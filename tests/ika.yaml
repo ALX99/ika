@@ -17,6 +17,8 @@ namespaces:
       /any: {}
       /get:
         rewritePath: /any
+      /httpbun/{any...}:
+        rewritePath: /{any...}
       /wildcard-rewrite/{any...}:
         rewritePath: /any/{any...}
       /path-rewrite/{a1}/{a2}:

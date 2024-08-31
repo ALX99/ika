@@ -1,5 +1,4 @@
 import http from "k6/http";
-import encoding from "k6/encoding";
 
 // https://jslib.k6.io/
 import chai, {
@@ -24,7 +23,7 @@ const baseURL = 'http://localhost:8888';
 const hostHeader = { 'Host': 'testns1.com' }
 
 
-export default function testSuite() {
+export default function tests() {
   describe("It is possible to send a request with any method", () => {
     const reqs = [
       { method: 'GET', url: `${baseURL}/any`, params: { headers: hostHeader, }, },
@@ -92,6 +91,11 @@ export default function testSuite() {
 
     expect(resp.status, resp.status).to.equal(200);
     expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hi%2Fworld/next');
+  });
+
+  describe("Redirects are not automatically followed", () => {
+    const resp = http.get(`${baseURL}/httpbun/redirect-to?url=https%3A%2F%2Fgoogle.com`, { headers: hostHeader, redirects: 0 });
+    expect(resp.status, resp.status).to.equal(302);
   });
 
 }
