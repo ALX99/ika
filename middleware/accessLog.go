@@ -26,7 +26,7 @@ func (*accessLog) Handle(next http.Handler) http.Handler {
 		now := time.Now()
 		next.ServeHTTP(st, r)
 
-		slog.Info("endpoint access",
+		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access",
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
 			slog.String("escapedPath", r.URL.EscapedPath()),

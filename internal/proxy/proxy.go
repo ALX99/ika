@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -53,7 +54,10 @@ func (p *Proxy) Route(rewritePath string, backends []config.Backend) (http.Handl
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
 			if rewritePath != "" {
+				prev := rp.Out.URL.EscapedPath()
 				rp.Out.URL.Path = rw.rewrite(rp.In)
+				slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
+					slog.String("from", prev), slog.String("to", rp.Out.URL.Path))
 			}
 		},
 	}
