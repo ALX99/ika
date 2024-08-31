@@ -14,7 +14,7 @@ up-reload:
 
 .PHONY: upd
 upd:
-	docker-compose up -d --build
+	docker compose up -d --build
 
 .PHONY: down
 down:
