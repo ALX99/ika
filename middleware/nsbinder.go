@@ -1,4 +1,4 @@
-package router
+package middleware
 
 import (
 	"context"
@@ -7,7 +7,8 @@ import (
 
 type nsKey struct{}
 
-func bindNamespace(ns string, h http.Handler) http.Handler {
+// BindNamespace binds the given namespace to the request context.
+func BindNamespace(ns string, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), nsKey{}, ns)
 		h.ServeHTTP(w, r.WithContext(ctx))

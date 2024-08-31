@@ -47,7 +47,7 @@ func MakeRouter(ctx context.Context, namespaces []config.Namespace) (http.Handle
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(maps.Keys(middlewares)))
 
-				mux.Handle(pattern, bindNamespace(ns.Name, handler(routeHandler)))
+				mux.Handle(pattern, middleware.BindNamespace(ns.Name, handler(routeHandler)))
 			}
 		}
 	}
