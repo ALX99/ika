@@ -159,6 +159,10 @@
                 "type": "object",
                 "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
                 "properties": {
+                  "rewritePath": {
+                    "type":"string",
+                    "description": "Rewrite the recieved path before the request is sent to the backends."
+                  },
                   "methods": {
                     "type": "array",
                     "description": "The HTTP methods that should be allowed for this path. If it is empty, all methods are allowed.",

@@ -58,9 +58,8 @@ func (ns *Namespace) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Backend struct {
-	Host        string `yaml:"host"`
-	Scheme      string `yaml:"scheme"`
-	RewritePath string `yaml:"rewritePath"`
+	Host   string `yaml:"host"`
+	Scheme string `yaml:"scheme"`
 }
 
 type Transport struct {
@@ -78,6 +77,7 @@ type Transport struct {
 }
 
 type Path struct {
+	RewritePath string      `yaml:"rewritePath"`
 	Methods     []Method    `yaml:"methods"`
 	Backends    []Backend   `yaml:"backends"`
 	Middlewares Middlewares `yaml:"middlewares"`

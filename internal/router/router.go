@@ -36,7 +36,7 @@ func MakeRouter(ctx context.Context, namespaces []config.Namespace) (http.Handle
 				return nil, err
 			}
 
-			routeHandler, err := p.Route(firstNonEmptyArr(path.Backends, ns.Backends))
+			routeHandler, err := p.Route(path.RewritePath, firstNonEmptyArr(path.Backends, ns.Backends))
 			if err != nil {
 				return nil, err
 			}
