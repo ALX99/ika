@@ -12,13 +12,12 @@ import (
 
 type (
 	Middlewares map[string]map[string]any
-	Namespaces  map[string]Namespace
 	Paths       map[string]Path
 )
 
 type Ika struct {
 	Server                  Server        `yaml:"server"`
-	Namespaces              Namespaces    `yaml:"namespaces"`
+	Namespaces              []Namespace   `yaml:"namespaces"`
 	GracefulShutdownTimeout time.Duration `yaml:"gracefulShutdownTimeout"`
 }
 
@@ -33,6 +32,7 @@ type Server struct {
 }
 
 type Namespace struct {
+	Name                   string      `yaml:"name"`
 	Backends               []Backend   `yaml:"backends"`
 	Transport              Transport   `yaml:"transport"`
 	Paths                  Paths       `yaml:"paths"`

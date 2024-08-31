@@ -18,14 +18,14 @@ type routerMaker struct {
 	mwsInitialized map[string]bool
 }
 
-func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler, error) {
+func MakeRouter(ctx context.Context, namespaces []config.Namespace) (http.Handler, error) {
 	slog.Info("Building router", "middlewareCount", middleware.Len(), "namespaceCount", len(namespaces))
 
 	rm := routerMaker{mwsInitialized: make(map[string]bool)}
 	mux := http.NewServeMux()
 
-	for name, ns := range namespaces {
-		log := slog.With(slog.String("namespace", name))
+	for _, ns := range namespaces {
+		log := slog.With(slog.String("namespace", ns.Name))
 		p := proxy.NewProxy(ns.Transport)
 
 		for pattern, path := range ns.Paths {
@@ -41,13 +41,13 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 				return nil, err
 			}
 
-			for _, pattern := range makeRoutePatterns(pattern, name, ns, path) {
+			for _, pattern := range makeRoutePatterns(pattern, ns, path) {
 				log.Info("Setting up path",
 					"pattern", pattern,
-					"namespace", name,
+					"namespace", ns.Name,
 					"middlewares", slices.Collect(maps.Keys(middlewares)))
 
-				mux.Handle(pattern, bindNamespace(name, handler(routeHandler)))
+				mux.Handle(pattern, bindNamespace(ns.Name, handler(routeHandler)))
 			}
 		}
 	}
@@ -111,7 +111,7 @@ func firstNonEmptyMap[T map[string]any](vs ...map[string]T) map[string]T {
 	return empty
 }
 
-func makeRoutePatterns(routePattern, nsName string, ns config.Namespace, route config.Path) []string {
+func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Path) []string {
 	var patterns []string
 	sb := strings.Builder{}
 	for _, method := range route.Methods {
@@ -125,7 +125,7 @@ func makeRoutePatterns(routePattern, nsName string, ns config.Namespace, route c
 			}
 
 			sb.WriteString("/")
-			sb.WriteString(nsName)
+			sb.WriteString(ns.Name)
 			sb.WriteString(routePattern)
 			patterns = append(patterns, sb.String())
 			continue

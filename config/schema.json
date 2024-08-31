@@ -114,85 +114,88 @@
       "required": []
     },
     "namespaces": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9]+$": {
-          "type": "object",
-          "properties": {
-            "disableNamespacedPaths": {
-              "type": "boolean",
-              "description": "If true, disables automatically prepending \"/namespace-name\" to all paths without at least one host specified."
-            },
-            "hosts": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "backends": {
-              "type": "array",
-              "description": "Specify the backends that will be used by default for all ruotes.",
-              "items": {
-                "$ref": "#/definitions/backend"
-              }
-            },
-            "transport": {
-              "description": "Transport settings to be used when connecting to backends.",
-              "$ref": "#/definitions/transport"
-            },
-            "middlewares": {
-              "type": "object",
-              "description": "Middlewares to run by default for all paths.",
-              "patternProperties": {
-                "^[a-zA-Z0-9]+$": {
-                  "type": "object"
-                }
-              }
-            },
-            "paths": {
-              "type": "object",
-              "patternProperties": {
-                "^/.*$": {
-                  "type": "object",
-                  "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
-                  "properties": {
-                    "methods": {
-                      "type": "array",
-                      "description": "The HTTP methods that should be allowed for this path. If it is empty, all methods are allowed.",
-                      "items": {
-                        "type": "string",
-                        "description": "The HTTP method"
-                      },
-                      "default": []
-                    },
-                    "backends": {
-                      "type": "array",
-                      "description": "Override the namespace backends for this path.",
-                      "items": {
-                        "$ref": "#/definitions/backend"
-                      }
-                    },
-                    "middlewares": {
-                      "type": "object",
-                      "description": "Override the namespace-level middlewares for this endpoint",
-                      "patternProperties": {
-                        "^[a-zA-Z0-9]+$": {
-                          "type": "object"
-                        }
-                      }
-                    }
-                  },
-                  "required": []
-                }
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The namespace name"
+          },
+          "disableNamespacedPaths": {
+            "type": "boolean",
+            "description": "If true, disables automatically prepending \"/namespace-name\" to all paths without at least one host specified."
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "backends": {
+            "type": "array",
+            "description": "Specify the backends that will be used by default for all ruotes.",
+            "items": {
+              "$ref": "#/definitions/backend"
+            }
+          },
+          "transport": {
+            "description": "Transport settings to be used when connecting to backends.",
+            "$ref": "#/definitions/transport"
+          },
+          "middlewares": {
+            "type": "object",
+            "description": "Middlewares to run by default for all paths.",
+            "patternProperties": {
+              "^[a-zA-Z0-9]+$": {
+                "type": "object"
               }
             }
           },
-          "required": [
-            "hosts",
-            "backends",
-            "paths"
-          ]
-        }
+          "paths": {
+            "type": "object",
+            "patternProperties": {
+              "^/.*$": {
+                "type": "object",
+                "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
+                "properties": {
+                  "methods": {
+                    "type": "array",
+                    "description": "The HTTP methods that should be allowed for this path. If it is empty, all methods are allowed.",
+                    "items": {
+                      "type": "string",
+                      "description": "The HTTP method"
+                    },
+                    "default": []
+                  },
+                  "backends": {
+                    "type": "array",
+                    "description": "Override the namespace backends for this path.",
+                    "items": {
+                      "$ref": "#/definitions/backend"
+                    }
+                  },
+                  "middlewares": {
+                    "type": "object",
+                    "description": "Override the namespace-level middlewares for this endpoint",
+                    "patternProperties": {
+                      "^[a-zA-Z0-9]+$": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "required": [
+          "hosts",
+          "backends",
+          "paths",
+          "name"
+        ]
       }
     }
   },
