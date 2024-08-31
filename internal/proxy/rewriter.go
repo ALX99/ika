@@ -86,14 +86,20 @@ func newValueRewriter(toPattern string) valueRewriter {
 
 func (rw valueRewriter) rewrite(r *http.Request) string {
 	args := make([]string, 0, len(rw.segments)*2)
-	for segment, replace := range rw.segments {
-		if isWildcard(segment) {
-			args = append(args, replace, r.PathValue(segment))
-		} else {
-			// Otherwise, escape the value to ensure that values such
-			// as '/' are safely encoded in the new path
-			args = append(args, replace, url.PathEscape(r.PathValue(segment)))
+	for segName, replace := range rw.segments {
+		if isWildcard(replace) {
+			val := r.PathValue(segName)
+
+			// Dilemma! Impossible to tell if the slash was originally '/' or '%2F'
+			// The only safe fallback is to keep the unescaped value
+			if strings.Contains(val, "/") {
+				args = append(args, replace, r.PathValue(segName))
+				continue
+			}
 		}
+
+		// Otherwise, escape the value to ensure that values such
+		args = append(args, replace, url.PathEscape(r.PathValue(segName)))
 	}
 
 	return strings.NewReplacer(args...).Replace(rw.toPattern)
