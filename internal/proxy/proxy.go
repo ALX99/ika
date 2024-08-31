@@ -6,7 +6,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"regexp"
-	"strings"
 
 	"github.com/alx99/ika/internal/config"
 )
@@ -36,68 +35,39 @@ func NewProxy(transportCfg config.Transport) *Proxy {
 	}
 }
 
-func (p *Proxy) Route(rewritePath string, backends []config.Backend) (http.Handler, error) {
+func (p *Proxy) Route(routePattern, rewritePattern string, backends []config.Backend) (http.Handler, error) {
 	backend := backends[0]
 	if len(backends) > 1 {
 		panic("not implemented")
 	}
-	rw := newRewriter(rewritePath)
+	var rw pathRewriter = newIndexRewriter(routePattern, rewritePattern)
 
+	var err error
 	rp := &httputil.ReverseProxy{
 		Transport: p.transport,
 		Rewrite: func(rp *httputil.ProxyRequest) {
 			rp.Out.URL.Scheme = backend.Scheme
 			rp.Out.URL.Host = backend.Host
 			rp.Out.Host = backend.Host
-
-			// Restore the query even if it can't be parsed
+			// Restore the query even if it can't be parsed (read [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
-			if rewritePath != "" {
-				prev := rp.Out.URL.EscapedPath()
-				rp.Out.URL.Path = rw.rewrite(rp.In)
-				slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
-					slog.String("from", prev), slog.String("to", rp.Out.URL.Path))
+			if rewritePattern == "" {
+				return
 			}
+
+			prevPath := rp.Out.URL.EscapedPath()
+			rp.Out.URL.RawPath = rw.rewrite(rp.In)
+			rp.Out.URL.Path, err = url.PathUnescape(rp.Out.URL.RawPath)
+			if err != nil {
+				slog.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
+					slog.String("err", err.Error()))
+			}
+
+			slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
+				slog.String("from", prevPath), slog.String("to", rp.Out.URL.Path))
 		},
 	}
 
 	return rp, nil
-}
-
-type rewriter struct {
-	// toPattern is the path which the request will be rewritten
-	toPattern string
-	// segments is a map of segment names to their corresponding replacement
-	segments map[string]string
-}
-
-func newRewriter(to string) rewriter {
-	rw := rewriter{segments: make(map[string]string), toPattern: to}
-
-	matches := segmentRe.FindAllStringSubmatch(to, -1)
-	for _, match := range matches {
-		if match[1] == "$" {
-			continue // special token, not a segment
-		}
-		rw.segments[strings.TrimSuffix(match[1], "...")] = match[0]
-	}
-	return rw
-}
-
-func (rw rewriter) rewrite(r *http.Request) string {
-	args := make([]string, 0, len(rw.segments)*2)
-	for segment, replace := range rw.segments {
-		// If the segment is suffixed with '...}', then the segment is a wildcard
-		// and so we don't want to escape the value.
-		if strings.HasSuffix(replace, "...}") {
-			args = append(args, replace, r.PathValue(segment))
-		} else {
-			// Otherwise, escape the value to ensure that values such
-			// as '/' are safely encoded in the new path
-			args = append(args, replace, url.PathEscape(r.PathValue(segment)))
-		}
-	}
-
-	return strings.NewReplacer(args...).Replace(rw.toPattern)
 }
