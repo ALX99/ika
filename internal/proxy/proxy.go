@@ -1,10 +1,12 @@
 package proxy
 
 import (
+	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"regexp"
 
 	"github.com/alx99/ika/internal/config"
@@ -45,6 +47,7 @@ func (p *Proxy) Route(routePattern, rewritePattern string, backends []config.Bac
 	var err error
 	rp := &httputil.ReverseProxy{
 		Transport: p.transport,
+		ErrorLog:  log.New(os.Stderr, "httputil.ReverseProxy ", log.LstdFlags),
 		Rewrite: func(rp *httputil.ProxyRequest) {
 			rp.Out.URL.Scheme = backend.Scheme
 			rp.Out.URL.Host = backend.Host
@@ -65,7 +68,7 @@ func (p *Proxy) Route(routePattern, rewritePattern string, backends []config.Bac
 			}
 
 			slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
-				slog.String("from", prevPath), slog.String("to", rp.Out.URL.Path))
+				slog.String("from", prevPath), slog.String("to", rp.Out.URL.RawPath))
 		},
 	}
 
