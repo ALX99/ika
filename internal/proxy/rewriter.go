@@ -47,8 +47,7 @@ func (ar indexRewriter) rewrite(r *http.Request) string {
 			continue
 		}
 
-		// wildcard segment
-		if strings.HasSuffix(replace, "...}") {
+		if isWildcard(replace) {
 			args = append(args, replace, strings.Join(s[segmentIndex:], "/"))
 			continue
 		}
