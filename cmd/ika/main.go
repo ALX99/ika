@@ -51,7 +51,7 @@ func main() {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(5 * time.Second):
+			case <-time.After(time.Second):
 				flush()
 			}
 		}
