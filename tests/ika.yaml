@@ -1,0 +1,21 @@
+gracefulShutdownTimeout: 1s
+
+server:
+  addr: :8888
+
+namespaces:
+  - name: testns1
+    hosts: [testns1.com]
+    backends:
+      - host: httpbun-local
+        scheme: http
+
+    middlewares:
+      accessLog: {}
+
+    paths:
+      /any: {}
+      /wildcard-rewrite/{any...}:
+        rewritePath: /any/{any...}
+      /path-rewrite/{a1}/{a2}:
+        rewritePath: /any/{a1}/{a2}
