@@ -36,6 +36,8 @@ func Test_makeRoutePattern(t *testing.T) {
 				"GET host2.com/",
 				"POST host1.com/",
 				"POST host2.com/",
+				"GET /nsName/",
+				"POST /nsName/",
 			},
 		},
 		{
@@ -56,6 +58,8 @@ func Test_makeRoutePattern(t *testing.T) {
 				"GET host2.com/route/{something/{any...}}",
 				"POST host1.com/route/{something/{any...}}",
 				"POST host2.com/route/{something/{any...}}",
+				"GET /nsName/route/{something/{any...}}",
+				"POST /nsName/route/{something/{any...}}",
 			},
 		},
 		{

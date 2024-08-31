@@ -44,6 +44,13 @@ export default function testSuite() {
     });
   });
 
+  describe("Namespaced paths are created", () => {
+    const resp = http.get(`${baseURL}/testns1/get`);
+
+    expect(resp.status, resp.status).to.equal(200);
+    expect(resp.json()["method"], resp.json()["method"]).to.equal('GET');
+  });
+
   describe("It is possible to wildcard rewrite the backend path", () => {
     const reqs = [
       { method: 'GET', url: `${baseURL}/wildcard-rewrite/1`, params: { headers: hostHeader, }, },
@@ -86,4 +93,5 @@ export default function testSuite() {
     expect(resp.status, resp.status).to.equal(200);
     expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hi%2Fworld/next');
   });
+
 }

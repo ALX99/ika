@@ -29,7 +29,6 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 		p := proxy.NewProxy(ns.Transport)
 
 		for pattern, path := range ns.Paths {
-			log = log.With(slog.String("pattern", pattern))
 			middlewares := firstNonEmptyMap(path.Middlewares, ns.Middlewares)
 			handler, err := rm.getMiddleware(ctx, log, middlewares)
 			if err != nil {
@@ -122,22 +121,20 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 	}
 
 	if len(route.Methods) == 0 {
-		if len(ns.Hosts) == 0 {
-			// no methods, no hosts just means /nsName/{pattern}
+
+		if !ns.DisableNamespacedPaths {
+			// Add namespaced route
 			sb.WriteString("/")
 			sb.WriteString(ns.Name)
 			sb.WriteString(routePattern)
 			patterns = append(patterns, sb.String())
-			return patterns
 		}
 
-		backup := sb.String()
 		for _, host := range ns.Hosts {
 			sb.Reset()
-			sb.WriteString(backup)
-
 			sb.WriteString(string(host))
 			sb.WriteString(routePattern)
+			// fmt.Printf("sb.String(): %v\n", sb.String())
 			patterns = append(patterns, sb.String())
 		}
 	}
@@ -147,12 +144,15 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 		sb.WriteString(string(method))
 		sb.WriteString(" ")
 
-		if len(ns.Hosts) == 0 {
+		if !ns.DisableNamespacedPaths {
+			backup := sb.String()
+			// Add namespaced route
 			sb.WriteString("/")
 			sb.WriteString(ns.Name)
 			sb.WriteString(routePattern)
 			patterns = append(patterns, sb.String())
-			continue
+			sb.Reset()
+			sb.WriteString(backup)
 		}
 
 		backup := sb.String()
