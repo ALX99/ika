@@ -18,7 +18,7 @@ type routerMaker struct {
 	mwsInitialized map[string]bool
 }
 
-func MakeRouter(ctx context.Context, namespaces []config.Namespace) (http.Handler, error) {
+func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler, error) {
 	slog.Info("Building router", "middlewareCount", middleware.Len(), "namespaceCount", len(namespaces))
 
 	rm := routerMaker{mwsInitialized: make(map[string]bool)}

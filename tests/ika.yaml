@@ -4,7 +4,7 @@ server:
   addr: :8888
 
 namespaces:
-  - name: testns1
+  testns1:
     hosts: [testns1.com]
     backends:
       - host: httpbun-local

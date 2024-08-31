@@ -13,11 +13,28 @@ import (
 type (
 	Middlewares map[string]map[string]any
 	Paths       map[string]Path
+	Namespaces  map[string]Namespace
 )
+
+func (ns *Namespaces) UnmarshalYAML(value *yaml.Node) error {
+	tmp := make(map[string]Namespace)
+
+	if err := value.Decode(&tmp); err != nil {
+		return err
+	}
+
+	for name, ns := range tmp {
+		ns.Name = name
+		tmp[name] = ns
+	}
+
+	*ns = tmp
+	return nil
+}
 
 type Ika struct {
 	Server                  Server        `yaml:"server"`
-	Namespaces              []Namespace   `yaml:"namespaces"`
+	Namespaces              Namespaces    `yaml:"namespaces"`
 	GracefulShutdownTimeout time.Duration `yaml:"gracefulShutdownTimeout"`
 }
 
