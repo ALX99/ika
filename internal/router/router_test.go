@@ -23,12 +23,12 @@ func Test_makeRoutePattern(t *testing.T) {
 			name: "Test with hosts",
 			args: args{
 				routePattern: "/",
-				nsName:       "nsName",
 				ns: config.Namespace{
-					Hosts: []config.Host{"host1.com", "host2.com"},
+					Name:  "nsName",
+					Hosts: []string{"host1.com", "host2.com"},
 				},
 				route: config.Path{
-					Methods: []string{"GET", "POST"},
+					Methods: []config.Method{"GET", "POST"},
 				},
 			},
 			want: []string{
@@ -44,10 +44,11 @@ func Test_makeRoutePattern(t *testing.T) {
 				routePattern: "/route/{something/{any...}}",
 				nsName:       "nsName",
 				ns: config.Namespace{
-					Hosts: []config.Host{"host1.com", "host2.com"},
+					Name:  "nsName",
+					Hosts: []string{"host1.com", "host2.com"},
 				},
 				route: config.Path{
-					Methods: []string{"GET", "POST"},
+					Methods: []config.Method{"GET", "POST"},
 				},
 			},
 			[]string{
@@ -63,10 +64,11 @@ func Test_makeRoutePattern(t *testing.T) {
 				routePattern: "/route/{something/{any...}}",
 				nsName:       "nsName",
 				ns: config.Namespace{
-					DisableNaspacmedRoutes: true,
+					Name:                   "nsName",
+					DisableNamespacedPaths: true,
 				},
 				route: config.Path{
-					Methods: []string{"GET", "POST"},
+					Methods: []config.Method{"GET", "POST"},
 				},
 			},
 			[]string{},
@@ -77,10 +79,11 @@ func Test_makeRoutePattern(t *testing.T) {
 				routePattern: "/route/{something/{any...}}",
 				nsName:       "nsName",
 				ns: config.Namespace{
-					Hosts: []config.Host{},
+					Name:  "nsName",
+					Hosts: []string{},
 				},
 				route: config.Path{
-					Methods: []string{"GET", "POST"},
+					Methods: []config.Method{"GET", "POST"},
 				},
 			},
 			[]string{
@@ -91,7 +94,7 @@ func Test_makeRoutePattern(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := makeRoutePattern(tt.args.routePattern, tt.args.nsName, tt.args.ns, tt.args.route)
+			got := makeRoutePatterns(tt.args.routePattern, tt.args.ns, tt.args.route)
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}

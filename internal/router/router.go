@@ -114,16 +114,40 @@ func firstNonEmptyMap[T map[string]any](vs ...map[string]T) map[string]T {
 func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Path) []string {
 	var patterns []string
 	sb := strings.Builder{}
+
+	if len(ns.Hosts) == 0 {
+		if ns.DisableNamespacedPaths {
+			return patterns // nothing to do
+		}
+	}
+
+	if len(route.Methods) == 0 {
+		if len(ns.Hosts) == 0 {
+			// no methods, no hosts just means /nsName/{pattern}
+			sb.WriteString("/")
+			sb.WriteString(ns.Name)
+			sb.WriteString(routePattern)
+			patterns = append(patterns, sb.String())
+			return patterns
+		}
+
+		backup := sb.String()
+		for _, host := range ns.Hosts {
+			sb.Reset()
+			sb.WriteString(backup)
+
+			sb.WriteString(string(host))
+			sb.WriteString(routePattern)
+			patterns = append(patterns, sb.String())
+		}
+	}
+
 	for _, method := range route.Methods {
 		sb.Reset()
 		sb.WriteString(string(method))
 		sb.WriteString(" ")
 
 		if len(ns.Hosts) == 0 {
-			if ns.DisableNamespacedPaths {
-				continue // nothing to do
-			}
-
 			sb.WriteString("/")
 			sb.WriteString(ns.Name)
 			sb.WriteString(routePattern)
@@ -141,5 +165,6 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 			patterns = append(patterns, sb.String())
 		}
 	}
+
 	return patterns
 }
