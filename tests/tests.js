@@ -9,7 +9,7 @@ import chai, {
 chai.config.logFailures = true;
 
 // https://grafana.com/docs/k6/latest/using-k6/k6-options/reference/
-export let options = {
+export const options = {
   thresholds: {
     checks: ["rate == 1.00"],
     http_req_failed: ["rate == 0.00"],

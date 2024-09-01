@@ -3,9 +3,18 @@ services:
     build: .
     ports:
       - "8888:8888"
+      - "6060:6060"
     command: ["/ika", "-config", "/config.yaml"]
     volumes:
       - ./tests/ika.yaml:/config.yaml
+  krakend:
+    image: devopsfaith/krakend
+    command: ["run", "-c", "/config.json"]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./tests/krakend.json:/config.json
   httpbun-local:
     image: sharat87/httpbun
     expose: ["80"]
+

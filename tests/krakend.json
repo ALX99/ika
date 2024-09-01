@@ -1,0 +1,25 @@
+{
+  "$schema": "https://www.krakend.io/schema/krakend.json",
+  "version": 3,
+  "name": "KrakenD - API Gateway",
+  "timeout": "3000ms",
+  "cache_ttl": "300s",
+  "output_encoding": "json",
+  "disable_rest": true,
+  "endpoints": [
+    {
+      "endpoint": "/testns1/{something}",
+      "method": "GET",
+      "output_encoding": "no-op",
+      "backend": [
+        {
+          "url_pattern": "/any/{something}",
+          "encoding": "no-op",
+          "sd": "static",
+          "method": "GET",
+          "host": ["httpbun-local"]
+        }
+      ]
+    }
+  ]
+}
