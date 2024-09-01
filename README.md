@@ -1,5 +1,9 @@
 # Ika
 
+<p align="center">
+  <img src="https://github.com/ALX99/ika/blob/master/logo.png" />
+</p>
+
 Ika is a simple, modular, programmable API Gateway written in Go. It is designed to serve as a base for building custom API gateway and have **ZERO** *gotchas*.
 In fact, it is so simple, that by default, it is closer to a reverse proxy than a full-fledged API Gateway. It even boasts an impressive external dependency count of **1**.
 This single dependency is just yaml parser to be able to read the configuration file.
