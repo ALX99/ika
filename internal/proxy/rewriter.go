@@ -3,8 +3,12 @@ package proxy
 import (
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
+
+// regular expression to match segments in the rewrite path
+var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
 type pathRewriter interface {
 	rewrite(r *http.Request) (rawPath string)

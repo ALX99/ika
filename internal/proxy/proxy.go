@@ -6,13 +6,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"regexp"
 
 	"github.com/alx99/ika/internal/config"
 )
-
-// regular expression to match segments in the rewrite path
-var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
 type Proxy struct {
 	transport *http.Transport
