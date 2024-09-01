@@ -25,3 +25,9 @@ Ika is designed for people that value the following:
 
 - Ika is not a full-fledged API Gateway like [Kong](https://konghq.com/products/kong-gateway), [Tyk](https://tyk.io) or [KrakenD](https://www.krakend.io).
 - Mature. It is a new project and has not yet been battle-tested in production, and has yet to see its first 1.0 release.
+
+
+## Performance
+
+As of now, Ika has not been benchmarked, and in fact there is little reason to do so.
+Because Ika is so simple, the performance is expected to be that identical of [`http.Server`](https://pkg.go.dev/net/http#Server), [`http.ServeMux`](https://pkg.go.dev/net/http#ServeMux).
