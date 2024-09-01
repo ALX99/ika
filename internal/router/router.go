@@ -26,7 +26,8 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 
 	for _, ns := range namespaces {
 		log := slog.With(slog.String("namespace", ns.Name))
-		p := proxy.NewProxy(ns.Transport)
+		transport := makeTransport(ns.Transport)
+		p := proxy.NewProxy(transport)
 
 		for pattern, path := range ns.Paths {
 			middlewares := firstNonEmptyMap(path.Middlewares, ns.Middlewares)
@@ -167,4 +168,20 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 	}
 
 	return patterns
+}
+
+func makeTransport(cfg config.Transport) *http.Transport {
+	return &http.Transport{
+		DisableKeepAlives:      cfg.DisableKeepAlives,
+		DisableCompression:     cfg.DisableCompression,
+		MaxIdleConns:           cfg.MaxIdleConns,
+		MaxIdleConnsPerHost:    cfg.MaxIdleConnsPerHost,
+		MaxConnsPerHost:        cfg.MaxConnsPerHost,
+		IdleConnTimeout:        cfg.IdleConnTimeout,
+		ResponseHeaderTimeout:  cfg.ResponseHeaderTimeout,
+		ExpectContinueTimeout:  cfg.ExpectContinueTimeout,
+		MaxResponseHeaderBytes: cfg.MaxResponseHeaderBytes,
+		WriteBufferSize:        cfg.WriteBufferSize,
+		ReadBufferSize:         cfg.ReadBufferSize,
+	}
 }

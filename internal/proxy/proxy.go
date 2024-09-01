@@ -11,25 +11,11 @@ import (
 )
 
 type Proxy struct {
-	transport *http.Transport
+	transport http.RoundTripper
 }
 
-func NewProxy(transportCfg config.Transport) *Proxy {
-	return &Proxy{
-		transport: &http.Transport{
-			DisableKeepAlives:      transportCfg.DisableKeepAlives,
-			DisableCompression:     transportCfg.DisableCompression,
-			MaxIdleConns:           transportCfg.MaxIdleConns,
-			MaxIdleConnsPerHost:    transportCfg.MaxIdleConnsPerHost,
-			MaxConnsPerHost:        transportCfg.MaxConnsPerHost,
-			IdleConnTimeout:        transportCfg.IdleConnTimeout,
-			ResponseHeaderTimeout:  transportCfg.ResponseHeaderTimeout,
-			ExpectContinueTimeout:  transportCfg.ExpectContinueTimeout,
-			MaxResponseHeaderBytes: transportCfg.MaxResponseHeaderBytes,
-			WriteBufferSize:        transportCfg.WriteBufferSize,
-			ReadBufferSize:         transportCfg.ReadBufferSize,
-		},
-	}
+func NewProxy(transport http.RoundTripper) *Proxy {
+	return &Proxy{transport: transport}
 }
 
 func (p *Proxy) Route(routePattern, rewritePattern string, backends []config.Backend) (http.Handler, error) {
