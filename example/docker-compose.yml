@@ -1,0 +1,10 @@
+services:
+  gateway:
+    build: .
+    ports:
+      - "8888:8888"
+    command: ["/ika", "-config", "/ika.yaml"]
+  httpbun:
+    image: sharat87/httpbun
+    expose: ["80"]
+

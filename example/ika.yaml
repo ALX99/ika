@@ -1,0 +1,20 @@
+gracefulShutdownTimeout: 1s
+
+server:
+  addr: :8888
+
+namespaces:
+  example:
+    backends:
+      - host: httpbun
+        scheme: http
+
+    middlewares:
+      - name: accessLog
+        enabled: true
+      - name: noCache
+        enabled: true
+
+    paths:
+      /get:
+        rewritePath: /get
