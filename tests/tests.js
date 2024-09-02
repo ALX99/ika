@@ -98,4 +98,23 @@ export default function tests() {
     expect(resp.status, resp.status).to.equal(302);
   });
 
+  describe("Only GET are allowed on /only-get", () => {
+    let reqs = [
+      { method: 'GET', url: `${baseURL}/only-get`, params: { headers: hostHeader, }, },
+      { method: 'GET', url: `${baseURL}/testns1/only-get` },
+    ];
+
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+    });
+
+    reqs = [
+      { method: 'POST', url: `${baseURL}/only-get`, params: { headers: hostHeader, responseCallback: http.setResponseCallback(http.expectedStatuses(405)) } },
+      { method: 'POST', url: `${baseURL}/testns1/only-get`, params: { responseCallback: http.setResponseCallback(http.expectedStatuses(405)) } },
+    ];
+
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(405);
+    });
+  });
 }

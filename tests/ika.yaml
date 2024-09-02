@@ -18,6 +18,9 @@ namespaces:
       /any: {}
       /get:
         rewritePath: /any
+      /only-get:
+        methods: [GET]
+        rewritePath: /any
 
       /httpbun/{any...}:
         rewritePath: /{any...}
@@ -25,5 +28,3 @@ namespaces:
         rewritePath: /any/{any...}
       /path-rewrite/{a1}/{a2}:
         rewritePath: /any/{a1}/{a2}
-      /{something}:
-        rewritePath: /any/{something}
