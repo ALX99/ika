@@ -25,12 +25,13 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 
 		for pattern, path := range ns.Paths {
 			middlewares := ns.Middlewares
-			handler, err := getMiddleware(ctx, log, path, ns)
+
+			proxyHandler, err := p.Route(pattern, path.RewritePath, firstNonEmptyArr(path.Backends, ns.Backends))
 			if err != nil {
 				return nil, err
 			}
 
-			routeHandler, err := p.Route(pattern, path.RewritePath, firstNonEmptyArr(path.Backends, ns.Backends))
+			handler, err := applyMiddlewares(ctx, log, proxyHandler, path, ns)
 			if err != nil {
 				return nil, err
 			}
@@ -41,7 +42,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(middlewares.Names()))
 
-				mux.Handle(pattern, middleware.BindNamespace(ns.Name, handler(routeHandler)))
+				mux.Handle(pattern, middleware.BindNamespace(ns.Name, handler))
 			}
 		}
 	}
@@ -49,36 +50,24 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 	return mux, nil
 }
 
-// getMiddleware initializes the given middlewares and returns a handler that chains them for the given path and namespace
-func getMiddleware(ctx context.Context, log *slog.Logger, path config.Path, ns config.Namespace) (func(http.Handler) http.Handler, error) {
-	var handlers []func(http.Handler) http.Handler
-
-	for mw := range path.MergedMiddlewares(ns) {
-		log.Debug("Setting up middleware", "name", mw.Name)
-		m, ok := middleware.Get(mw.Name)
+// applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
+func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
+	for mwProvider := range path.MergedMiddlewares(ns) {
+		log.Debug("Setting up middleware", "name", mwProvider.Name)
+		m, ok := middleware.Get(mwProvider.Name)
 		if !ok {
-			return nil, fmt.Errorf("middleware %q has not been registered", mw.Name)
+			return nil, fmt.Errorf("middleware %q has not been registered", mwProvider.Name)
 		}
 
-		err := m.Setup(ctx, mw.Args)
+		mw, err := m.GetMiddleware(ctx, mwProvider.Args)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup middleware %q: %w", mw.Name, err)
+			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwProvider.Name, err)
 		}
 
-		handlers = append(handlers, m.Handle)
+		handler = mw(handler)
 	}
 
-	return chain(handlers), nil
-}
-
-// chain chains the given handlers in reverse order
-func chain(handlers []func(http.Handler) http.Handler) func(http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		for i := len(handlers) - 1; i >= 0; i-- {
-			h = handlers[i](h)
-		}
-		return h
-	}
+	return handler, nil
 }
 
 func firstNonEmptyArr[T any](vs ...[]T) []T {

@@ -8,35 +8,36 @@ import (
 )
 
 var (
-	middlewares = make(map[string]MiddlewareProvider)
-	mu          = sync.RWMutex{}
+	providers = make(map[string]Provider)
+	mu        = sync.RWMutex{}
 )
 
 type Middleware func(http.Handler) http.Handler
 
-type MiddlewareProvider interface {
-	// Setup is called once each time the middleware is initialized
-	Setup(ctx context.Context, config map[string]any) error
+type Provider interface {
+	// GetMiddleware should set up the middleware based on the given configuration
+	GetMiddleware(ctx context.Context, config map[string]any) (Middleware, error)
+	// Teardown should clean up any potential resources used by the middleware.
+	// It is called when the server is shutting down.
 	Teardown(ctx context.Context) error
-	Handle(http.Handler) http.Handler
 }
 
-// Register registers a middleware with the given name.
-func Register(name string, middleware MiddlewareProvider) error {
+// RegisterProvider registers a new provider which provides a middleware with the specified name.
+func RegisterProvider(name string, provider Provider) error {
 	mu.Lock()
 	defer mu.Unlock()
-	if _, ok := middlewares[name]; ok {
+	if _, ok := providers[name]; ok {
 		return fmt.Errorf("middleware %q is already registered", name)
 	}
-	middlewares[name] = middleware
+	providers[name] = provider
 	return nil
 }
 
 // Get returns a middleware by name.
-func Get(name string) (MiddlewareProvider, bool) {
+func Get(name string) (Provider, bool) {
 	mu.RLock()
 	defer mu.RUnlock()
-	m, ok := middlewares[name]
+	m, ok := providers[name]
 	return m, ok
 }
 
@@ -44,5 +45,5 @@ func Get(name string) (MiddlewareProvider, bool) {
 func Len() int {
 	mu.RLock()
 	defer mu.RUnlock()
-	return len(middlewares)
+	return len(providers)
 }

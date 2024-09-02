@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	err := Register("accessLog", &accessLog{})
+	err := RegisterProvider("accessLog", &accessLog{})
 	if err != nil {
 		panic(err)
 	}
@@ -16,27 +16,25 @@ func init() {
 
 type accessLog struct{}
 
-func (*accessLog) Setup(_ context.Context, _ map[string]any) error {
-	return nil
-}
+func (*accessLog) GetMiddleware(_ context.Context, _ map[string]any) (Middleware, error) {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			st := &statusRecorder{ResponseWriter: w}
+			now := time.Now()
+			next.ServeHTTP(st, r)
 
-func (*accessLog) Handle(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		st := &statusRecorder{ResponseWriter: w}
-		now := time.Now()
-		next.ServeHTTP(st, r)
-
-		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access",
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.String("escapedPath", r.URL.EscapedPath()),
-			slog.String("remote", r.RemoteAddr),
-			slog.String("userAgent", r.UserAgent()),
-			slog.Int("status", st.status),
-			slog.Int64("duration", time.Since(now).Milliseconds()),
-			slog.String("namespace", GetNamespace(r.Context())),
-		)
-	})
+			slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access",
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+				slog.String("escapedPath", r.URL.EscapedPath()),
+				slog.String("remote", r.RemoteAddr),
+				slog.String("userAgent", r.UserAgent()),
+				slog.Int("status", st.status),
+				slog.Int64("duration", time.Since(now).Milliseconds()),
+				slog.String("namespace", GetNamespace(r.Context())),
+			)
+		})
+	}, nil
 }
 
 func (*accessLog) Teardown(_ context.Context) error {
