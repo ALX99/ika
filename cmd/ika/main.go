@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg, err := config.ReadConfig(*configPath)
+	cfg, err := config.Read(*configPath)
 	if err != nil {
 		exitWithError("failed to read config", err)
 	}
