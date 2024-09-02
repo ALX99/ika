@@ -1,7 +1,7 @@
 # Ika
 
 <p align="center">
-  <img src="https://github.com/ALX99/ika/blob/master/logo.png" />
+  <img src="https://github.com/ALX99/ika/blob/main/logo.png" />
 </p>
 
 Ika is a simple, modular, programmable API Gateway written in Go. It is designed to serve as a base for building custom API gateway and have **ZERO** *gotchas*.
