@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
 	"slices"
 	"strings"
@@ -14,14 +13,9 @@ import (
 	"github.com/alx99/ika/middleware"
 )
 
-type routerMaker struct {
-	mwsInitialized map[string]bool
-}
-
 func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler, error) {
 	slog.Info("Building router", "middlewareCount", middleware.Len(), "namespaceCount", len(namespaces))
 
-	rm := routerMaker{mwsInitialized: make(map[string]bool)}
 	mux := http.NewServeMux()
 
 	for _, ns := range namespaces {
@@ -30,8 +24,8 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 		p := proxy.NewProxy(transport)
 
 		for pattern, path := range ns.Paths {
-			middlewares := firstNonEmptyMap(path.Middlewares, ns.Middlewares)
-			handler, err := rm.getMiddleware(ctx, log, middlewares)
+			middlewares := ns.Middlewares
+			handler, err := getMiddleware(ctx, log, path, ns)
 			if err != nil {
 				return nil, err
 			}
@@ -45,7 +39,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 				log.Info("Setting up path",
 					"pattern", pattern,
 					"namespace", ns.Name,
-					"middlewares", slices.Collect(maps.Keys(middlewares)))
+					"middlewares", slices.Collect(middlewares.Names()))
 
 				mux.Handle(pattern, middleware.BindNamespace(ns.Name, handler(routeHandler)))
 			}
@@ -55,24 +49,20 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 	return mux, nil
 }
 
-// getMiddleware initializes the given middlewares and returns a handler that chains them
-func (rm routerMaker) getMiddleware(ctx context.Context, log *slog.Logger, mws config.Middlewares) (func(http.Handler) http.Handler, error) {
+// getMiddleware initializes the given middlewares and returns a handler that chains them for the given path and namespace
+func getMiddleware(ctx context.Context, log *slog.Logger, path config.Path, ns config.Namespace) (func(http.Handler) http.Handler, error) {
 	var handlers []func(http.Handler) http.Handler
-	for name, cfg := range mws {
-		if rm.mwsInitialized[name] {
-			continue
-		}
 
-		log.Debug("Setting up middleware", "name", name)
-		m, ok := middleware.Get(name)
+	for mw := range path.MergedMiddlewares(ns) {
+		log.Debug("Setting up middleware", "name", mw.Name)
+		m, ok := middleware.Get(mw.Name)
 		if !ok {
-			return nil, fmt.Errorf("middleware %q has not been registered", name)
+			return nil, fmt.Errorf("middleware %q has not been registered", mw.Name)
 		}
-		rm.mwsInitialized[name] = true
 
-		err := m.Setup(ctx, cfg)
+		err := m.Setup(ctx, mw.Args)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup middleware %q: %w", name, err)
+			return nil, fmt.Errorf("failed to setup middleware %q: %w", mw.Name, err)
 		}
 
 		handlers = append(handlers, m.Handle)

@@ -11,15 +11,19 @@ namespaces:
         scheme: http
 
     middlewares:
-      accessLog: {}
+    - name: accessLog
+      enabled: true
 
     paths:
       /any: {}
       /get:
         rewritePath: /any
+
       /httpbun/{any...}:
         rewritePath: /{any...}
       /wildcard-rewrite/{any...}:
         rewritePath: /any/{any...}
       /path-rewrite/{a1}/{a2}:
         rewritePath: /any/{a1}/{a2}
+      /{something}:
+        rewritePath: /any/{something}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"iter"
 	"net/http"
 	"os"
 	"slices"
@@ -11,10 +12,40 @@ import (
 )
 
 type (
-	Middlewares map[string]map[string]any
+	Middlewares []Middleware
 	Paths       map[string]Path
 	Namespaces  map[string]Namespace
 )
+
+type Middleware struct {
+	Name    string         `yaml:"name"`
+	Enabled bool           `yaml:"enabled"`
+	Args    map[string]any `yaml:",inline"`
+}
+
+// Names returns an iterator that yields the names of all enabled middlewares.
+func (m Middlewares) Names() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for mw := range m.enabled() {
+			if !yield(mw.Name) {
+				return
+			}
+		}
+	}
+}
+
+// enabled returns an iterator that yields all enabled middlewares.
+func (m Middlewares) enabled() iter.Seq[Middleware] {
+	return func(yield func(Middleware) bool) {
+		for _, mw := range m {
+			if mw.Enabled {
+				if !yield(mw) {
+					return
+				}
+			}
+		}
+	}
+}
 
 func (ns *Namespaces) UnmarshalYAML(value *yaml.Node) error {
 	tmp := make(map[string]Namespace)
@@ -98,6 +129,23 @@ type Path struct {
 	Methods     []Method    `yaml:"methods"`
 	Backends    []Backend   `yaml:"backends"`
 	Middlewares Middlewares `yaml:"middlewares"`
+}
+
+// MergedMiddlewares returns an iterator that yields all enabled middlewares from the path and namespace.
+func (p Path) MergedMiddlewares(ns Namespace) iter.Seq[Middleware] {
+	return func(yield func(Middleware) bool) {
+		for mw := range p.Middlewares.enabled() {
+			if !yield(mw) {
+				return
+			}
+		}
+
+		for mw := range ns.Middlewares.enabled() {
+			if !yield(mw) {
+				return
+			}
+		}
+	}
 }
 
 type Method string

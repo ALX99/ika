@@ -72,6 +72,25 @@
         }
       },
       "required": []
+    },
+    "middleware": {
+      "type": "object",
+      "description": "Middleware definition to be used in the namespaces and paths.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the middleware is enabled or not."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the middleware"
+        }
+      },
+      "required": [
+        "name",
+        "enabled"
+      ],
+      "additionalProperties": true
     }
   },
   "properties": {
@@ -131,7 +150,7 @@
             },
             "backends": {
               "type": "array",
-              "description": "Specify the backends that will be used by default for all ruotes.",
+              "description": "Specify the backends that will be used by default for all routes.",
               "items": {
                 "$ref": "#/definitions/backend"
               }
@@ -141,12 +160,10 @@
               "$ref": "#/definitions/transport"
             },
             "middlewares": {
-              "type": "object",
-              "description": "Middlewares to run by default for all paths.",
-              "patternProperties": {
-                "^[a-zA-Z0-9]+$": {
-                  "type": "object"
-                }
+              "type": "array",
+              "items": {
+                "type": "object",
+                "$ref": "#/definitions/middleware"
               }
             },
             "paths": {
@@ -158,7 +175,7 @@
                   "properties": {
                     "rewritePath": {
                       "type": "string",
-                      "description": "Rewrite the recieved path before the request is sent to the backends."
+                      "description": "Rewrite the received path before the request is sent to the backends."
                     },
                     "methods": {
                       "type": "array",
@@ -177,12 +194,11 @@
                       }
                     },
                     "middlewares": {
-                      "type": "object",
-                      "description": "Override the namespace-level middlewares for this endpoint",
-                      "patternProperties": {
-                        "^[a-zA-Z0-9]+$": {
-                          "type": "object"
-                        }
+                      "description": "Override the namespace-level middlewares for this endpoint.",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "$ref": "#/definitions/middleware"
                       }
                     }
                   },
