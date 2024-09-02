@@ -13,7 +13,6 @@ namespaces:
       - name: accessLog
         enabled: true
       - name: noCache
-        enabled: true
 
     paths:
       /get:

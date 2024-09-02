@@ -79,7 +79,8 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Whether the middleware is enabled or not."
+          "description": "Whether the middleware is enabled or not.",
+          "default": true
         },
         "name": {
           "type": "string",
@@ -87,8 +88,7 @@
         }
       },
       "required": [
-        "name",
-        "enabled"
+        "name"
       ],
       "additionalProperties": true
     }

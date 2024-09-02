@@ -12,7 +12,6 @@ namespaces:
 
     middlewares:
     - name: accessLog
-      enabled: true
 
     paths:
       /any: {}

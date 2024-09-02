@@ -18,9 +18,9 @@ type (
 )
 
 type Middleware struct {
-	Name    string         `yaml:"name"`
-	Enabled bool           `yaml:"enabled"`
-	Args    map[string]any `yaml:",inline"`
+	Name    string            `yaml:"name"`
+	Enabled Defaultable[bool] `yaml:"enabled"`
+	Args    map[string]any    `yaml:",inline"`
 }
 
 // Names returns an iterator that yields the names of all enabled middlewares.
@@ -38,7 +38,7 @@ func (m Middlewares) Names() iter.Seq[string] {
 func (m Middlewares) enabled() iter.Seq[Middleware] {
 	return func(yield func(Middleware) bool) {
 		for _, mw := range m {
-			if mw.Enabled {
+			if mw.Enabled.Or(true) {
 				if !yield(mw) {
 					return
 				}
