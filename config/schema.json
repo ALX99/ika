@@ -94,9 +94,14 @@
     }
   },
   "properties": {
-    "gracefulShutdownTimeout": {
-      "type": "string",
-      "description": "Maximum time ika will wait to achieve a graceful shutdown. Includes the time to gracefully finish all active requests, close all idle connections, and close all listeners, as well as the time to teardown all middlewares."
+    "ika": {
+      "type": "object",
+      "properties": {
+        "gracefulShutdownTimeout": {
+          "type": "string",
+          "description": "Maximum time ika will wait to achieve a graceful shutdown. Includes the time to gracefully finish all active requests, close all idle connections, and close all listeners, as well as the time to teardown all middlewares."
+        }
+      }
     },
     "server": {
       "type": "object",

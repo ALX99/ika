@@ -75,8 +75,8 @@ func main() {
 
 	ctx, cancel = context.WithTimeoutCause(
 		context.Background(),
-		cfg.GracefulShutdownTimeout,
-		fmt.Errorf("could not shut down gracefully in %v", cfg.GracefulShutdownTimeout),
+		cfg.Ika.GracefulShutdownTimeout,
+		fmt.Errorf("could not shut down gracefully in %v", cfg.Ika.GracefulShutdownTimeout),
 	)
 
 	defer cancel()

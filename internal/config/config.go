@@ -2,19 +2,18 @@ package config
 
 import (
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
-type Ika struct {
-	Server                  Server        `yaml:"server"`
-	Namespaces              Namespaces    `yaml:"namespaces"`
-	GracefulShutdownTimeout time.Duration `yaml:"gracefulShutdownTimeout"`
+type Config struct {
+	Server     Server     `yaml:"server"`
+	Namespaces Namespaces `yaml:"namespaces"`
+	Ika        Ika        `yaml:"ika"`
 }
 
-func Read(path string) (Ika, error) {
-	cfg := Ika{}
+func Read(path string) (Config, error) {
+	cfg := Config{}
 
 	f, err := os.Open(path)
 	if err != nil {

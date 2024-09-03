@@ -1,4 +1,5 @@
-gracefulShutdownTimeout: 1s
+ika:
+  gracefulShutdownTimeout: 1s
 
 server:
   addr: :8888
