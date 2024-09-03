@@ -5,6 +5,12 @@ server:
   addr: :8888
 
 namespaces:
+  root:
+    backends:
+      - host: httpbun-local
+        scheme: http
+    paths:
+      /headers: {}
   testns1:
     hosts: [testns1.com]
     backends:

@@ -117,4 +117,16 @@ export default function tests() {
       expect(resp.status, resp.status).to.equal(405);
     });
   });
+
+  describe("X-Forwarded-For does not exist by default", () => {
+    const resp = http.get(`${baseURL}/headers`, { responseCallback: http.setResponseCallback(http.expectedStatuses(200)) });
+    expect(resp.status, resp.status).to.equal(200);
+    expect(resp.headers, resp.headers).to.not.have.key('X-Forwarded-For');
+  });
+
+  describe("Accept-Encoding is gzip by default", () => {
+    const resp = http.get(`${baseURL}/headers`);
+    expect(resp.status, resp.status).to.equal(200);
+    expect(resp.json()["Accept-Encoding"], resp.json()["Accept-Encoding"]).to.equal('gzip');
+  });
 }

@@ -50,3 +50,7 @@ func (ns *Namespaces) UnmarshalYAML(value *yaml.Node) error {
 	*ns = tmp
 	return nil
 }
+
+func (ns Namespace) IsRoot() bool {
+	return ns.Name == "root"
+}

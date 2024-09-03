@@ -101,12 +101,15 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 	}
 
 	if len(route.Methods) == 0 {
-
 		if !ns.DisableNamespacedPaths {
-			// Add namespaced route
-			sb.WriteString("/")
-			sb.WriteString(ns.Name)
-			sb.WriteString(routePattern)
+			if !ns.IsRoot() {
+				// Add namespaced route
+				sb.WriteString("/")
+				sb.WriteString(ns.Name)
+				sb.WriteString(routePattern)
+			} else {
+				sb.WriteString(routePattern)
+			}
 			patterns = append(patterns, sb.String())
 		}
 
@@ -126,10 +129,14 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 
 		if !ns.DisableNamespacedPaths {
 			backup := sb.String()
-			// Add namespaced route
-			sb.WriteString("/")
-			sb.WriteString(ns.Name)
-			sb.WriteString(routePattern)
+			if !ns.IsRoot() {
+				// Add namespaced route
+				sb.WriteString("/")
+				sb.WriteString(ns.Name)
+				sb.WriteString(routePattern)
+			} else {
+				sb.WriteString(routePattern)
+			}
 			patterns = append(patterns, sb.String())
 			sb.Reset()
 			sb.WriteString(backup)
