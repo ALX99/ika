@@ -69,7 +69,7 @@ func Test_makeRoutePattern(t *testing.T) {
 				nsName:       "nsName",
 				ns: config.Namespace{
 					Name:                   "nsName",
-					DisableNamespacedPaths: true,
+					DisableNamespacedPaths: config.NewNullable(true),
 				},
 				route: config.Path{
 					Methods: []config.Method{"GET", "POST"},

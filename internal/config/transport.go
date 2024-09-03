@@ -3,15 +3,15 @@ package config
 import "time"
 
 type Transport struct {
-	DisableKeepAlives      bool          `yaml:"disableKeepAlives"`
-	DisableCompression     bool          `yaml:"disableCompression"`
-	MaxIdleConns           int           `yaml:"maxIdleConns"`
-	MaxIdleConnsPerHost    int           `yaml:"maxIdleConnsPerHost"`
-	MaxConnsPerHost        int           `yaml:"maxConnsPerHost"`
-	IdleConnTimeout        time.Duration `yaml:"idleConnTimeout"`
-	ResponseHeaderTimeout  time.Duration `yaml:"responseHeaderTimeout"`
-	ExpectContinueTimeout  time.Duration `yaml:"expectContinueTimeout"`
-	MaxResponseHeaderBytes int64         `yaml:"maxResponseHeaderBytes"`
-	WriteBufferSize        int           `yaml:"writeBufferSize"`
-	ReadBufferSize         int           `yaml:"readBufferSize"`
+	DisableKeepAlives      Nullable[bool]          `yaml:"disableKeepAlives"`
+	DisableCompression     Nullable[bool]          `yaml:"disableCompression"`
+	MaxIdleConns           Nullable[int]           `yaml:"maxIdleConns"`
+	MaxIdleConnsPerHost    Nullable[int]           `yaml:"maxIdleConnsPerHost"`
+	MaxConnsPerHost        Nullable[int]           `yaml:"maxConnsPerHost"`
+	IdleConnTimeout        Nullable[time.Duration] `yaml:"idleConnTimeout"`
+	ResponseHeaderTimeout  Nullable[time.Duration] `yaml:"responseHeaderTimeout"`
+	ExpectContinueTimeout  Nullable[time.Duration] `yaml:"expectContinueTimeout"`
+	MaxResponseHeaderBytes Nullable[int64]         `yaml:"maxResponseHeaderBytes"`
+	WriteBufferSize        Nullable[int]           `yaml:"writeBufferSize"`
+	ReadBufferSize         Nullable[int]           `yaml:"readBufferSize"`
 }

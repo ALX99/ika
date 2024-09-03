@@ -26,7 +26,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 		for pattern, path := range ns.Paths {
 			middlewares := ns.Middlewares
 
-			proxyHandler, err := p.Route(pattern, path.RewritePath, firstNonEmptyArr(path.Backends, ns.Backends))
+			proxyHandler, err := p.Route(pattern, path.RewritePath.V, firstNonEmptyArr(path.Backends, ns.Backends))
 			if err != nil {
 				return nil, err
 			}
@@ -95,13 +95,13 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 	sb := strings.Builder{}
 
 	if len(ns.Hosts) == 0 {
-		if ns.DisableNamespacedPaths {
+		if ns.DisableNamespacedPaths.V {
 			return patterns // nothing to do
 		}
 	}
 
 	if len(route.Methods) == 0 {
-		if !ns.DisableNamespacedPaths {
+		if !ns.DisableNamespacedPaths.V {
 			if !ns.IsRoot() {
 				// Add namespaced route
 				sb.WriteString("/")
@@ -127,7 +127,7 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 		sb.WriteString(string(method))
 		sb.WriteString(" ")
 
-		if !ns.DisableNamespacedPaths {
+		if !ns.DisableNamespacedPaths.V {
 			backup := sb.String()
 			if !ns.IsRoot() {
 				// Add namespaced route
@@ -158,16 +158,16 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 
 func makeTransport(cfg config.Transport) *http.Transport {
 	return &http.Transport{
-		DisableKeepAlives:      cfg.DisableKeepAlives,
-		DisableCompression:     cfg.DisableCompression,
-		MaxIdleConns:           cfg.MaxIdleConns,
-		MaxIdleConnsPerHost:    cfg.MaxIdleConnsPerHost,
-		MaxConnsPerHost:        cfg.MaxConnsPerHost,
-		IdleConnTimeout:        cfg.IdleConnTimeout,
-		ResponseHeaderTimeout:  cfg.ResponseHeaderTimeout,
-		ExpectContinueTimeout:  cfg.ExpectContinueTimeout,
-		MaxResponseHeaderBytes: cfg.MaxResponseHeaderBytes,
-		WriteBufferSize:        cfg.WriteBufferSize,
-		ReadBufferSize:         cfg.ReadBufferSize,
+		DisableKeepAlives:      cfg.DisableKeepAlives.V,
+		DisableCompression:     cfg.DisableCompression.V,
+		MaxIdleConns:           cfg.MaxIdleConns.V,
+		MaxIdleConnsPerHost:    cfg.MaxIdleConnsPerHost.V,
+		MaxConnsPerHost:        cfg.MaxConnsPerHost.V,
+		IdleConnTimeout:        cfg.IdleConnTimeout.V,
+		ResponseHeaderTimeout:  cfg.ResponseHeaderTimeout.V,
+		ExpectContinueTimeout:  cfg.ExpectContinueTimeout.V,
+		MaxResponseHeaderBytes: cfg.MaxResponseHeaderBytes.V,
+		WriteBufferSize:        cfg.WriteBufferSize.V,
+		ReadBufferSize:         cfg.ReadBufferSize.V,
 	}
 }

@@ -8,13 +8,13 @@ import (
 
 type (
 	Namespace struct {
-		Name                   string      `yaml:"name"`
-		Backends               []Backend   `yaml:"backends"`
-		Transport              Transport   `yaml:"transport"`
-		Paths                  Paths       `yaml:"paths"`
-		Middlewares            Middlewares `yaml:"middlewares"`
-		Hosts                  []string    `yaml:"hosts"`
-		DisableNamespacedPaths bool        `yaml:"disableNamespacedPaths"`
+		Name                   string         `yaml:"name"`
+		Backends               []Backend      `yaml:"backends"`
+		Transport              Transport      `yaml:"transport"`
+		Paths                  Paths          `yaml:"paths"`
+		Middlewares            Middlewares    `yaml:"middlewares"`
+		Hosts                  []string       `yaml:"hosts"`
+		DisableNamespacedPaths Nullable[bool] `yaml:"disableNamespacedPaths"`
 	}
 	Namespaces map[string]Namespace
 )
@@ -27,7 +27,7 @@ func (ns *Namespace) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 
-	if len(tmp.Hosts) == 0 && tmp.DisableNamespacedPaths {
+	if len(tmp.Hosts) == 0 && tmp.DisableNamespacedPaths.V {
 		return fmt.Errorf("namespace has no hosts and namespaced paths are disabled")
 	}
 

@@ -21,13 +21,13 @@ func NewServer(handler http.Handler, config config.Server) *Server {
 	return &Server{
 		server: http.Server{
 			Handler:                      handler,
-			Addr:                         config.Addr,
-			DisableGeneralOptionsHandler: config.DisableGeneralOptionsHandler,
-			ReadTimeout:                  config.ReadTimeout,
-			ReadHeaderTimeout:            config.ReadHeaderTimeout,
-			WriteTimeout:                 config.WriteTimeout,
-			IdleTimeout:                  config.IdleTimeout,
-			MaxHeaderBytes:               config.MaxHeaderBytes,
+			Addr:                         config.Addr.V,
+			DisableGeneralOptionsHandler: config.DisableGeneralOptionsHandler.V,
+			ReadTimeout:                  config.ReadTimeout.V,
+			ReadHeaderTimeout:            config.ReadHeaderTimeout.V,
+			WriteTimeout:                 config.WriteTimeout.V,
+			IdleTimeout:                  config.IdleTimeout.V,
+			MaxHeaderBytes:               config.MaxHeaderBytes.V,
 		},
 	}
 }
