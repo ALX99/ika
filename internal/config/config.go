@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Server     Server     `yaml:"server"`
-	Namespaces Namespaces `yaml:"namespaces"`
-	Ika        Ika        `yaml:"ika"`
+	Server            Server     `yaml:"server"`
+	Namespaces        Namespaces `yaml:"namespaces"`
+	NamespaceOverride Namespace  `yaml:"namespaceOverride"`
+	Ika               Ika        `yaml:"ika"`
 }
 
 func Read(path string) (Config, error) {
@@ -22,4 +23,12 @@ func Read(path string) (Config, error) {
 	defer f.Close()
 
 	return cfg, yaml.NewDecoder(f).Decode(&cfg)
+}
+
+// ApplyOverride applies the NamespaceOverrides to the Config.
+func (c *Config) ApplyOverride() {
+	for name, ns := range c.Namespaces {
+		ns.Transport = override(ns.Transport, c.NamespaceOverride.Transport)
+		c.Namespaces[name] = ns
+	}
 }

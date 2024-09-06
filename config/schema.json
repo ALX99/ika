@@ -25,6 +25,7 @@
     },
     "transport": {
       "type": "object",
+      "description": "Transport settings to be used when connecting to backends.",
       "properties": {
         "disableKeepAlives": {
           "type": "boolean",
@@ -137,6 +138,14 @@
       },
       "required": []
     },
+    "namespaceOverrides": {
+      "description": "Override settings for all namespaces",
+      "properties": {
+        "transport": {
+          "$ref": "#/definitions/transport"
+        }
+      }
+    },
     "namespaces": {
       "type": "object",
       "patternProperties": {
@@ -161,7 +170,6 @@
               }
             },
             "transport": {
-              "description": "Transport settings to be used when connecting to backends.",
               "$ref": "#/definitions/transport"
             },
             "middlewares": {
