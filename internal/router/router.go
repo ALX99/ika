@@ -14,7 +14,7 @@ import (
 )
 
 func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler, error) {
-	slog.Info("Building router", "middlewareCount", middleware.Len(), "namespaceCount", len(namespaces))
+	slog.Info("Building router", "namespaceCount", len(namespaces))
 
 	mux := http.NewServeMux()
 
@@ -52,19 +52,25 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 
 // applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
 func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
-	for mwProvider := range path.MergedMiddlewares(ns) {
-		log.Debug("Setting up middleware", "name", mwProvider.Name)
-		m, ok := middleware.Get(mwProvider.Name)
+	for mwConfig := range path.MergedMiddlewares(ns) {
+		log.Debug("Setting up middleware", "name", mwConfig.Name)
+		provider, ok := middleware.Get(mwConfig.Name)
 		if !ok {
-			return nil, fmt.Errorf("middleware %q has not been registered", mwProvider.Name)
+			return nil, fmt.Errorf("middleware %q has not been registered", mwConfig.Name)
 		}
+		fmt.Printf("mw.Name: %v\n", mwConfig.Name)
 
-		mw, err := m.GetMiddleware(ctx, mwProvider.Args)
+		mw, err := provider.NewMiddleware(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwProvider.Name, err)
+			return nil, fmt.Errorf("failed to create middleware %q: %w", mwConfig.Name, err)
 		}
 
-		handler = mw(handler)
+		err = mw.Setup(ctx, handler, mwConfig.Args)
+		if err != nil {
+			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
+		}
+
+		handler = mw
 	}
 
 	return handler, nil
