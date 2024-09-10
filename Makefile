@@ -29,7 +29,7 @@ down:
 
 .PHONY: run
 run: build
-	./bin/ika -config ./tests/ika.yaml
+	./bin/ika -config ./tests/ika.yaml -log-format text
 
 .PHONY: test
 test:

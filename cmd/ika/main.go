@@ -14,11 +14,13 @@ import (
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
+	"github.com/lmittmann/tint"
 )
 
 var (
 	printVersion = flag.Bool("version", false, "Print the version and exit.")
 	configPath   = flag.String("config", "ika.yaml", "Path to the configuration file.")
+	logFormat    = flag.String("log-format", "json", "Log format (json or text)")
 )
 
 func main() {
@@ -42,6 +44,7 @@ func main() {
 		exitWithError("failed to read config", err)
 	}
 
+	cfg.ApplyOverride()
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 	defer cancel()
 
@@ -91,10 +94,19 @@ func main() {
 
 func initLogger() (flush func() error) {
 	w := bufio.NewWriter(os.Stdout)
-	log := slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{
-		Level:     slog.LevelDebug,
-		AddSource: true,
-	}))
+	var log *slog.Logger
+	if *logFormat == "text" {
+		log = slog.New(tint.NewHandler(w, &tint.Options{
+			Level: slog.LevelDebug,
+			// AddSource: true,
+		}))
+	} else {
+		log = slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+			// AddSource: true,
+		}))
+	}
+
 	slog.SetDefault(log)
 
 	return w.Flush

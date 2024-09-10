@@ -45,7 +45,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 					return nil, err
 				}
 
-				log.Info("Setting up path",
+				log.Debug("Setting up path",
 					"pattern", route,
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
