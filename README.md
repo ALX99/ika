@@ -36,3 +36,38 @@ Ika is designed for people that value the following:
 
 As of now, Ika has not been benchmarked, and in fact there is little reason to do so.
 Because Ika is so simple, the performance is expected to be that identical of [`http.Server`](https://pkg.go.dev/net/http#Server) and [`http.ServeMux`](https://pkg.go.dev/net/http#ServeMux).
+
+## Getting started
+
+### Installation
+
+To install Ika, you can use `go get`:
+
+```bash
+go install github.com/alx99/ika@latest
+```
+
+### Configuration
+
+Ika is configured using a YAML file. The most basic configuration file might look something like this:
+
+```yaml
+ika:
+  gracefulShutdownTimeout: 30s
+
+server:
+  addr: :8888  # The server will listen on port 8080 for incoming traffic
+
+namespaces:
+  api:
+    backends:
+      - host: dummyjson.com
+        scheme: https
+    middlewares:
+      - name: accessLog
+    paths:
+      /users:
+        rewritePath: /users
+```
+
+For a full configuration reference please see [ika.example.yaml](./ika.example.yaml) and the [JSON schema](./config/schema.json).

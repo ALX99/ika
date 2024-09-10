@@ -1,0 +1,81 @@
+ika:
+  gracefulShutdownTimeout: 30s  # Allow for a graceful shutdown of 30 seconds
+
+server:
+  addr: :8080  # The server will listen on port 8080 for incoming traffic
+  disableGeneralOptionsHandler: true  # Disallow OPTIONS requests to be handled
+  readTimeout: 15s  # Max duration to read an entire request (headers + body)
+  readHeaderTimeout: 5s  # Max time to read request headers
+  writeTimeout: 30s  # Max time before timing out writes of the response
+  idleTimeout: 60s  # Max time to wait for the next request on a keep-alive connection
+  maxHeaderBytes: 8192  # Max size of request headers (8 KB)
+
+namespaceOverrides:
+  # Override transport settings for all namespaces
+  transport:
+    disableKeepAlives: false
+    maxIdleConns: 100
+    idleConnTimeout: 60s
+
+namespaces:
+  api:
+    # Don't allow namespaced paths
+    disableNamespacedPaths: true
+    hosts: [api.myapp.com]
+    backends:
+      - host: api-backend
+        scheme: https
+    transport:
+      disableCompression: true
+      maxConnsPerHost: 50
+    middlewares:
+      - name: rateLimiter  # Limit API request rate
+      - name: accessLog
+    paths:
+      /v1/users:
+        methods: [GET, POST]
+        rewritePath: /users  # Rewrite to base users endpoint
+      /v1/orders:
+        methods: [GET, POST, PUT]
+        rewritePath: /orders  # Rewrite to base orders endpoint
+
+  admin:
+    hosts: [admin.myapp.com]
+    backends:
+      - host: admin-backend
+        scheme: https
+    transport:
+      maxIdleConnsPerHost: 10
+      idleConnTimeout: 120s
+      responseHeaderTimeout: 5s
+    middlewares:
+      - name: adminAuth  # Custom middleware for admin authentication
+    paths:
+      /dashboard:
+        methods: [GET]
+        rewritePath: /admin/dashboard  # Admin dashboard route
+      /users:
+        methods: [GET, PUT, DELETE]
+        rewritePath: /admin/users  # Admin manage users endpoint
+
+  public:
+    hosts: [www.myapp.com]
+    backends:
+      - host: public-backend
+        scheme: https
+    transport:
+      disableKeepAlives: false
+      maxConnsPerHost: 100
+      idleConnTimeout: 30s
+    middlewares:
+      - name: cache
+        enabled: true  # Caching middleware for public endpoints
+    paths:
+      /:
+        rewritePath: /home  # Homepage route
+      /about:
+        rewritePath: /info/about  # About page route
+      /contact:
+        rewritePath: /info/contact  # Contact page route
+      /products/{category}/{id}:
+        rewritePath: /catalog/{category}/{id}  # Product detail route
