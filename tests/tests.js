@@ -129,4 +129,9 @@ export default function tests() {
     expect(resp.status, resp.status).to.equal(200);
     expect(resp.json()["Accept-Encoding"], resp.json()["Accept-Encoding"]).to.equal('gzip');
   });
+
+  describe("noRewritePath is handled correctly", () => {
+    const resp = http.get(`${baseURL}/testns2/any/hi`);
+    expect(resp.status, resp.status).to.equal(200);
+  });
 }

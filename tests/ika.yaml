@@ -34,3 +34,11 @@ namespaces:
         rewritePath: /any/{any...}
       /path-rewrite/{a1}/{a2}:
         rewritePath: /any/{a1}/{a2}
+  testns2:
+    backends:
+      - host: httpbun-local
+        scheme: http
+    middlewares:
+    - name: accessLog
+    paths:
+      /any/{any...}: {}

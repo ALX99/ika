@@ -66,8 +66,7 @@ namespaces:
     middlewares:
       - name: accessLog
     paths:
-      /users:
-        rewritePath: /users
+      /users: {}
 ```
 
 For a full configuration reference please see [ika.example.yaml](./ika.example.yaml) and the [JSON schema](./config/schema.json).

@@ -17,7 +17,7 @@ func Test_makeRoutePattern(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []string
+		want []routePattern
 	}{
 		{
 			name: "Test with hosts",
@@ -31,13 +31,13 @@ func Test_makeRoutePattern(t *testing.T) {
 					Methods: []config.Method{"GET", "POST"},
 				},
 			},
-			want: []string{
-				"GET host1.com/",
-				"GET host2.com/",
-				"POST host1.com/",
-				"POST host2.com/",
-				"GET /nsName/",
-				"POST /nsName/",
+			want: []routePattern{
+				{pattern: "GET host1.com/"},
+				{pattern: "GET host2.com/"},
+				{pattern: "POST host1.com/"},
+				{pattern: "POST host2.com/"},
+				{pattern: "GET /nsName/", isNamespaced: true},
+				{pattern: "POST /nsName/", isNamespaced: true},
 			},
 		},
 		{
@@ -53,13 +53,13 @@ func Test_makeRoutePattern(t *testing.T) {
 					Methods: []config.Method{"GET", "POST"},
 				},
 			},
-			[]string{
-				"GET host1.com/route/{something/{any...}}",
-				"GET host2.com/route/{something/{any...}}",
-				"POST host1.com/route/{something/{any...}}",
-				"POST host2.com/route/{something/{any...}}",
-				"GET /nsName/route/{something/{any...}}",
-				"POST /nsName/route/{something/{any...}}",
+			[]routePattern{
+				{pattern: "GET host1.com/route/{something/{any...}}"},
+				{pattern: "GET host2.com/route/{something/{any...}}"},
+				{pattern: "POST host1.com/route/{something/{any...}}"},
+				{pattern: "POST host2.com/route/{something/{any...}}"},
+				{pattern: "GET /nsName/route/{something/{any...}}", isNamespaced: true},
+				{pattern: "POST /nsName/route/{something/{any...}}", isNamespaced: true},
 			},
 		},
 		{
@@ -75,7 +75,7 @@ func Test_makeRoutePattern(t *testing.T) {
 					Methods: []config.Method{"GET", "POST"},
 				},
 			},
-			[]string{},
+			[]routePattern{},
 		},
 		{
 			"test with empty hosts",
@@ -90,15 +90,15 @@ func Test_makeRoutePattern(t *testing.T) {
 					Methods: []config.Method{"GET", "POST"},
 				},
 			},
-			[]string{
-				"GET /nsName/route/{something/{any...}}",
-				"POST /nsName/route/{something/{any...}}",
+			[]routePattern{
+				{pattern: "GET /nsName/route/{something/{any...}}", isNamespaced: true},
+				{pattern: "POST /nsName/route/{something/{any...}}", isNamespaced: true},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := makeRoutePatterns(tt.args.routePattern, tt.args.ns, tt.args.route)
+			got := makeRoutes(tt.args.routePattern, tt.args.ns, tt.args.route)
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}

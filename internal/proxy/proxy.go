@@ -18,7 +18,7 @@ func NewProxy(transport http.RoundTripper) *Proxy {
 	return &Proxy{transport: transport}
 }
 
-func (p *Proxy) Route(routePattern, rewritePattern string, backends []config.Backend) (http.Handler, error) {
+func (p *Proxy) GetHandler(routePattern, rewritePattern string, backends []config.Backend) (http.Handler, error) {
 	backend := backends[0]
 	if len(backends) > 1 {
 		panic("not implemented")

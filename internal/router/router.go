@@ -13,6 +13,13 @@ import (
 	"github.com/alx99/ika/middleware"
 )
 
+type routePattern struct {
+	// pattern is the route pattern
+	pattern string
+	// isNamespaced is true if the route pattern is namespaced
+	isNamespaced bool
+}
+
 func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler, error) {
 	slog.Info("Building router", "namespaceCount", len(namespaces))
 
@@ -23,26 +30,32 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 		transport := makeTransport(ns.Transport)
 		p := proxy.NewProxy(transport)
 
-		for pattern, path := range ns.Paths {
-			middlewares := ns.Middlewares
+		for pattern, routeCfg := range ns.Paths {
+			for _, route := range makeRoutes(pattern, ns, routeCfg) {
 
-			proxyHandler, err := p.Route(pattern, path.RewritePath.V, firstNonEmptyArr(path.Backends, ns.Backends))
-			if err != nil {
-				return nil, err
-			}
+				rewritePath := routeCfg.RewritePath.V
+				// If the route is namespaced and the rewrite path is empty, set the rewrite path to the route pattern
+				// This ensures that the namespaced prefix is stripped from the request path
+				if route.isNamespaced && routeCfg.RewritePath.V == "" {
+					rewritePath = routeCfg.RewritePath.Or(strings.TrimPrefix(route.pattern, "/"+ns.Name))
+				}
 
-			handler, err := applyMiddlewares(ctx, log, proxyHandler, path, ns)
-			if err != nil {
-				return nil, err
-			}
+				proxyHandler, err := p.GetHandler(pattern, rewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
+				if err != nil {
+					return nil, err
+				}
 
-			for _, pattern := range makeRoutePatterns(pattern, ns, path) {
 				log.Info("Setting up path",
-					"pattern", pattern,
+					"pattern", route,
 					"namespace", ns.Name,
-					"middlewares", slices.Collect(middlewares.Names()))
+					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
-				mux.Handle(pattern, middleware.BindNamespace(ns.Name, handler))
+				handler, err := applyMiddlewares(ctx, log, proxyHandler, routeCfg, ns)
+				if err != nil {
+					return nil, err
+				}
+
+				mux.Handle(route.pattern, middleware.BindNamespace(ns.Name, handler))
 			}
 		}
 	}
@@ -58,7 +71,6 @@ func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handle
 		if !ok {
 			return nil, fmt.Errorf("middleware %q has not been registered", mwConfig.Name)
 		}
-		fmt.Printf("mw.Name: %v\n", mwConfig.Name)
 
 		mw, err := provider.NewMiddleware(ctx)
 		if err != nil {
@@ -96,9 +108,22 @@ func firstNonEmptyMap[T map[string]any](vs ...map[string]T) map[string]T {
 	return empty
 }
 
-func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Path) []string {
-	var patterns []string
+func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePattern {
+	var patterns []routePattern
 	sb := strings.Builder{}
+
+	// writeNamespacedRoute writes the namespaced route if isRoot is false, otherwise it writes the route pattern
+	writeNamespacedRoute := func(isRoot bool) {
+		if isRoot {
+			// Add namespaced route
+			sb.WriteString("/")
+			sb.WriteString(ns.Name)
+			sb.WriteString(rp)
+			isRoot = true
+		} else {
+			sb.WriteString(rp)
+		}
+	}
 
 	if len(ns.Hosts) == 0 {
 		if ns.DisableNamespacedPaths.V {
@@ -108,23 +133,16 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 
 	if len(route.Methods) == 0 {
 		if !ns.DisableNamespacedPaths.V {
-			if !ns.IsRoot() {
-				// Add namespaced route
-				sb.WriteString("/")
-				sb.WriteString(ns.Name)
-				sb.WriteString(routePattern)
-			} else {
-				sb.WriteString(routePattern)
-			}
-			patterns = append(patterns, sb.String())
+			isNamespaced := !ns.IsRoot()
+			writeNamespacedRoute(isNamespaced)
+			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
 		}
 
 		for _, host := range ns.Hosts {
 			sb.Reset()
 			sb.WriteString(string(host))
-			sb.WriteString(routePattern)
-			// fmt.Printf("sb.String(): %v\n", sb.String())
-			patterns = append(patterns, sb.String())
+			sb.WriteString(rp)
+			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: false})
 		}
 	}
 
@@ -135,15 +153,9 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 
 		if !ns.DisableNamespacedPaths.V {
 			backup := sb.String()
-			if !ns.IsRoot() {
-				// Add namespaced route
-				sb.WriteString("/")
-				sb.WriteString(ns.Name)
-				sb.WriteString(routePattern)
-			} else {
-				sb.WriteString(routePattern)
-			}
-			patterns = append(patterns, sb.String())
+			isNamespaced := !ns.IsRoot()
+			writeNamespacedRoute(isNamespaced)
+			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
 			sb.Reset()
 			sb.WriteString(backup)
 		}
@@ -154,8 +166,8 @@ func makeRoutePatterns(routePattern string, ns config.Namespace, route config.Pa
 			sb.WriteString(backup)
 
 			sb.WriteString(string(host))
-			sb.WriteString(routePattern)
-			patterns = append(patterns, sb.String())
+			sb.WriteString(rp)
+			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: false})
 		}
 	}
 
