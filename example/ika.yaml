@@ -16,5 +16,4 @@ namespaces:
       - name: noCache
 
     paths:
-      /get:
-        rewritePath: /get
+      /get: {}
