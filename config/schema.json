@@ -23,6 +23,41 @@
         "scheme"
       ]
     },
+    "server": {
+      "type": "object",
+      "description": "Configuration for the Ika HTTP Server.",
+      "properties": {
+        "addr": {
+          "type": "string",
+          "description": "Specifies the TCP address for the server to listen on, in the form 'host:port'. If empty, ':http' (port 80) is used."
+        },
+        "disableGeneralOptionsHandler": {
+          "type": "boolean",
+          "description": "If true, passes 'OPTIONS *' requests to the Handler, otherwise responds with 200 OK and Content-Length: 0."
+        },
+        "readTimeout": {
+          "type": "string",
+          "description": "Maximum duration for reading the entire request, including the body. A zero or negative value means there is no timeout."
+        },
+        "readHeaderTimeout": {
+          "type": "string",
+          "description": "Amount of time allowed to read request headers. If zero, the value of ReadTimeout is used. If negative, there is no timeout."
+        },
+        "writeTimeout": {
+          "type": "string",
+          "description": "Maximum duration before timing out writes of the response. A zero or negative value means there is no timeout."
+        },
+        "idleTimeout": {
+          "type": "string",
+          "description": "Maximum amount of time to wait for the next request when keep-alives are enabled. If zero, the value of ReadTimeout is used."
+        },
+        "maxHeaderBytes": {
+          "type": "integer",
+          "description": "Controls the maximum number of bytes the server will read while parsing the request header's keys and values, including the request line. It does not limit the size of the request body."
+        }
+      },
+      "required": []
+    },
     "transport": {
       "type": "object",
       "description": "Transport settings to be used when connecting to backends.",
@@ -105,38 +140,7 @@
       }
     },
     "server": {
-      "type": "object",
-      "properties": {
-        "addr": {
-          "type": "string",
-          "description": "Specifies the TCP address for the server to listen on, in the form 'host:port'. If empty, ':http' (port 80) is used."
-        },
-        "disableGeneralOptionsHandler": {
-          "type": "boolean",
-          "description": "If true, passes 'OPTIONS *' requests to the Handler, otherwise responds with 200 OK and Content-Length: 0."
-        },
-        "readTimeout": {
-          "type": "string",
-          "description": "Maximum duration for reading the entire request, including the body. A zero or negative value means there is no timeout."
-        },
-        "readHeaderTimeout": {
-          "type": "string",
-          "description": "Amount of time allowed to read request headers. If zero, the value of ReadTimeout is used. If negative, there is no timeout."
-        },
-        "writeTimeout": {
-          "type": "string",
-          "description": "Maximum duration before timing out writes of the response. A zero or negative value means there is no timeout."
-        },
-        "idleTimeout": {
-          "type": "string",
-          "description": "Maximum amount of time to wait for the next request when keep-alives are enabled. If zero, the value of ReadTimeout is used."
-        },
-        "maxHeaderBytes": {
-          "type": "integer",
-          "description": "Controls the maximum number of bytes the server will read while parsing the request header's keys and values, including the request line. It does not limit the size of the request body."
-        }
-      },
-      "required": []
+      "$ref": "#/definitions/server"
     },
     "namespaceOverrides": {
       "description": "Override settings for all namespaces",
