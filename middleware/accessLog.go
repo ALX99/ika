@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	err := Register("accessLog", FromMiddlewareFunc(accessLog))
+	err := Register("accessLog", Stateless(accessLog))
 	if err != nil {
 		panic(err)
 	}

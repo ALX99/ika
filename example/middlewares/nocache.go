@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	err := middleware.Register("noCache", middleware.FromMiddlewareFunc(chimw.NoCache))
+	err := middleware.Register("noCache", middleware.Stateless(chimw.NoCache))
 	if err != nil {
 		panic(err)
 	}

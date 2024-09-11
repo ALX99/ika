@@ -9,8 +9,9 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/middleware"
 	"github.com/alx99/ika/internal/proxy"
-	"github.com/alx99/ika/middleware"
+	pubMW "github.com/alx99/ika/middleware"
 )
 
 type routePattern struct {
@@ -55,7 +56,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 					return nil, err
 				}
 
-				mux.Handle(route.pattern, middleware.BindNamespace(ns.Name, handler))
+				mux.Handle(route.pattern, pubMW.BindNamespace(ns.Name, handler))
 			}
 		}
 	}
@@ -67,17 +68,12 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
 	for mwConfig := range path.MergedMiddlewares(ns) {
 		log.Debug("Setting up middleware", "name", mwConfig.Name)
-		provider, ok := middleware.Get(mwConfig.Name)
-		if !ok {
-			return nil, fmt.Errorf("middleware %q has not been registered", mwConfig.Name)
-		}
-
-		mw, err := provider.NewMiddleware(ctx)
+		mw, err := middleware.Get(ctx, mwConfig.Name, handler)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create middleware %q: %w", mwConfig.Name, err)
+			return nil, err
 		}
 
-		err = mw.Setup(ctx, handler, mwConfig.Args)
+		err = mw.Setup(ctx, mwConfig.Args)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
 		}
