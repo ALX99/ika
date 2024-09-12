@@ -9,14 +9,14 @@ import (
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// Register registers a new provider which provides a middleware with the specified name.
-func Register(name string, provider middleware.Provider) error {
+// RegisterProvider registers a provider which provides a middleware with the specified name.
+func RegisterProvider(name string, provider middleware.Provider) error {
 	return middleware.Register(name, provider)
 }
 
-// Stateless creates a new provider from the given middleware func.
-func Stateless(fun MiddlewareFunc) middleware.Provider {
-	return basicProvider{middleware: fun}
+// RegisterFunc creates a [MiddlewareFunc] the given middleware func.
+func RegisterFunc(name string, fun MiddlewareFunc) error {
+	return RegisterProvider(name, basicProvider{middleware: fun})
 }
 
 type basicProvider struct {

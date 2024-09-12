@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	err := Register("accessLog", Stateless(accessLog))
+	err := RegisterFunc("accessLog", accessLog)
 	if err != nil {
 		panic(err)
 	}
