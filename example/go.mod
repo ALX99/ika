@@ -3,7 +3,7 @@ module example
 go 1.23.0
 
 require (
-	github.com/alx99/ika v0.0.3
+	github.com/alx99/ika v0.0.4
 	github.com/go-chi/chi/v5 v5.1.0
 )
 
