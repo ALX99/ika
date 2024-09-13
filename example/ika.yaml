@@ -17,3 +17,16 @@ namespaces:
 
     paths:
       /get: {}
+  dummyjson:
+    hosts:
+      - ika-example-latest.onrender.com
+    backends:
+      - host: dummyjson.com
+        scheme: https
+
+    middlewares:
+      - name: accessLog
+        enabled: true
+
+    paths:
+      /{any...}: {}
