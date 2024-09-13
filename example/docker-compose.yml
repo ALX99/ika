@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "8888:8888"
+    env_file: .env
     command: ["/ika", "-config", "/ika.yaml"]
   httpbun:
     image: sharat87/httpbun

@@ -32,7 +32,7 @@ jobs:
       - name: Image ika
         run: make image
       - name: Run ika with the example project
-        run: cd ./example && docker compose up --build -d
+        run: cd ./example && touch .env && docker compose up --build -d
       - name: Check that the Cache-Control headers are set
         run: |
           curl localhost:8888/example/get -sD headers.txt
