@@ -1,10 +1,13 @@
-FROM ika-builder:latest AS builder
+FROM golang:1.23-alpine AS builder
 
+RUN apk add --no-cache git
+COPY go.* ./
+RUN go mod download
 
-COPY . /user
+COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
-  /ika/builder --package example --package-directory /user --output-directory /bin
+    go build -o /bin/ika ./main.go
 
 FROM gcr.io/distroless/static-debian12
 
