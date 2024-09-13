@@ -80,10 +80,15 @@ export default function tests() {
   });
 
   describe("Encoded paths are passed correctly", () => {
-    const resp = http.get(`${baseURL}/path-rewrite/hi%2Fworld/next`, { headers: hostHeader, });
+    const resps = [
+      { method: 'GET', url: `${baseURL}/path-rewrite/hi%2Fworld/next`, params: { headers: hostHeader, }, },
+      { method: 'GET', url: `${baseURL}/testns1/path-rewrite/hi%2Fworld/next` },
+    ];
 
-    expect(resp.status, resp.status).to.equal(200);
-    expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hi%2Fworld/next');
+    http.batch(resps).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hi%2Fworld/next');
+    });
   });
 
   describe("Encoded wildcard routes are passed correctly", () => {

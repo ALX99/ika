@@ -23,9 +23,9 @@ type indexRewriter struct {
 	segments map[int]string
 }
 
-func newIndexRewriter(fromPattern, toPattern string) indexRewriter {
+func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) indexRewriter {
 	rw := indexRewriter{segments: make(map[int]string), toPattern: toPattern}
-	s := strings.Split(fromPattern, "/")
+	s := strings.Split(routePattern, "/")
 
 	matches := segmentRe.FindAllStringSubmatch(toPattern, -1)
 	for _, match := range matches {
@@ -35,7 +35,13 @@ func newIndexRewriter(fromPattern, toPattern string) indexRewriter {
 
 		for i, v := range s {
 			if v == match[0] {
-				rw.segments[i] = match[0]
+				if isNamespaced {
+					// If a route is namespaced, the first segment is the namespace
+					// which is impossible to to match with a rewritePath
+					rw.segments[i+1] = match[0]
+				} else {
+					rw.segments[i] = match[0]
+				}
 			}
 		}
 	}

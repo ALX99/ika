@@ -18,12 +18,12 @@ func NewProxy(transport http.RoundTripper) *Proxy {
 	return &Proxy{transport: transport}
 }
 
-func (p *Proxy) GetHandler(routePattern, rewritePattern string, backends []config.Backend) (http.Handler, error) {
+func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, rewritePattern string, backends []config.Backend) (http.Handler, error) {
 	backend := backends[0]
 	if len(backends) > 1 {
 		panic("not implemented")
 	}
-	var rw pathRewriter = newIndexRewriter(routePattern, rewritePattern)
+	var rw pathRewriter = newIndexRewriter(routePattern, isNamespaced, rewritePattern)
 
 	var err error
 	rp := &httputil.ReverseProxy{

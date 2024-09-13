@@ -41,7 +41,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 					rewritePath = routeCfg.RewritePath.Or(strings.TrimPrefix(route.pattern, "/"+ns.Name))
 				}
 
-				proxyHandler, err := p.GetHandler(pattern, rewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
+				proxyHandler, err := p.GetHandler(pattern, route.isNamespaced, rewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
 				if err != nil {
 					return nil, err
 				}
