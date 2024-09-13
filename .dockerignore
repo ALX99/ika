@@ -5,3 +5,4 @@
 !go.mod
 !go.sum
 !builder
+!ika.go
