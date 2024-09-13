@@ -73,7 +73,11 @@ func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handle
 			return nil, err
 		}
 
-		err = mw.Setup(ctx, mwConfig.Args)
+		// Be nice to the user
+		if mwConfig.Config == nil {
+			mwConfig.Config = make(map[string]any)
+		}
+		err = mw.Setup(ctx, mwConfig.Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
 		}

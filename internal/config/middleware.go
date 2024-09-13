@@ -6,7 +6,7 @@ type (
 	Middleware struct {
 		Name    string         `yaml:"name"`
 		Enabled Nullable[bool] `yaml:"enabled"`
-		Args    map[string]any `yaml:",inline"`
+		Config  map[string]any `yaml:"config"`
 	}
 	Middlewares []Middleware
 )

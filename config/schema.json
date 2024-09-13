@@ -113,14 +113,19 @@
       "type": "object",
       "description": "Middleware definition to be used in the namespaces and paths.",
       "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the middleware"
+        },
         "enabled": {
           "type": "boolean",
           "description": "Whether the middleware is enabled or not.",
           "default": true
         },
-        "name": {
-          "type": "string",
-          "description": "The name of the middleware"
+        "config": {
+          "type": "object",
+          "description": "Configuration for the middleware",
+          "default": {}
         }
       },
       "required": [
