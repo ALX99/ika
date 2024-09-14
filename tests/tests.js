@@ -180,22 +180,48 @@ export default function tests() {
   });
 
   describe("passthrough tests", () => {
+    http.setResponseCallback(http.expectedStatuses(200));
     let reqs = [
-      { method: 'GET', url: `${baseURL}/passthrough`, params: { responseCallback: http.setResponseCallback(http.expectedStatuses(200)), redirects: 0 } },
+      { method: 'GET', url: `${baseURL}/passthrough`, params: { redirects: 0 } },
+      { method: 'GET', url: `${baseURL}`, params: { headers: { "Host": "passthrough.com" }, redirects: 0 } },
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
     });
 
-    let resp = http.get(`${baseURL}/passthrough/get`, {});
-    expect(resp.status, resp.status).to.equal(200);
-    expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/get');
+    reqs = [
+      { method: 'GET', url: `${baseURL}/passthrough/` },
+      { method: 'GET', url: `${baseURL}/`, params: { headers: { "Host": "passthrough.com" } } },
+    ];
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+    });
 
-    resp = http.get(`${baseURL}/passthrough/any/hihi/%2F`);
-    expect(resp.status, resp.status).to.equal(200);
-    expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hihi/%2F');
+    reqs = [
+      { method: 'GET', url: `${baseURL}/passthrough/get` },
+      { method: 'GET', url: `${baseURL}/get`, params: { headers: { "Host": "passthrough.com" } } },
+    ];
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/get');
+    });
 
-    resp = http.get(`${baseURL}/passthrough%2F`, { responseCallback: http.setResponseCallback(http.expectedStatuses(404)) });
-    expect(resp.status, resp.status).to.equal(404);
+    reqs = [
+      { method: 'GET', url: `${baseURL}/passthrough/any/hihi/%2F` },
+      { method: 'GET', url: `${baseURL}/any/hihi/%2F`, params: { headers: { "Host": "passthrough.com" } } },
+    ];
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hihi/%2F');
+    });
+
+    http.setResponseCallback(http.expectedStatuses(404));
+    reqs = [
+      { method: 'GET', url: `${baseURL}/passthrough%2F` },
+      { method: 'GET', url: `${baseURL}/%2F`, params: { headers: { "Host": "passthrough.com" } } },
+    ];
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(404);
+    });
   });
 }

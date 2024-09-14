@@ -49,8 +49,8 @@ namespaces:
     paths:
       /any/{any...}: {}
   passthrough:
-    # hosts:
-    #   - passthrough.com
+    hosts:
+      - passthrough.com
     backends:
       - host: httpbun-local
         scheme: http

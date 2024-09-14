@@ -106,6 +106,12 @@ func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePatter
 	sb := strings.Builder{}
 	isNamespaced := !ns.IsRoot()
 
+	// if the routepattern is empty, it is impossible to route by hosts
+	// since 'example.com' is not a valid route for example
+	if rp == "" {
+		ns.Hosts = []string{}
+	}
+
 	// writeNamespacedRoute writes the namespaced route if isRoot is false, otherwise it writes the route pattern
 	writeNamespacedRoute := func(isRoot bool) {
 		if isRoot {
