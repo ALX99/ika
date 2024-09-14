@@ -9,7 +9,7 @@ import (
 type Config struct {
 	Server            Server     `yaml:"server"`
 	Namespaces        Namespaces `yaml:"namespaces"`
-	NamespaceOverride Namespace  `yaml:"namespaceOverride"`
+	NamespaceOverride Namespace  `yaml:"namespaceOverrides"`
 	Ika               Ika        `yaml:"ika"`
 }
 
