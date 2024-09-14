@@ -36,5 +36,5 @@ test:
 	go test -v ./...
 
 .PHONY: e2e
-e2e: down upd
+e2e: upd
 	k6 run ./tests/tests.js
