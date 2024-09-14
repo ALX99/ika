@@ -15,8 +15,8 @@ func (n *Nullable[T]) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 
-	n.set = true
 	*n = Nullable[T](tmp)
+	(*n).set = true
 	return nil
 }
 
