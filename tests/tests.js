@@ -155,4 +155,27 @@ export default function tests() {
       expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any');
     });
   });
+
+  describe("terminated paths behave correctly", () => {
+    let reqs = [
+      { method: 'GET', url: `${baseURL}/terminated/hi/`, params: { headers: hostHeader } },
+      { method: 'GET', url: `${baseURL}/testns1/terminated/hi/` },
+    ];
+
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any');
+    });
+
+    reqs = [
+      { method: 'GET', url: `${baseURL}/terminated/hi/a/b/c/`, params: { headers: hostHeader, responseCallback: http.setResponseCallback(http.expectedStatuses(404)) } },
+      { method: 'GET', url: `${baseURL}/testns1/terminated/hi/a/b/c/`, params: { responseCallback: http.setResponseCallback(http.expectedStatuses(404)) } },
+      { method: 'GET', url: `${baseURL}/terminated/hi/a/b/c/d`, params: { headers: hostHeader, responseCallback: http.setResponseCallback(http.expectedStatuses(404)) } },
+      { method: 'GET', url: `${baseURL}/testns1/terminated/hi/a/b/c/d`, params: { responseCallback: http.setResponseCallback(http.expectedStatuses(404)) } },
+    ];
+
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(404);
+    });
+  });
 }

@@ -37,6 +37,9 @@ namespaces:
       /not-terminated/{any}/:
         methods: [GET]
         rewritePath: /any
+      /terminated/{any}/{$}:
+        methods: [GET]
+        rewritePath: /any
   testns2:
     backends:
       - host: httpbun-local
