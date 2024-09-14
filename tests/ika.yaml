@@ -34,6 +34,9 @@ namespaces:
         rewritePath: /any/{any...}
       /path-rewrite/{a1}/{a2}:
         rewritePath: /any/{a1}/{a2}
+      /not-terminated/{any}/:
+        methods: [GET]
+        rewritePath: /any
   testns2:
     backends:
       - host: httpbun-local

@@ -139,4 +139,20 @@ export default function tests() {
     const resp = http.get(`${baseURL}/testns2/any/hi`);
     expect(resp.status, resp.status).to.equal(200);
   });
+
+  describe("non-terminated paths behave correctly", () => {
+    let reqs = [
+      { method: 'GET', url: `${baseURL}/not-terminated/hi/`, params: { headers: hostHeader } },
+      { method: 'GET', url: `${baseURL}/testns1/not-terminated/hi/` },
+      { method: 'GET', url: `${baseURL}/not-terminated/a/b/c/`, params: { headers: hostHeader } },
+      { method: 'GET', url: `${baseURL}/testns1/not-terminated/a/b/c/` },
+      { method: 'GET', url: `${baseURL}/not-terminated/a/b/c/d`, params: { headers: hostHeader } },
+      { method: 'GET', url: `${baseURL}/testns1/not-terminated/a/b/c/d` },
+    ];
+
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any');
+    });
+  });
 }
