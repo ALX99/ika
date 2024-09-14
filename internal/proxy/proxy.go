@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/middleware"
 )
 
 type Proxy struct {
@@ -52,15 +53,16 @@ func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, namespace str
 
 // setPath sets the path on the outgoing request
 func setPath(rp *httputil.ProxyRequest, rawPath string) {
+	log := slog.With(slog.String("namespace", middleware.GetNamespace(rp.In.Context())))
 	var err error
 	prevPath := rp.Out.URL.EscapedPath()
 	rp.Out.URL.RawPath = rawPath
 	rp.Out.URL.Path, err = url.PathUnescape(rp.Out.URL.RawPath)
 	if err != nil {
-		slog.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
+		log.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
 			slog.String("err", err.Error()))
 	}
-	slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
+	log.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
 		slog.String("from", prevPath), slog.String("to", rp.Out.URL.RawPath))
 }
 
