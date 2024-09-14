@@ -178,4 +178,24 @@ export default function tests() {
       expect(resp.status, resp.status).to.equal(404);
     });
   });
+
+  describe("passthrough tests", () => {
+    let reqs = [
+      { method: 'GET', url: `${baseURL}/passthrough`, params: { responseCallback: http.setResponseCallback(http.expectedStatuses(200)), redirects: 0 } },
+    ];
+    http.batch(reqs).forEach((resp) => {
+      expect(resp.status, resp.status).to.equal(200);
+    });
+
+    let resp = http.get(`${baseURL}/passthrough/get`, {});
+    expect(resp.status, resp.status).to.equal(200);
+    expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/get');
+
+    resp = http.get(`${baseURL}/passthrough/any/hihi/%2F`);
+    expect(resp.status, resp.status).to.equal(200);
+    expect(resp.json()["url"], resp.json()["url"]).to.equal('http://httpbun-local/any/hihi/%2F');
+
+    resp = http.get(`${baseURL}/passthrough%2F`, { responseCallback: http.setResponseCallback(http.expectedStatuses(404)) });
+    expect(resp.status, resp.status).to.equal(404);
+  });
 }

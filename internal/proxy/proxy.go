@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 
 	"github.com/alx99/ika/internal/config"
 )
@@ -18,14 +19,13 @@ func NewProxy(transport http.RoundTripper) *Proxy {
 	return &Proxy{transport: transport}
 }
 
-func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, rewritePattern string, backends []config.Backend) (http.Handler, error) {
+func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, namespace string, rewritePattern config.Nullable[string], backends []config.Backend) (http.Handler, error) {
 	backend := backends[0]
 	if len(backends) > 1 {
 		panic("not implemented")
 	}
-	var rw pathRewriter = newIndexRewriter(routePattern, isNamespaced, rewritePattern)
+	var rw pathRewriter = newIndexRewriter(routePattern, isNamespaced, rewritePattern.V)
 
-	var err error
 	rp := &httputil.ReverseProxy{
 		Transport: p.transport,
 		ErrorLog:  log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
@@ -36,24 +36,32 @@ func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, rewritePatter
 			// Restore the query even if it can't be parsed (read [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
-			if rewritePattern == "" {
+			if !rewritePattern.Set() {
+				// If no rewrite path is set, and the route is namespaced, we will strip the namespace from the path
+				if isNamespaced && namespace != "root" {
+					setPath(rp, strings.TrimPrefix(rp.In.URL.EscapedPath(), "/"+namespace))
+				}
 				return
 			}
-
-			prevPath := rp.Out.URL.EscapedPath()
-			rp.Out.URL.RawPath = rw.rewrite(rp.In)
-			rp.Out.URL.Path, err = url.PathUnescape(rp.Out.URL.RawPath)
-			if err != nil {
-				slog.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
-					slog.String("err", err.Error()))
-			}
-
-			slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
-				slog.String("from", prevPath), slog.String("to", rp.Out.URL.RawPath))
+			setPath(rp, rw.rewrite(rp.In))
 		},
 	}
 
 	return rp, nil
+}
+
+// setPath sets the path on the outgoing request
+func setPath(rp *httputil.ProxyRequest, rawPath string) {
+	var err error
+	prevPath := rp.Out.URL.EscapedPath()
+	rp.Out.URL.RawPath = rawPath
+	rp.Out.URL.Path, err = url.PathUnescape(rp.Out.URL.RawPath)
+	if err != nil {
+		slog.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
+			slog.String("err", err.Error()))
+	}
+	slog.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
+		slog.String("from", prevPath), slog.String("to", rp.Out.URL.RawPath))
 }
 
 type slogIOWriter struct{}

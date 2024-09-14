@@ -48,3 +48,14 @@ namespaces:
     - name: accessLog
     paths:
       /any/{any...}: {}
+  passthrough:
+    # hosts:
+    #   - passthrough.com
+    backends:
+      - host: httpbun-local
+        scheme: http
+    middlewares:
+    - name: accessLog
+    paths:
+      "": {}
+      "/": {}

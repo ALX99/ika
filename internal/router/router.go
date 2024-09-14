@@ -34,14 +34,12 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 		for pattern, routeCfg := range ns.Paths {
 			for _, route := range makeRoutes(pattern, ns, routeCfg) {
 
-				rewritePath := routeCfg.RewritePath.V
-				// If the route is namespaced and the rewrite path is empty, set the rewrite path to the route pattern
-				// This ensures that the namespaced prefix is stripped from the request path
-				if route.isNamespaced && routeCfg.RewritePath.V == "" {
-					rewritePath = routeCfg.RewritePath.Or(strings.TrimPrefix(route.pattern, "/"+ns.Name))
+				proxyHandler, err := p.GetHandler(pattern, route.isNamespaced, ns.Name, routeCfg.RewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
+				if err != nil {
+					return nil, err
 				}
 
-				proxyHandler, err := p.GetHandler(pattern, route.isNamespaced, rewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
+				handler, err := applyMiddlewares(ctx, log, proxyHandler, routeCfg, ns)
 				if err != nil {
 					return nil, err
 				}
@@ -50,11 +48,6 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler
 					"pattern", route,
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
-
-				handler, err := applyMiddlewares(ctx, log, proxyHandler, routeCfg, ns)
-				if err != nil {
-					return nil, err
-				}
 
 				mux.Handle(route.pattern, pubMW.BindNamespace(ns.Name, handler))
 			}
@@ -111,6 +104,7 @@ func firstNonEmptyMap[T map[string]any](vs ...map[string]T) map[string]T {
 func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePattern {
 	var patterns []routePattern
 	sb := strings.Builder{}
+	isNamespaced := !ns.IsRoot()
 
 	// writeNamespacedRoute writes the namespaced route if isRoot is false, otherwise it writes the route pattern
 	writeNamespacedRoute := func(isRoot bool) {
@@ -119,7 +113,6 @@ func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePatter
 			sb.WriteString("/")
 			sb.WriteString(ns.Name)
 			sb.WriteString(rp)
-			isRoot = true
 		} else {
 			sb.WriteString(rp)
 		}
@@ -133,7 +126,6 @@ func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePatter
 
 	if len(route.Methods) == 0 {
 		if !ns.DisableNamespacedPaths.V {
-			isNamespaced := !ns.IsRoot()
 			writeNamespacedRoute(isNamespaced)
 			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
 		}
@@ -153,7 +145,6 @@ func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePatter
 
 		if !ns.DisableNamespacedPaths.V {
 			backup := sb.String()
-			isNamespaced := !ns.IsRoot()
 			writeNamespacedRoute(isNamespaced)
 			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
 			sb.Reset()

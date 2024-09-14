@@ -28,6 +28,11 @@ func (n Nullable[T]) Or(defaultV T) T {
 	return n.V
 }
 
+// Set returns true if the value is set.
+func (n Nullable[T]) Set() bool {
+	return n.set
+}
+
 func NewNullable[T any](v T) Nullable[T] {
 	return Nullable[T]{V: v, set: true}
 }
