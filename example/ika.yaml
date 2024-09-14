@@ -14,19 +14,17 @@ namespaces:
       - name: accessLog
         enabled: true
       - name: noCache
-
     paths:
-      /get: {}
-  dummyjson:
+      /: {}
+
+  proxy:
     hosts:
       - ika-example-latest.onrender.com
     backends:
-      - host: dummyjson.com
+      - host: www.google.com
         scheme: https
-
     middlewares:
       - name: accessLog
-        enabled: true
-
+      - name: noCache
     paths:
-      /{any...}: {}
+      /: {}
