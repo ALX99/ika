@@ -12,6 +12,7 @@ import (
 	"github.com/alx99/ika/hook"
 	"github.com/alx99/ika/middleware"
 	"github.com/grafana/pyroscope-go"
+	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -58,17 +59,7 @@ func (w *tracer) Teardown(context.Context) error {
 }
 
 func (w *tracer) HookTransport(_ context.Context, tsp http.RoundTripper) (http.RoundTripper, error) {
-	return otelhttp.NewTransport(tsp,
-		otelhttp.WithMetricAttributesFn(func(r *http.Request) []attribute.KeyValue {
-			return []attribute.KeyValue{
-				attribute.String("http.method", r.Method),
-				attribute.String("http.host", r.Host),
-				attribute.String("http.target", r.URL.Path),
-				attribute.String("http.flavor", r.Proto),
-				attribute.String("http.user_agent", r.UserAgent()),
-			}
-		}),
-	), nil
+	return otelhttp.NewTransport(tsp), nil
 }
 
 func (w *tracer) HookFirstHandler(_ context.Context, handler http.Handler) (http.Handler, error) {
@@ -190,6 +181,11 @@ func setupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	}
 	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
 	otel.SetMeterProvider(meterProvider)
+
+	err = host.Start(host.WithMeterProvider(meterProvider))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
 	if err != nil {
