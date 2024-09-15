@@ -1,5 +1,5 @@
-github.com/alx99/ika v0.0.8 h1:d2qyfgBaWITeNkPEFb1MwgZGCdRxC/JK3RmN1HSVUKU=
-github.com/alx99/ika v0.0.8/go.mod h1:OuW1kaP416Z+WD2UP9GLTj3+APa63yYOxdtSaLaSomQ=
+github.com/alx99/ika v0.0.9 h1:cahjs++Q9EWKVh6jCYOag1r2CUiNpYTuBVn9aNz6U/s=
+github.com/alx99/ika v0.0.9/go.mod h1:IIqrR/AQCpfmNnVEbD0SGTWFyW13bJTMRuF0wr1iJsU=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -13,6 +13,8 @@ github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
 github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
+github.com/gojuno/minimock/v3 v3.4.0 h1:htPGQuFvmCaTygTnARPp5tSWZUZxOnu8A2RDVyl/LA8=
+github.com/gojuno/minimock/v3 v3.4.0/go.mod h1:0PdkFMCugnywaAqwrdWMZMzHhSH3ZoXlMVHiRVdIrLk=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=

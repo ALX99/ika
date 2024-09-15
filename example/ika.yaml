@@ -6,6 +6,8 @@ server:
 
 namespaces:
   example:
+    hooks:
+      - name: tracer
     backends:
       - host: httpbun
         scheme: http

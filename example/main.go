@@ -21,15 +21,18 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 
 	chimw "github.com/go-chi/chi/v5/middleware"
 )
 
 var (
-	version                    = "unknown"
-	_       hook.TransportHook = &tracer{}
+	version                       = "unknown"
+	_       hook.TransportHook    = &tracer{}
+	_       hook.MiddlewareHook   = &tracer{}
+	_       hook.FirstHandlerHook = &tracer{}
 )
 
 func init() {
@@ -66,6 +69,34 @@ func (w *tracer) HookTransport(_ context.Context, tsp http.RoundTripper) (http.R
 			}
 		}),
 	), nil
+}
+
+func (w *tracer) HookFirstHandler(_ context.Context, handler http.Handler) (http.Handler, error) {
+	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attr := attribute.String("namespace.name", middleware.GetNamespace(r.Context()))
+		trace.SpanFromContext(r.Context()).
+			SetAttributes(attr)
+		labeler, _ := otelhttp.LabelerFromContext(r.Context())
+		labeler.Add(attr)
+		handler.ServeHTTP(w, r)
+	})
+
+	return otelhttp.NewHandler(newHandler, "Request",
+			otelhttp.WithPublicEndpoint(),
+		),
+		nil
+}
+
+func (w *tracer) HookMiddleware(_ context.Context, name string, next http.Handler) (http.Handler, error) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, span := trace.
+			SpanFromContext(r.Context()).
+			TracerProvider().
+			Tracer("example.middleware").
+			Start(r.Context(), name, trace.WithSpanKind(trace.SpanKindServer))
+		next.ServeHTTP(w, r)
+		span.End()
+	}), nil
 }
 
 func setupMonitoring() func() {
@@ -136,9 +167,9 @@ func setupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 		handleErr(err)
 		return
 	}
-	tracerProvider := trace.NewTracerProvider(
-		trace.WithBatcher(traceExporter),
-		trace.WithResource(r),
+	tracerProvider := sdkTrace.NewTracerProvider(
+		sdkTrace.WithBatcher(traceExporter),
+		sdkTrace.WithResource(r),
 	)
 	if err != nil {
 		handleErr(err)
