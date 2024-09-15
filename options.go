@@ -14,9 +14,9 @@ type startCfg struct {
 type Option func(*startCfg)
 
 // WithHook registers a hook.
-func WithHook(name string, hook hook.Hook) Option {
+func WithHook[T hook.Hook](name string, hook T) Option {
 	return func(cfg *startCfg) {
-		cfg.hooks[name] = noopHookFactory{hook}
+		cfg.hooks[name] = noopHookFactory[T]{}
 	}
 }
 
@@ -27,10 +27,9 @@ func WithHookFactory(name string, factory hook.Factory) Option {
 	}
 }
 
-type noopHookFactory struct {
-	hook.Hook
-}
+type noopHookFactory[T hook.Hook] struct{}
 
-func (fac noopHookFactory) New(_ context.Context) (hook.Hook, error) {
-	return fac, nil
+func (noopHookFactory[T]) New(_ context.Context) (hook.Hook, error) {
+	var hook T
+	return hook, nil
 }
