@@ -61,17 +61,18 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 			return nil, errors.Join(err, r.Shutdown(ctx))
 		}
 
-		p := proxy.NewProxy(transport)
-
 		for pattern, routeCfg := range ns.Paths {
 			for _, route := range makeRoutes(pattern, ns, routeCfg) {
+				p := proxy.NewProxy(proxy.Config{
+					Transport:      transport,
+					RoutePattern:   pattern,
+					IsNamespaced:   route.isNamespaced,
+					Namespace:      ns.Name,
+					RewritePattern: routeCfg.RewritePath,
+					Backends:       firstNonEmptyArr(routeCfg.Backends, ns.Backends),
+				})
 
-				proxyHandler, err := p.GetHandler(pattern, route.isNamespaced, ns.Name, routeCfg.RewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
-				if err != nil {
-					return nil, errors.Join(err, r.Shutdown(ctx))
-				}
-
-				handler, err := r.applyMiddlewares(ctx, log, hookFacs, proxyHandler, routeCfg, ns)
+				handler, err := r.applyMiddlewares(ctx, log, hookFacs, p, routeCfg, ns)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}

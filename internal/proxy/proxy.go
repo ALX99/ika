@@ -14,20 +14,29 @@ import (
 
 type Proxy struct {
 	transport http.RoundTripper
+	rp        *httputil.ReverseProxy
 }
 
-func NewProxy(transport http.RoundTripper) *Proxy {
-	return &Proxy{transport: transport}
+type Config struct {
+	Transport      http.RoundTripper
+	RoutePattern   string
+	IsNamespaced   bool
+	Namespace      string
+	RewritePattern config.Nullable[string]
+	Backends       []config.Backend
 }
 
-func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, namespace string, rewritePattern config.Nullable[string], backends []config.Backend) (http.Handler, error) {
-	backend := backends[0]
-	if len(backends) > 1 {
+func NewProxy(cfg Config) *Proxy {
+	backend := cfg.Backends[0]
+	if len(cfg.Backends) > 1 {
 		panic("not implemented")
 	}
-	var rw pathRewriter = newIndexRewriter(routePattern, isNamespaced, rewritePattern.V)
 
-	rp := &httputil.ReverseProxy{
+	p := &Proxy{transport: cfg.Transport}
+
+	var rw pathRewriter = newIndexRewriter(cfg.RoutePattern, cfg.IsNamespaced, cfg.RewritePattern.V)
+
+	p.rp = &httputil.ReverseProxy{
 		Transport: p.transport,
 		ErrorLog:  log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
 		Rewrite: func(rp *httputil.ProxyRequest) {
@@ -37,10 +46,10 @@ func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, namespace str
 			// Restore the query even if it can't be parsed (read [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
-			if !rewritePattern.Set() {
+			if !cfg.RewritePattern.Set() {
 				// If no rewrite path is set, and the route is namespaced, we will strip the namespace from the path
-				if isNamespaced && namespace != "root" {
-					setPath(rp, strings.TrimPrefix(rp.In.URL.EscapedPath(), "/"+namespace))
+				if cfg.IsNamespaced && cfg.Namespace != "root" {
+					setPath(rp, strings.TrimPrefix(rp.In.URL.EscapedPath(), "/"+cfg.Namespace))
 				}
 				return
 			}
@@ -48,7 +57,11 @@ func (p *Proxy) GetHandler(routePattern string, isNamespaced bool, namespace str
 		},
 	}
 
-	return rp, nil
+	return p
+}
+
+func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	p.rp.ServeHTTP(w, r)
 }
 
 // setPath sets the path on the outgoing request
