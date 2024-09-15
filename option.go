@@ -13,9 +13,17 @@ type startCfg struct {
 // Option represents an option for Run.
 type Option func(*startCfg)
 
+// WithHook registers a hook.
 func WithHook(name string, hook hook.Hook) Option {
 	return func(cfg *startCfg) {
 		cfg.hooks[name] = noopHookFactory{hook}
+	}
+}
+
+// WithHookFactory registers a hook factory.
+func WithHookFactory(name string, factory hook.Factory) Option {
+	return func(cfg *startCfg) {
+		cfg.hooks[name] = factory
 	}
 }
 
