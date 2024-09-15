@@ -72,13 +72,13 @@ func run(ctx context.Context, sCfg startCfg) error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	// Setup all hooks
-	hooks, hookTeardown, err := hook.Setup(ctx, sCfg.hooks, cfg.Namespaces)
+	// Setup all factories
+	factories, err := hook.GetFactories(ctx, sCfg.hooks, cfg.Namespaces)
 	if err != nil {
-		return fmt.Errorf("failed to setup hooks: %w", err)
+		return err
 	}
 
-	handler, err := router.MakeRouter(ctx, cfg.Namespaces, hooks)
+	handler, teardown, err := router.MakeRouter(ctx, cfg.Namespaces, factories)
 	if err != nil {
 		return fmt.Errorf("failed to create router: %w", err)
 	}
@@ -102,7 +102,7 @@ func run(ctx context.Context, sCfg startCfg) error {
 
 	// Shutdown
 	err = s.Shutdown(ctx)
-	err = errors.Join(err, hookTeardown(ctx))
+	err = errors.Join(err, teardown(ctx))
 	return err
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"slices"
 
@@ -12,84 +11,128 @@ import (
 	"github.com/alx99/ika/internal/config"
 )
 
-type Hook struct {
+type HookFactory struct {
 	// Name of the hook
 	Name string
 	// Namespaces is a list of namespaces where the hook is enabled.
 	Namespaces []string
-	// Hook function
-	Hook any
+	pubHook.Factory
 }
-type Hooks []Hook
+type HookFactories []HookFactory
 
-// Setup sets up all enabled hooks and returns the hooks and a teardown function.
-func Setup(ctx context.Context, hooks map[string]pubHook.Factory, namespaces config.Namespaces) (Hooks, func(context.Context) error, error) {
-	var setupHooks Hooks
-	teardowns := make(map[string]func(context.Context) error)
-	teardownFunc := func(context.Context) error {
-		var errs error
-		for name, teardown := range teardowns {
-			err := teardown(ctx)
-			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to teardown hook %q: %w", name, err))
-			}
-		}
-		return errs
-	}
+// GetFactories returns a list of hook factories for the enabled hooks in all namespaces.
+func GetFactories(ctx context.Context, hooks map[string]pubHook.Factory, namespaces config.Namespaces) (HookFactories, error) {
+	var factories HookFactories
 
 	for _, ns := range namespaces {
 		for hookCfg := range ns.Hooks.Enabled() {
 			// Try to find the hookFactory
 			hookFactory, ok := hooks[hookCfg.Name]
 			if !ok {
-				return nil, nil, fmt.Errorf("hook %q not found", hookCfg.Name)
+				return nil, fmt.Errorf("hook %q not found", hookCfg.Name)
 			}
-
-			// Try to create a new hook
-			hook, err := hookFactory.New(ctx)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to create hook %q: %w", hookCfg.Name, err)
-			}
-
-			// Set up the hook
-			err = hook.Setup(ctx, hookCfg.Config)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to setup hook %q: %w", hookCfg.Name, err)
-			}
-			slog.Debug("Hook set up", "name", hookCfg.Name)
-			// Save the teardown function
-			teardowns[hookCfg.Name] = hook.Teardown
 
 			added := false
-			for _, setupHook := range setupHooks {
-				if setupHook.Name == hookCfg.Name {
-					setupHook.Namespaces = append(setupHook.Namespaces, ns.Name)
+			for i := range factories {
+				if factories[i].Name == hookCfg.Name {
+					if !slices.Contains(factories[i].Namespaces, ns.Name) {
+						factories[i].Namespaces = append(factories[i].Namespaces, ns.Name)
+					}
 					added = true
 				}
 			}
 			if !added {
-				setupHooks = append(setupHooks, Hook{
+				factories = append(factories, HookFactory{
 					Name:       hookCfg.Name,
 					Namespaces: []string{ns.Name},
-					Hook:       hook,
+					Factory:    hookFactory,
 				})
 			}
 		}
 	}
-	return setupHooks, teardownFunc, nil
+	return factories, nil
 }
 
-func (hooks Hooks) ApplyTspHooks(ctx context.Context, nsName string, tsp http.RoundTripper) (http.RoundTripper, error) {
+func (hf HookFactories) ApplyTspHooks(ctx context.Context, hooksCfg config.Hooks, tsp http.RoundTripper) (http.RoundTripper, func(context.Context) error, error) {
+	hooks, teardown, err := createHooks[pubHook.TransportHook](ctx, hooksCfg, hf)
+	if err != nil {
+		return nil, teardown, err
+	}
 	for _, hook := range hooks {
-		tspHook, ok := hook.Hook.(pubHook.TransportHook)
-		if !ok || !slices.Contains(hook.Namespaces, nsName) {
-			continue
-		}
-		var err error
-		tsp, err = tspHook.HookTransport(ctx, tsp)
+		tsp, err = hook.HookTransport(ctx, tsp)
 		if err != nil {
-			return nil, fmt.Errorf("failed to apply tsp hook %q: %w", hook.Name, err)
+			return nil, teardown, fmt.Errorf("failed to apply hook: %w", err)
 		}
 	}
-	return tsp, nil
+	return tsp, teardown, nil
+}
+
+func (hf HookFactories) ApplyMiddlewareHooks(ctx context.Context, hooksCfg config.Hooks, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
+	hooks, teardown, err := createHooks[pubHook.MiddlewareHook](ctx, hooksCfg, hf)
+	if err != nil {
+		return nil, teardown, err
+	}
+	for _, hook := range hooks {
+		handler, err = hook.HookMiddleware(ctx, mwName, handler)
+		if err != nil {
+			return nil, teardown, fmt.Errorf("failed to apply hook: %w", err)
+		}
+	}
+	return handler, teardown, nil
+}
+
+func (hf HookFactories) ApplyFirstHandlerHook(ctx context.Context, hooksCfg config.Hooks, handler http.Handler) (http.Handler, func(context.Context) error, error) {
+	hooks, teardown, err := createHooks[pubHook.FirstHandlerHook](ctx, hooksCfg, hf)
+	if err != nil {
+		return nil, teardown, err
+	}
+	for _, hook := range hooks {
+		handler, err = hook.HookFirstHandler(ctx, handler)
+		if err != nil {
+			return nil, teardown, fmt.Errorf("failed to apply hook: %w", err)
+		}
+	}
+	return handler, teardown, nil
+}
+
+// createHooks creates hooks for the given namespace.
+func createHooks[T any](ctx context.Context, hooksCfg config.Hooks, factories HookFactories) ([]T, func(context.Context) error, error) {
+	var hooks []T
+	var teardowns []func(context.Context) error
+
+	teardown := func(ctx context.Context) error {
+		var err error
+		for _, t := range teardowns {
+			if e := t(ctx); e != nil {
+				err = errors.Join(err, e)
+			}
+		}
+		return err
+	}
+
+	for hookCfg := range hooksCfg.Enabled() {
+		for _, factory := range factories {
+			if factory.Name != hookCfg.Name {
+				continue
+			}
+
+			hook, err := factory.New(ctx)
+			if err != nil {
+				return nil, teardown, fmt.Errorf("failed to create hook %q: %w", factory.Name, err)
+			}
+
+			err = hook.Setup(ctx, hookCfg.Config)
+			if err != nil {
+				return nil, teardown, fmt.Errorf("failed to setup hook %q: %w", factory.Name, err)
+			}
+			teardowns = append(teardowns, hook.Teardown)
+
+			handlerHook, ok := hook.(T)
+			if !ok {
+				continue
+			}
+			hooks = append(hooks, handlerHook)
+		}
+	}
+	return hooks, teardown, nil
 }

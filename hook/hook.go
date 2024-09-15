@@ -14,6 +14,14 @@ type Hook interface {
 	Teardown(ctx context.Context) error
 }
 
+type MiddlewareHook interface {
+	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
+}
+
+type FirstHandlerHook interface {
+	HookFirstHandler(ctx context.Context, handler http.Handler) (http.Handler, error)
+}
+
 type TransportHook interface {
 	HookTransport(ctx context.Context, transport http.RoundTripper) (http.RoundTripper, error)
 }

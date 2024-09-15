@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -22,8 +23,19 @@ type routePattern struct {
 	isNamespaced bool
 }
 
-func MakeRouter(ctx context.Context, namespaces config.Namespaces, hooks hook.Hooks) (http.Handler, error) {
+func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook.HookFactories) (http.Handler, func(context.Context) error, error) {
 	slog.Info("Building router", "namespaceCount", len(namespaces))
+	var teardowns []func(context.Context) error
+
+	teardownF := func(ctx context.Context) error {
+		var err error
+		for _, t := range teardowns {
+			if e := t(ctx); e != nil {
+				err = errors.Join(err, e)
+			}
+		}
+		return err
+	}
 
 	mux := http.NewServeMux()
 
@@ -32,9 +44,10 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hooks hook.Ho
 		var transport http.RoundTripper
 		transport = makeTransport(ns.Transport)
 
-		transport, err := hooks.ApplyTspHooks(ctx, ns.Name, transport)
+		transport, teardown, err := hookFacs.ApplyTspHooks(ctx, ns.Hooks, transport)
 		if err != nil {
-			return nil, err
+			teardowns = append(teardowns, teardown)
+			return nil, teardownF, err
 		}
 
 		p := proxy.NewProxy(transport)
@@ -44,12 +57,13 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hooks hook.Ho
 
 				proxyHandler, err := p.GetHandler(pattern, route.isNamespaced, ns.Name, routeCfg.RewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
 				if err != nil {
-					return nil, err
+					return nil, teardownF, err
 				}
 
-				handler, err := applyMiddlewares(ctx, log, proxyHandler, routeCfg, ns)
+				handler, teardown, err := applyMiddlewares(ctx, log, hookFacs, proxyHandler, routeCfg, ns)
 				if err != nil {
-					return nil, err
+					teardowns = append(teardowns, teardown)
+					return nil, teardownF, err
 				}
 
 				log.Debug("Setting up path",
@@ -57,21 +71,37 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hooks hook.Ho
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
+				handler, teardown, err = hookFacs.ApplyFirstHandlerHook(ctx, ns.Hooks, handler)
+				if err != nil {
+					teardowns = append(teardowns, teardown)
+					return nil, teardownF, err
+				}
+
 				mux.Handle(route.pattern, pubMW.BindNamespace(ns.Name, handler))
 			}
 		}
 	}
 
-	return mux, nil
+	return mux, teardownF, nil
 }
 
 // applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
-func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
+func applyMiddlewares(ctx context.Context, log *slog.Logger, hooks hook.HookFactories, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, func(context.Context) error, error) {
+	var teardowns []func(context.Context) error
+	teardownF := func(ctx context.Context) error {
+		var err error
+		for _, t := range teardowns {
+			if e := t(ctx); e != nil {
+				err = errors.Join(err, e)
+			}
+		}
+		return err
+	}
 	for mwConfig := range path.MergedMiddlewares(ns) {
 		log.Debug("Setting up middleware", "name", mwConfig.Name)
 		mw, err := middleware.Get(ctx, mwConfig.Name, handler)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// Be nice to the user
@@ -80,13 +110,18 @@ func applyMiddlewares(ctx context.Context, log *slog.Logger, handler http.Handle
 		}
 		err = mw.Setup(ctx, mwConfig.Config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
+			return nil, nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
 		}
 
-		handler = mw
+		var teardown func(context.Context) error
+		handler, teardown, err = hooks.ApplyMiddlewareHooks(ctx, ns.Hooks, mwConfig.Name, handler)
+		if err != nil {
+			teardowns = append(teardowns, teardown)
+			return nil, teardownF, err
+		}
 	}
 
-	return handler, nil
+	return handler, teardownF, nil
 }
 
 func firstNonEmptyArr[T any](vs ...[]T) []T {
