@@ -93,7 +93,7 @@ func (w *tracer) HookMiddleware(_ context.Context, name string, next http.Handle
 			SpanFromContext(r.Context()).
 			TracerProvider().
 			Tracer("example.middleware").
-			Start(r.Context(), name, trace.WithSpanKind(trace.SpanKindServer))
+			Start(r.Context(), name, trace.WithSpanKind(trace.SpanKindInternal))
 		next.ServeHTTP(w, r)
 		span.End()
 	}), nil
