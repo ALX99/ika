@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
@@ -49,7 +50,17 @@ func (w *tracer) Teardown(context.Context) error {
 }
 
 func (w *tracer) HookTransport(_ context.Context, tsp http.RoundTripper) (http.RoundTripper, error) {
-	return otelhttp.NewTransport(tsp), nil
+	return otelhttp.NewTransport(tsp,
+		otelhttp.WithMetricAttributesFn(func(r *http.Request) []attribute.KeyValue {
+			return []attribute.KeyValue{
+				attribute.String("http.method", r.Method),
+				attribute.String("http.host", r.Host),
+				attribute.String("http.target", r.URL.Path),
+				attribute.String("http.flavor", r.Proto),
+				attribute.String("http.user_agent", r.UserAgent()),
+			}
+		}),
+	), nil
 }
 
 func setupMonitoring() func() {
