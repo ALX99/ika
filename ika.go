@@ -130,15 +130,3 @@ func initLogger() (flush func() error) {
 
 	return w.Flush
 }
-
-type startCfg struct {
-	hooks map[string]hook.Hooker
-}
-
-type Option func(*startCfg)
-
-func WithHook(name string, hook hook.Hooker) Option {
-	return func(cfg *startCfg) {
-		cfg.hooks[name] = hook
-	}
-}
