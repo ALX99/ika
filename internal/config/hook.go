@@ -33,7 +33,7 @@ func (h Hooks) Enabled() iter.Seq[Hook] {
 }
 
 // Setup sets up all enabled hooks and returns a teardown function.
-func (h Hooks) Setup(ctx context.Context, hooks map[string]hook.Hooker) (func(context.Context) error, error) {
+func (h Hooks) Setup(ctx context.Context, hooks map[string]hook.Factory) (func(context.Context) error, error) {
 	teardowns := make(map[string]func(context.Context) error, len(h))
 	teardownFunc := func(ctx context.Context) error {
 		var errs error
@@ -47,15 +47,26 @@ func (h Hooks) Setup(ctx context.Context, hooks map[string]hook.Hooker) (func(co
 	}
 
 	for hookCfg := range h.Enabled() {
-		hook, ok := hooks[hookCfg.Name]
+		// Try to find the hookFactory
+		hookFactory, ok := hooks[hookCfg.Name]
 		if !ok {
 			return nil, fmt.Errorf("hook %q not found", hookCfg.Name)
 		}
-		err := hook.Setup(ctx, hookCfg.Config)
+
+		// Try to create a new hook
+		hook, err := hookFactory.New(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create hook %q: %w", hookCfg.Name, err)
+		}
+
+		// Set up the hook
+		err = hook.Setup(ctx, hookCfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup hook %q: %w", hookCfg.Name, err)
 		}
 		slog.Debug("Hook set up", "name", hookCfg.Name)
+
+		// Save the teardown function
 		teardowns[hookCfg.Name] = hook.Teardown
 	}
 	return teardownFunc, nil

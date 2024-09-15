@@ -4,7 +4,11 @@ import (
 	"context"
 )
 
-type Hooker interface {
+type Factory interface {
+	New(context.Context) (Hook, error)
+}
+
+type Hook interface {
 	Setup(ctx context.Context, config map[string]any) error
 	Teardown(ctx context.Context) error
 }

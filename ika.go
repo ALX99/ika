@@ -51,7 +51,7 @@ func Run(opts ...Option) {
 	}()
 
 	cfg := startCfg{
-		hooks: make(map[string]hook.Hooker),
+		hooks: make(map[string]hook.Factory),
 	}
 	for _, opt := range opts {
 		opt(&cfg)
