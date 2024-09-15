@@ -112,6 +112,7 @@ func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, hooks h
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
 		}
+		handler = mw
 
 		var teardown func(context.Context) error
 		handler, teardown, err = hooks.ApplyMiddlewareHooks(ctx, ns.Hooks, mwConfig.Name, handler)
