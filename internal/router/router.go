@@ -16,6 +16,12 @@ import (
 	pubMW "github.com/alx99/ika/middleware"
 )
 
+type Router struct {
+	// mux is the underlying http.ServeMux
+	mux      *http.ServeMux
+	teardown []func(context.Context) error
+}
+
 type routePattern struct {
 	// pattern is the route pattern
 	pattern string
@@ -23,21 +29,26 @@ type routePattern struct {
 	isNamespaced bool
 }
 
-func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook.HookFactories) (http.Handler, func(context.Context) error, error) {
-	slog.Info("Building router", "namespaceCount", len(namespaces))
-	var teardowns []func(context.Context) error
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	r.mux.ServeHTTP(w, req)
+}
 
-	teardownF := func(ctx context.Context) error {
-		var err error
-		for _, t := range teardowns {
-			if e := t(ctx); e != nil {
-				err = errors.Join(err, e)
-			}
+// Shutdown shuts down the router
+func (r *Router) Shutdown(ctx context.Context) error {
+	var err error
+	for _, t := range r.teardown {
+		if e := t(ctx); e != nil {
+			err = errors.Join(err, e)
 		}
-		return err
 	}
+	return err
+}
 
-	mux := http.NewServeMux()
+func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook.HookFactories) (*Router, error) {
+	slog.Info("Building router", "namespaceCount", len(namespaces))
+	r := &Router{
+		mux: http.NewServeMux(),
+	}
 
 	for _, ns := range namespaces {
 		log := slog.With(slog.String("namespace", ns.Name))
@@ -45,9 +56,9 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 		transport = makeTransport(ns.Transport)
 
 		transport, teardown, err := hookFacs.ApplyTspHooks(ctx, ns.Hooks, transport)
+		r.teardown = append(r.teardown, teardown)
 		if err != nil {
-			teardowns = append(teardowns, teardown)
-			return nil, teardownF, err
+			return nil, errors.Join(err, r.Shutdown(ctx))
 		}
 
 		p := proxy.NewProxy(transport)
@@ -57,13 +68,12 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 
 				proxyHandler, err := p.GetHandler(pattern, route.isNamespaced, ns.Name, routeCfg.RewritePath, firstNonEmptyArr(routeCfg.Backends, ns.Backends))
 				if err != nil {
-					return nil, teardownF, err
+					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				handler, teardown, err := applyMiddlewares(ctx, log, hookFacs, proxyHandler, routeCfg, ns)
+				handler, err := r.applyMiddlewares(ctx, log, hookFacs, proxyHandler, routeCfg, ns)
 				if err != nil {
-					teardowns = append(teardowns, teardown)
-					return nil, teardownF, err
+					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
 				log.Debug("Setting up path",
@@ -72,36 +82,26 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
 				handler, teardown, err = hookFacs.ApplyFirstHandlerHook(ctx, ns.Hooks, handler)
+				r.teardown = append(r.teardown, teardown)
 				if err != nil {
-					teardowns = append(teardowns, teardown)
-					return nil, teardownF, err
+					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				mux.Handle(route.pattern, pubMW.BindNamespace(ns.Name, handler))
+				r.mux.Handle(route.pattern, pubMW.BindNamespace(ns.Name, handler))
 			}
 		}
 	}
 
-	return mux, teardownF, nil
+	return r, nil
 }
 
 // applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
-func applyMiddlewares(ctx context.Context, log *slog.Logger, hooks hook.HookFactories, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, func(context.Context) error, error) {
-	var teardowns []func(context.Context) error
-	teardownF := func(ctx context.Context) error {
-		var err error
-		for _, t := range teardowns {
-			if e := t(ctx); e != nil {
-				err = errors.Join(err, e)
-			}
-		}
-		return err
-	}
+func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, hooks hook.HookFactories, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
 	for mwConfig := range path.MergedMiddlewares(ns) {
 		log.Debug("Setting up middleware", "name", mwConfig.Name)
 		mw, err := middleware.Get(ctx, mwConfig.Name, handler)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		// Be nice to the user
@@ -110,18 +110,18 @@ func applyMiddlewares(ctx context.Context, log *slog.Logger, hooks hook.HookFact
 		}
 		err = mw.Setup(ctx, mwConfig.Config)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
+			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
 		}
 
 		var teardown func(context.Context) error
 		handler, teardown, err = hooks.ApplyMiddlewareHooks(ctx, ns.Hooks, mwConfig.Name, handler)
+		r.teardown = append(r.teardown, teardown)
 		if err != nil {
-			teardowns = append(teardowns, teardown)
-			return nil, teardownF, err
+			return nil, err
 		}
 	}
 
-	return handler, teardownF, nil
+	return handler, nil
 }
 
 func firstNonEmptyArr[T any](vs ...[]T) []T {
@@ -131,16 +131,6 @@ func firstNonEmptyArr[T any](vs ...[]T) []T {
 		}
 	}
 	var empty []T
-	return empty
-}
-
-func firstNonEmptyMap[T map[string]any](vs ...map[string]T) map[string]T {
-	for _, v := range vs {
-		if len(v) > 0 {
-			return v
-		}
-	}
-	var empty map[string]T
 	return empty
 }
 

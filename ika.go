@@ -78,12 +78,12 @@ func run(ctx context.Context, sCfg startCfg) error {
 		return err
 	}
 
-	handler, teardown, err := router.MakeRouter(ctx, cfg.Namespaces, factories)
+	router, err := router.MakeRouter(ctx, cfg.Namespaces, factories)
 	if err != nil {
 		return fmt.Errorf("failed to create router: %w", err)
 	}
 
-	s := server.NewServer(handler, cfg.Server)
+	s := server.NewServer(router, cfg.Server)
 	err = s.ListenAndServe()
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
@@ -101,9 +101,7 @@ func run(ctx context.Context, sCfg startCfg) error {
 	defer cancel()
 
 	// Shutdown
-	err = s.Shutdown(ctx)
-	err = errors.Join(err, teardown(ctx))
-	return err
+	return errors.Join(s.Shutdown(ctx), router.Shutdown(ctx))
 }
 
 func initLogger() (flush func() error) {
