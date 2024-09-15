@@ -224,4 +224,60 @@ export default function tests() {
       expect(resp.status, resp.status).to.equal(404);
     });
   });
+
+  describe("Query params are passed correctly", () => {
+    http.setResponseCallback(http.expectedStatuses(200));
+
+    // Test case 1: Single query parameter
+    let resp = http.get(`${baseURL}/testns1/get?hi=1`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("1");
+
+    // Test case 2: Multiple query parameters
+    resp = http.get(`${baseURL}/testns1/get?hi=1&bye=2`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("1");
+    expect(resp.json()["args"]["bye"], resp.json()["args"]["bye"]).to.equal("2");
+
+    // Test case 3: Encoded query parameters
+    resp = http.get(`${baseURL}/testns1/get?hi=%20hello%20world%20`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal(" hello world ");
+
+    // Test case 4: Missing query parameters
+    resp = http.get(`${baseURL}/testns1/get`);
+    expect(resp.json()["args"], resp.json()["args"]).to.be.empty;
+
+    // Test case 5: Query parameters with array values
+    resp = http.get(`${baseURL}/testns1/get?hi=1&hi=2&hi=3`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.deep.equal(["1", "2", "3"]);
+
+    // Test case 6: Query parameters with empty values
+    resp = http.get(`${baseURL}/testns1/get?hi=&bye=`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("");
+    expect(resp.json()["args"]["bye"], resp.json()["args"]["bye"]).to.equal("");
+
+    // Test case 7: Query parameters with null values
+    resp = http.get(`${baseURL}/testns1/get?hi=null`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("null");
+
+    // Test case 8: Query parameters with boolean values
+    resp = http.get(`${baseURL}/testns1/get?hi=true&bye=false`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("true");
+    expect(resp.json()["args"]["bye"], resp.json()["args"]["bye"]).to.equal("false");
+
+    // Test case 9: Query parameters with numeric values
+    resp = http.get(`${baseURL}/testns1/get?hi=123&bye=456.789`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("123");
+    expect(resp.json()["args"]["bye"], resp.json()["args"]["bye"]).to.equal("456.789");
+
+    // Test case 10: Query parameters with mixed types
+    resp = http.get(`${baseURL}/testns1/get?hi=1&bye=true&foo=null&bar=%20space%20`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("1");
+    expect(resp.json()["args"]["bye"], resp.json()["args"]["bye"]).to.equal("true");
+    expect(resp.json()["args"]["foo"], resp.json()["args"]["foo"]).to.equal("null");
+    expect(resp.json()["args"]["bar"], resp.json()["args"]["bar"]).to.equal(" space ");
+
+    // Test case 11: Query parameters with encoded values
+    resp = http.get(`${baseURL}/testns1/get?hi=hello%20world&bye=goodbye%2Fworld`);
+    expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("hello world");
+    expect(resp.json()["url"], resp.json()["url"]).to.equal("http://httpbun-local/any?hi=hello%20world&bye=goodbye%2Fworld");
+  });
 }
