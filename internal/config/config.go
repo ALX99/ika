@@ -20,9 +20,14 @@ func Read(path string) (Config, error) {
 	if err != nil {
 		return cfg, err
 	}
-	defer f.Close()
 
-	return cfg, yaml.NewDecoder(f).Decode(&cfg)
+	defer f.Close()
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		return cfg, err
+	}
+
+	cfg.ApplyOverride()
+	return cfg, nil
 }
 
 // ApplyOverride applies the NamespaceOverrides to the Config.

@@ -62,7 +62,6 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	cfg.ApplyOverride()
 
 	handler, err := router.MakeRouter(ctx, cfg.Namespaces)
 	if err != nil {
