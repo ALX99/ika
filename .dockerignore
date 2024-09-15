@@ -7,3 +7,4 @@
 !go.sum
 !builder
 !ika.go
+!options.go
