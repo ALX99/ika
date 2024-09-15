@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+//go:generate minimock -i Factory,TransportHook,Hook -o ../mocks -s _mock.go
 type Factory interface {
 	New(context.Context) (Hook, error)
 }

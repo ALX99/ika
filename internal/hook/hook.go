@@ -20,7 +20,7 @@ type HookFactory struct {
 }
 type HookFactories []HookFactory
 
-// GetFactories returns a list of hook factories for the enabled hooks in all namespaces.
+// GetFactories returns hook factories for all enabled hooks in all namespaces.
 func GetFactories(ctx context.Context, hooks map[string]pubHook.Factory, namespaces config.Namespaces) (HookFactories, error) {
 	var factories HookFactories
 
