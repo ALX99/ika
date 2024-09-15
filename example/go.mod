@@ -3,7 +3,7 @@ module example
 go 1.23.0
 
 require (
-	github.com/alx99/ika v0.0.10
+	github.com/alx99/ika v0.0.11
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/grafana/pyroscope-go v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.55.0

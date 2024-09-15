@@ -59,21 +59,24 @@ func (w *tracer) Teardown(context.Context) error {
 }
 
 func (w *tracer) HookTransport(_ context.Context, tsp http.RoundTripper) (http.RoundTripper, error) {
-	return otelhttp.NewTransport(tsp), nil
+	return otelhttp.NewTransport(tsp,
+		otelhttp.WithMetricAttributesFn(metaDataAttrs),
+	), nil
 }
 
 func (w *tracer) HookFirstHandler(_ context.Context, handler http.Handler) (http.Handler, error) {
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attr := attribute.String("namespace.name", middleware.GetNamespace(r.Context()))
+		attr := metaDataAttrs(r)
 		trace.SpanFromContext(r.Context()).
-			SetAttributes(attr)
+			SetAttributes(attr...)
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
-		labeler.Add(attr)
+		labeler.Add(attr...)
 		handler.ServeHTTP(w, r)
 	})
 
 	return otelhttp.NewHandler(newHandler, "Request",
 			otelhttp.WithPublicEndpoint(),
+			otelhttp.WithMetricAttributesFn(metaDataAttrs),
 		),
 		nil
 }
@@ -111,6 +114,15 @@ func setupMonitoring() func() {
 	return func() {
 		p.Flush(true)
 		otelShutdown(context.Background())
+	}
+}
+
+func metaDataAttrs(r *http.Request) []attribute.KeyValue {
+	m := middleware.GetMetadata(r.Context())
+	return []attribute.KeyValue{
+		attribute.String("namespace.name", m.Namespace),
+		attribute.String("ika.route", m.Route),
+		attribute.String("ika.generated_route", m.GeneratedRoute),
 	}
 }
 
