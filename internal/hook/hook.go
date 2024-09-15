@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"slices"
 
-	"github.com/alx99/ika/hook"
+	pubHook "github.com/alx99/ika/hook"
 	"github.com/alx99/ika/internal/config"
 )
 
@@ -18,11 +20,12 @@ type Hook struct {
 	// Hook function
 	Hook any
 }
+type Hooks []Hook
 
 // Setup sets up all enabled hooks and returns the hooks and a teardown function.
-func Setup(ctx context.Context, hooks map[string]hook.Factory, namespaces config.Namespaces) ([]Hook, func(context.Context) error, error) {
+func Setup(ctx context.Context, hooks map[string]pubHook.Factory, namespaces config.Namespaces) (Hooks, func(context.Context) error, error) {
+	var setupHooks Hooks
 	teardowns := make(map[string]func(context.Context) error)
-	setupHooks := []Hook{}
 	teardownFunc := func(context.Context) error {
 		var errs error
 		for name, teardown := range teardowns {
@@ -74,4 +77,19 @@ func Setup(ctx context.Context, hooks map[string]hook.Factory, namespaces config
 		}
 	}
 	return setupHooks, teardownFunc, nil
+}
+
+func (hooks Hooks) ApplyTspHooks(ctx context.Context, nsName string, tsp http.RoundTripper) (http.RoundTripper, error) {
+	for _, hook := range hooks {
+		tspHook, ok := hook.Hook.(pubHook.TransportHook)
+		if !ok || !slices.Contains(hook.Namespaces, nsName) {
+			continue
+		}
+		var err error
+		tsp, err = tspHook.HookTransport(ctx, tsp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply tsp hook %q: %w", hook.Name, err)
+		}
+	}
+	return tsp, nil
 }

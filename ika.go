@@ -73,12 +73,12 @@ func run(ctx context.Context, sCfg startCfg) error {
 	}
 
 	// Setup all hooks
-	_, hookTeardown, err := hook.Setup(ctx, sCfg.hooks, cfg.Namespaces)
+	hooks, hookTeardown, err := hook.Setup(ctx, sCfg.hooks, cfg.Namespaces)
 	if err != nil {
 		return fmt.Errorf("failed to setup hooks: %w", err)
 	}
 
-	handler, err := router.MakeRouter(ctx, cfg.Namespaces)
+	handler, err := router.MakeRouter(ctx, cfg.Namespaces, hooks)
 	if err != nil {
 		return fmt.Errorf("failed to create router: %w", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/hook"
 	"github.com/alx99/ika/internal/middleware"
 	"github.com/alx99/ika/internal/proxy"
 	pubMW "github.com/alx99/ika/middleware"
@@ -21,14 +22,21 @@ type routePattern struct {
 	isNamespaced bool
 }
 
-func MakeRouter(ctx context.Context, namespaces config.Namespaces) (http.Handler, error) {
+func MakeRouter(ctx context.Context, namespaces config.Namespaces, hooks hook.Hooks) (http.Handler, error) {
 	slog.Info("Building router", "namespaceCount", len(namespaces))
 
 	mux := http.NewServeMux()
 
 	for _, ns := range namespaces {
 		log := slog.With(slog.String("namespace", ns.Name))
-		transport := makeTransport(ns.Transport)
+		var transport http.RoundTripper
+		transport = makeTransport(ns.Transport)
+
+		transport, err := hooks.ApplyTspHooks(ctx, ns.Name, transport)
+		if err != nil {
+			return nil, err
+		}
+
 		p := proxy.NewProxy(transport)
 
 		for pattern, routeCfg := range ns.Paths {
