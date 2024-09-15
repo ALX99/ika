@@ -61,7 +61,11 @@ func setPath(rp *httputil.ProxyRequest, rawPath string) {
 	if err != nil {
 		log.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
 			slog.String("err", err.Error()))
+	} else {
+		// remove qurey params from the path
+		rp.Out.URL.Path = strings.SplitN(rp.Out.URL.Path, "?", 2)[0]
 	}
+
 	log.LogAttrs(rp.In.Context(), slog.LevelDebug, "Path rewritten",
 		slog.String("from", prevPath), slog.String("to", rp.Out.URL.RawPath))
 }
