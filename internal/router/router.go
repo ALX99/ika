@@ -88,7 +88,11 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				r.mux.Handle(route.pattern, pubMW.BindNamespace(ns.Name, handler))
+				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
+					Namespace:      ns.Name,
+					Route:          pattern,
+					GeneratedRoute: route.pattern,
+				}, handler))
 			}
 		}
 	}

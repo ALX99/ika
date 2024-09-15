@@ -26,7 +26,7 @@ func accessLog(next http.Handler) http.Handler {
 			slog.String("userAgent", r.UserAgent()),
 			slog.Int("status", st.status),
 			slog.Int64("duration", time.Since(now).Milliseconds()),
-			slog.String("namespace", GetNamespace(r.Context())),
+			slog.String("namespace", GetMetadata(r.Context()).Namespace),
 		)
 	})
 }

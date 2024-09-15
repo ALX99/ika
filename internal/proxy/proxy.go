@@ -66,7 +66,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // setPath sets the path on the outgoing request
 func setPath(rp *httputil.ProxyRequest, rawPath string) {
-	log := slog.With(slog.String("namespace", middleware.GetNamespace(rp.In.Context())))
+	log := slog.With(slog.String("namespace", middleware.GetMetadata(rp.In.Context()).Namespace))
 	var err error
 	prevPath := rp.Out.URL.EscapedPath()
 	rp.Out.URL.RawPath = rawPath
