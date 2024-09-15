@@ -132,6 +132,30 @@
         "name"
       ],
       "additionalProperties": true
+    },
+    "hook": {
+      "type": "object",
+      "description": "Hook definition.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the hook"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the hook is enabled or not.",
+          "default": true
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration for the hook",
+          "default": {}
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
     }
   },
   "properties": {
@@ -187,6 +211,13 @@
               "items": {
                 "type": "object",
                 "$ref": "#/definitions/middleware"
+              }
+            },
+            "hooks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "$ref": "#/definitions/hook"
               }
             },
             "paths": {

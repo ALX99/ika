@@ -2,6 +2,7 @@
 !/cmd
 !/internal
 !/middleware
+!/hook
 !go.mod
 !go.sum
 !builder

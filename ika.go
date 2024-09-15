@@ -3,6 +3,7 @@ package ika
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alx99/ika/hook"
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
@@ -24,7 +26,7 @@ var (
 )
 
 // Run starts Ika
-func Run() {
+func Run(opts ...Option) {
 	flag.Parse()
 	if *printVersion {
 		fmt.Println("0.0.1")
@@ -48,7 +50,14 @@ func Run() {
 		}
 	}()
 
-	if err := run(ctx); err != nil {
+	cfg := startCfg{
+		hooks: make(map[string]hook.Hooker),
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	if err := run(ctx, cfg); err != nil {
 		slog.Error(err.Error())
 	} else {
 		slog.Info("ika has shut down")
@@ -56,12 +65,21 @@ func Run() {
 	}
 }
 
-func run(ctx context.Context) error {
+func run(ctx context.Context, sCfg startCfg) error {
 	cfg, err := config.Read(*configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
+	// Setup all hooks
+	teardowns := []func(context.Context) error{}
+	for _, ns := range cfg.Namespaces {
+		teardown, err := ns.Hooks.Setup(ctx, sCfg.hooks)
+		if err != nil {
+			return err
+		}
+		teardowns = append(teardowns, teardown)
+	}
 
 	handler, err := router.MakeRouter(ctx, cfg.Namespaces)
 	if err != nil {
@@ -84,7 +102,13 @@ func run(ctx context.Context) error {
 		fmt.Errorf("could not shut down gracefully in %v", cfg.Ika.GracefulShutdownTimeout),
 	)
 	defer cancel()
-	return s.Shutdown(ctx)
+
+	// Shutdown
+	err = s.Shutdown(ctx)
+	for _, teardown := range teardowns {
+		err = errors.Join(err, teardown(ctx))
+	}
+	return err
 }
 
 func initLogger() (flush func() error) {
@@ -105,4 +129,16 @@ func initLogger() (flush func() error) {
 	slog.SetDefault(log)
 
 	return w.Flush
+}
+
+type startCfg struct {
+	hooks map[string]hook.Hooker
+}
+
+type Option func(*startCfg)
+
+func WithHook(name string, hook hook.Hooker) Option {
+	return func(cfg *startCfg) {
+		cfg.hooks[name] = hook
+	}
 }
