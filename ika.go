@@ -12,8 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alx99/ika/hook"
+	pubHook "github.com/alx99/ika/hook"
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/hook"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
 	"github.com/lmittmann/tint"
@@ -51,7 +52,7 @@ func Run(opts ...Option) {
 	}()
 
 	cfg := startCfg{
-		hooks: make(map[string]hook.Factory),
+		hooks: make(map[string]pubHook.Factory),
 	}
 	for _, opt := range opts {
 		opt(&cfg)
@@ -72,13 +73,9 @@ func run(ctx context.Context, sCfg startCfg) error {
 	}
 
 	// Setup all hooks
-	teardowns := []func(context.Context) error{}
-	for _, ns := range cfg.Namespaces {
-		teardown, err := ns.Hooks.Setup(ctx, sCfg.hooks)
-		if err != nil {
-			return err
-		}
-		teardowns = append(teardowns, teardown)
+	_, hookTeardown, err := hook.Setup(ctx, sCfg.hooks, cfg.Namespaces)
+	if err != nil {
+		return fmt.Errorf("failed to setup hooks: %w", err)
 	}
 
 	handler, err := router.MakeRouter(ctx, cfg.Namespaces)
@@ -105,9 +102,7 @@ func run(ctx context.Context, sCfg startCfg) error {
 
 	// Shutdown
 	err = s.Shutdown(ctx)
-	for _, teardown := range teardowns {
-		err = errors.Join(err, teardown(ctx))
-	}
+	err = errors.Join(err, hookTeardown(ctx))
 	return err
 }
 
