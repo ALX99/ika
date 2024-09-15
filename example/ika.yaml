@@ -18,6 +18,8 @@ namespaces:
       /: {}
 
   proxy:
+    hooks:
+      - name: tracer
     hosts:
       - ika-example-latest.onrender.com
     backends:
