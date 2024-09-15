@@ -25,6 +25,7 @@ jobs:
       - name: Build
         run: |
           cd ./example
+          export VERSION="$(git rev-parse --short=7 HEAD)"
           docker build -t ghcr.io/alx99/ika-example:latest .
           docker push ghcr.io/alx99/ika-example:latest
   deploy-example:

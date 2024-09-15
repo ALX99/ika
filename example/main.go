@@ -20,12 +20,17 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	chimw "github.com/go-chi/chi/v5/middleware"
 )
 
-var _ hook.TransportHook = &tracer{}
+var (
+	version                    = "unknown"
+	_       hook.TransportHook = &tracer{}
+)
 
 func init() {
 	err := middleware.RegisterFunc("noCache", chimw.NoCache)
@@ -120,7 +125,21 @@ func setupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 		return nil, err
 	}
 
-	tracerProvider := trace.NewTracerProvider(trace.WithBatcher(traceExporter))
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceVersion(version),
+		),
+	)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	tracerProvider := trace.NewTracerProvider(
+		trace.WithBatcher(traceExporter),
+		trace.WithResource(r),
+	)
 	if err != nil {
 		handleErr(err)
 		return
