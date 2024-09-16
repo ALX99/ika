@@ -19,16 +19,29 @@ namespaces:
     paths:
       /: {}
 
-  proxy:
+  google-proxy:
     hooks:
       - name: tracer
     hosts:
-      - ika-example-latest.onrender.com
+      - ika-demo.onrender.com
+      - google.dozy.dev
     backends:
       - host: www.google.com
         scheme: https
     middlewares:
       - name: accessLog
-      - name: noCache
+    paths:
+      /: {}
+      /maps/: {}
+  go-proxy:
+    hooks:
+      - name: tracer
+    hosts:
+      - go.dozy.dev
+    backends:
+      - host: go.dev
+        scheme: https
+    middlewares:
+      - name: accessLog
     paths:
       /: {}
