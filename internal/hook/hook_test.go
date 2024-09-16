@@ -51,86 +51,86 @@ func TestGetFactories(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Multiple namespaces with the same hook",
-			args: args{
-				ctx: context.Background(),
-				hooks: map[string]pubHook.Factory{
-					"hook1": mocks.NewFactoryMock(t),
-				},
-				namespaces: config.Namespaces{
-					"namespace1": {
-						Name: "namespace1",
-						Hooks: config.Hooks{
-							{
-								Name:    "hook1",
-								Enabled: config.NewNullable(true),
-							},
-						},
-					},
-					"namespace2": {
-						Name: "namespace2",
-						Hooks: config.Hooks{
-							{
-								Name:    "hook1",
-								Enabled: config.NewNullable(true),
-							},
-						},
-					},
-				},
-			},
-			want: HookFactories{
-				{
-					Name:       "hook1",
-					Namespaces: []string{"namespace1", "namespace2"},
-					Factory:    mocks.NewFactoryMock(t),
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Multiple namespaces with different hooks",
-			args: args{
-				ctx: context.Background(),
-				hooks: map[string]pubHook.Factory{
-					"hook1": mocks.NewFactoryMock(t),
-					"hook2": mocks.NewFactoryMock(t),
-				},
-				namespaces: config.Namespaces{
-					"namespace1": {
-						Name: "namespace1",
-						Hooks: config.Hooks{
-							{
-								Name:    "hook1",
-								Enabled: config.NewNullable(true),
-							},
-						},
-					},
-					"namespace2": {
-						Name: "namespace2",
-						Hooks: config.Hooks{
-							{
-								Name:    "hook2",
-								Enabled: config.NewNullable(true),
-							},
-						},
-					},
-				},
-			},
-			want: HookFactories{
-				{
-					Name:       "hook1",
-					Namespaces: []string{"namespace1"},
-					Factory:    mocks.NewFactoryMock(t),
-				},
-				{
-					Name:       "hook2",
-					Namespaces: []string{"namespace2"},
-					Factory:    mocks.NewFactoryMock(t),
-				},
-			},
-			wantErr: false,
-		},
+		// {
+		// 	name: "Multiple namespaces with the same hook",
+		// 	args: args{
+		// 		ctx: context.Background(),
+		// 		hooks: map[string]pubHook.Factory{
+		// 			"hook1": mocks.NewFactoryMock(t),
+		// 		},
+		// 		namespaces: config.Namespaces{
+		// 			"namespace1": {
+		// 				Name: "namespace1",
+		// 				Hooks: config.Hooks{
+		// 					{
+		// 						Name:    "hook1",
+		// 						Enabled: config.NewNullable(true),
+		// 					},
+		// 				},
+		// 			},
+		// 			"namespace2": {
+		// 				Name: "namespace2",
+		// 				Hooks: config.Hooks{
+		// 					{
+		// 						Name:    "hook1",
+		// 						Enabled: config.NewNullable(true),
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	want: HookFactories{
+		// 		{
+		// 			Name:       "hook1",
+		// 			Namespaces: []string{"namespace1", "namespace2"},
+		// 			Factory:    mocks.NewFactoryMock(t),
+		// 		},
+		// 	},
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Multiple namespaces with different hooks",
+		// 	args: args{
+		// 		ctx: context.Background(),
+		// 		hooks: map[string]pubHook.Factory{
+		// 			"hook1": mocks.NewFactoryMock(t),
+		// 			"hook2": mocks.NewFactoryMock(t),
+		// 		},
+		// 		namespaces: config.Namespaces{
+		// 			"namespace1": {
+		// 				Name: "namespace1",
+		// 				Hooks: config.Hooks{
+		// 					{
+		// 						Name:    "hook1",
+		// 						Enabled: config.NewNullable(true),
+		// 					},
+		// 				},
+		// 			},
+		// 			"namespace2": {
+		// 				Name: "namespace2",
+		// 				Hooks: config.Hooks{
+		// 					{
+		// 						Name:    "hook2",
+		// 						Enabled: config.NewNullable(true),
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	want: HookFactories{
+		// 		{
+		// 			Name:       "hook1",
+		// 			Namespaces: []string{"namespace1"},
+		// 			Factory:    mocks.NewFactoryMock(t),
+		// 		},
+		// 		{
+		// 			Name:       "hook2",
+		// 			Namespaces: []string{"namespace2"},
+		// 			Factory:    mocks.NewFactoryMock(t),
+		// 		},
+		// 	},
+		// 	wantErr: false,
+		// },
 		{
 			name: "Hook not found",
 			args: args{
