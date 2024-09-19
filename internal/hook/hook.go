@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"slices"
 
-	pubHook "github.com/alx99/ika/hook"
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/plugin"
 )
 
 type HookFactory struct {
@@ -16,12 +16,12 @@ type HookFactory struct {
 	Name string
 	// Namespaces is a list of namespaces where the hook is enabled.
 	Namespaces []string
-	pubHook.Factory
+	plugin.Factory[plugin.Hook]
 }
 type HookFactories []HookFactory
 
 // GetFactories returns hook factories for all enabled hooks in all namespaces.
-func GetFactories(ctx context.Context, hooks map[string]pubHook.Factory, namespaces config.Namespaces) (HookFactories, error) {
+func GetFactories(ctx context.Context, hooks map[string]plugin.Factory[plugin.Hook], namespaces config.Namespaces) (HookFactories, error) {
 	var factories HookFactories
 
 	for _, ns := range namespaces {
@@ -54,7 +54,7 @@ func GetFactories(ctx context.Context, hooks map[string]pubHook.Factory, namespa
 }
 
 func (hf HookFactories) ApplyTspHooks(ctx context.Context, hooksCfg config.Hooks, tsp http.RoundTripper) (http.RoundTripper, func(context.Context) error, error) {
-	hooks, teardown, err := createHooks[pubHook.TransportHook](ctx, hooksCfg, hf)
+	hooks, teardown, err := createHooks[plugin.TransportHook](ctx, hooksCfg, hf)
 	if err != nil {
 		return nil, teardown, err
 	}
@@ -68,7 +68,7 @@ func (hf HookFactories) ApplyTspHooks(ctx context.Context, hooksCfg config.Hooks
 }
 
 func (hf HookFactories) ApplyMiddlewareHooks(ctx context.Context, hooksCfg config.Hooks, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
-	hooks, teardown, err := createHooks[pubHook.MiddlewareHook](ctx, hooksCfg, hf)
+	hooks, teardown, err := createHooks[plugin.MiddlewareHook](ctx, hooksCfg, hf)
 	if err != nil {
 		return nil, teardown, err
 	}
@@ -82,7 +82,7 @@ func (hf HookFactories) ApplyMiddlewareHooks(ctx context.Context, hooksCfg confi
 }
 
 func (hf HookFactories) ApplyFirstHandlerHook(ctx context.Context, hooksCfg config.Hooks, handler http.Handler) (http.Handler, func(context.Context) error, error) {
-	hooks, teardown, err := createHooks[pubHook.FirstHandlerHook](ctx, hooksCfg, hf)
+	hooks, teardown, err := createHooks[plugin.FirstHandlerHook](ctx, hooksCfg, hf)
 	if err != nil {
 		return nil, teardown, err
 	}

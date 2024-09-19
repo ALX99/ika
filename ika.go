@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	pubHook "github.com/alx99/ika/hook"
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/hook"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
+	"github.com/alx99/ika/plugin"
 	"github.com/lmittmann/tint"
 )
 
@@ -52,7 +52,7 @@ func Run(opts ...Option) {
 	}()
 
 	cfg := startCfg{
-		hooks: make(map[string]pubHook.Factory),
+		hooks: make(map[string]plugin.Factory[plugin.Hook]),
 	}
 	for _, opt := range opts {
 		opt(&cfg)

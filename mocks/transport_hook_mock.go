@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i github.com/alx99/ika/hook.TransportHook -o transport_hook_mock.go -n TransportHookMock -p mocks
+//go:generate minimock -i github.com/alx99/ika/plugin.TransportHook -o transport_hook_mock.go -n TransportHookMock -p mocks
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/gojuno/minimock/v3"
 )
 
-// TransportHookMock implements mm_hook.TransportHook
+// TransportHookMock implements mm_plugin.TransportHook
 type TransportHookMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
@@ -27,7 +27,7 @@ type TransportHookMock struct {
 	HookTransportMock          mTransportHookMockHookTransport
 }
 
-// NewTransportHookMock returns a mock for mm_hook.TransportHook
+// NewTransportHookMock returns a mock for mm_plugin.TransportHook
 func NewTransportHookMock(t minimock.Tester) *TransportHookMock {
 	m := &TransportHookMock{t: t}
 
@@ -256,7 +256,7 @@ func (mmHookTransport *mTransportHookMockHookTransport) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// HookTransport implements mm_hook.TransportHook
+// HookTransport implements mm_plugin.TransportHook
 func (mmHookTransport *TransportHookMock) HookTransport(ctx context.Context, transport http.RoundTripper) (r1 http.RoundTripper, err error) {
 	mm_atomic.AddUint64(&mmHookTransport.beforeHookTransportCounter, 1)
 	defer mm_atomic.AddUint64(&mmHookTransport.afterHookTransportCounter, 1)

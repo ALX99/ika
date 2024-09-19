@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i github.com/alx99/ika/hook.Factory -o factory_mock.go -n FactoryMock -p mocks
+//go:generate minimock -i github.com/alx99/ika/plugin.Factory -o factory_mock.go -n FactoryMock -p mocks
 
 import (
 	"context"
@@ -10,46 +10,45 @@ import (
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	mm_hook "github.com/alx99/ika/hook"
 	"github.com/gojuno/minimock/v3"
 )
 
-// FactoryMock implements mm_hook.Factory
-type FactoryMock struct {
+// FactoryMock implements mm_plugin.Factory
+type FactoryMock[T any] struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcNew          func(ctx context.Context) (h1 mm_hook.Hook, err error)
+	funcNew          func(ctx context.Context) (t1 T, err error)
 	funcNewOrigin    string
 	inspectFuncNew   func(ctx context.Context)
 	afterNewCounter  uint64
 	beforeNewCounter uint64
-	NewMock          mFactoryMockNew
+	NewMock          mFactoryMockNew[T]
 }
 
-// NewFactoryMock returns a mock for mm_hook.Factory
-func NewFactoryMock(t minimock.Tester) *FactoryMock {
-	m := &FactoryMock{t: t}
+// NewFactoryMock returns a mock for mm_plugin.Factory
+func NewFactoryMock[T any](t minimock.Tester) *FactoryMock[T] {
+	m := &FactoryMock[T]{t: t}
 
 	if controller, ok := t.(minimock.MockController); ok {
 		controller.RegisterMocker(m)
 	}
 
-	m.NewMock = mFactoryMockNew{mock: m}
-	m.NewMock.callArgs = []*FactoryMockNewParams{}
+	m.NewMock = mFactoryMockNew[T]{mock: m}
+	m.NewMock.callArgs = []*FactoryMockNewParams[T]{}
 
 	t.Cleanup(m.MinimockFinish)
 
 	return m
 }
 
-type mFactoryMockNew struct {
+type mFactoryMockNew[T any] struct {
 	optional           bool
-	mock               *FactoryMock
-	defaultExpectation *FactoryMockNewExpectation
-	expectations       []*FactoryMockNewExpectation
+	mock               *FactoryMock[T]
+	defaultExpectation *FactoryMockNewExpectation[T]
+	expectations       []*FactoryMockNewExpectation[T]
 
-	callArgs []*FactoryMockNewParams
+	callArgs []*FactoryMockNewParams[T]
 	mutex    sync.RWMutex
 
 	expectedInvocations       uint64
@@ -57,29 +56,29 @@ type mFactoryMockNew struct {
 }
 
 // FactoryMockNewExpectation specifies expectation struct of the Factory.New
-type FactoryMockNewExpectation struct {
-	mock               *FactoryMock
-	params             *FactoryMockNewParams
-	paramPtrs          *FactoryMockNewParamPtrs
+type FactoryMockNewExpectation[T any] struct {
+	mock               *FactoryMock[T]
+	params             *FactoryMockNewParams[T]
+	paramPtrs          *FactoryMockNewParamPtrs[T]
 	expectationOrigins FactoryMockNewExpectationOrigins
-	results            *FactoryMockNewResults
+	results            *FactoryMockNewResults[T]
 	returnOrigin       string
 	Counter            uint64
 }
 
 // FactoryMockNewParams contains parameters of the Factory.New
-type FactoryMockNewParams struct {
+type FactoryMockNewParams[T any] struct {
 	ctx context.Context
 }
 
 // FactoryMockNewParamPtrs contains pointers to parameters of the Factory.New
-type FactoryMockNewParamPtrs struct {
+type FactoryMockNewParamPtrs[T any] struct {
 	ctx *context.Context
 }
 
 // FactoryMockNewResults contains results of the Factory.New
-type FactoryMockNewResults struct {
-	h1  mm_hook.Hook
+type FactoryMockNewResults[T any] struct {
+	t1  T
 	err error
 }
 
@@ -94,26 +93,26 @@ type FactoryMockNewExpectationOrigins struct {
 // Optional() makes method check to work in '0 or more' mode.
 // It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
 // catch the problems when the expected method call is totally skipped during test run.
-func (mmNew *mFactoryMockNew) Optional() *mFactoryMockNew {
+func (mmNew *mFactoryMockNew[T]) Optional() *mFactoryMockNew[T] {
 	mmNew.optional = true
 	return mmNew
 }
 
 // Expect sets up expected params for Factory.New
-func (mmNew *mFactoryMockNew) Expect(ctx context.Context) *mFactoryMockNew {
+func (mmNew *mFactoryMockNew[T]) Expect(ctx context.Context) *mFactoryMockNew[T] {
 	if mmNew.mock.funcNew != nil {
 		mmNew.mock.t.Fatalf("FactoryMock.New mock is already set by Set")
 	}
 
 	if mmNew.defaultExpectation == nil {
-		mmNew.defaultExpectation = &FactoryMockNewExpectation{}
+		mmNew.defaultExpectation = &FactoryMockNewExpectation[T]{}
 	}
 
 	if mmNew.defaultExpectation.paramPtrs != nil {
 		mmNew.mock.t.Fatalf("FactoryMock.New mock is already set by ExpectParams functions")
 	}
 
-	mmNew.defaultExpectation.params = &FactoryMockNewParams{ctx}
+	mmNew.defaultExpectation.params = &FactoryMockNewParams[T]{ctx}
 	mmNew.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmNew.expectations {
 		if minimock.Equal(e.params, mmNew.defaultExpectation.params) {
@@ -125,13 +124,13 @@ func (mmNew *mFactoryMockNew) Expect(ctx context.Context) *mFactoryMockNew {
 }
 
 // ExpectCtxParam1 sets up expected param ctx for Factory.New
-func (mmNew *mFactoryMockNew) ExpectCtxParam1(ctx context.Context) *mFactoryMockNew {
+func (mmNew *mFactoryMockNew[T]) ExpectCtxParam1(ctx context.Context) *mFactoryMockNew[T] {
 	if mmNew.mock.funcNew != nil {
 		mmNew.mock.t.Fatalf("FactoryMock.New mock is already set by Set")
 	}
 
 	if mmNew.defaultExpectation == nil {
-		mmNew.defaultExpectation = &FactoryMockNewExpectation{}
+		mmNew.defaultExpectation = &FactoryMockNewExpectation[T]{}
 	}
 
 	if mmNew.defaultExpectation.params != nil {
@@ -139,7 +138,7 @@ func (mmNew *mFactoryMockNew) ExpectCtxParam1(ctx context.Context) *mFactoryMock
 	}
 
 	if mmNew.defaultExpectation.paramPtrs == nil {
-		mmNew.defaultExpectation.paramPtrs = &FactoryMockNewParamPtrs{}
+		mmNew.defaultExpectation.paramPtrs = &FactoryMockNewParamPtrs[T]{}
 	}
 	mmNew.defaultExpectation.paramPtrs.ctx = &ctx
 	mmNew.defaultExpectation.expectationOrigins.originCtx = minimock.CallerInfo(1)
@@ -148,7 +147,7 @@ func (mmNew *mFactoryMockNew) ExpectCtxParam1(ctx context.Context) *mFactoryMock
 }
 
 // Inspect accepts an inspector function that has same arguments as the Factory.New
-func (mmNew *mFactoryMockNew) Inspect(f func(ctx context.Context)) *mFactoryMockNew {
+func (mmNew *mFactoryMockNew[T]) Inspect(f func(ctx context.Context)) *mFactoryMockNew[T] {
 	if mmNew.mock.inspectFuncNew != nil {
 		mmNew.mock.t.Fatalf("Inspect function is already set for FactoryMock.New")
 	}
@@ -159,21 +158,21 @@ func (mmNew *mFactoryMockNew) Inspect(f func(ctx context.Context)) *mFactoryMock
 }
 
 // Return sets up results that will be returned by Factory.New
-func (mmNew *mFactoryMockNew) Return(h1 mm_hook.Hook, err error) *FactoryMock {
+func (mmNew *mFactoryMockNew[T]) Return(t1 T, err error) *FactoryMock[T] {
 	if mmNew.mock.funcNew != nil {
 		mmNew.mock.t.Fatalf("FactoryMock.New mock is already set by Set")
 	}
 
 	if mmNew.defaultExpectation == nil {
-		mmNew.defaultExpectation = &FactoryMockNewExpectation{mock: mmNew.mock}
+		mmNew.defaultExpectation = &FactoryMockNewExpectation[T]{mock: mmNew.mock}
 	}
-	mmNew.defaultExpectation.results = &FactoryMockNewResults{h1, err}
+	mmNew.defaultExpectation.results = &FactoryMockNewResults[T]{t1, err}
 	mmNew.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
 	return mmNew.mock
 }
 
 // Set uses given function f to mock the Factory.New method
-func (mmNew *mFactoryMockNew) Set(f func(ctx context.Context) (h1 mm_hook.Hook, err error)) *FactoryMock {
+func (mmNew *mFactoryMockNew[T]) Set(f func(ctx context.Context) (t1 T, err error)) *FactoryMock[T] {
 	if mmNew.defaultExpectation != nil {
 		mmNew.mock.t.Fatalf("Default expectation is already set for the Factory.New method")
 	}
@@ -189,14 +188,14 @@ func (mmNew *mFactoryMockNew) Set(f func(ctx context.Context) (h1 mm_hook.Hook, 
 
 // When sets expectation for the Factory.New which will trigger the result defined by the following
 // Then helper
-func (mmNew *mFactoryMockNew) When(ctx context.Context) *FactoryMockNewExpectation {
+func (mmNew *mFactoryMockNew[T]) When(ctx context.Context) *FactoryMockNewExpectation[T] {
 	if mmNew.mock.funcNew != nil {
 		mmNew.mock.t.Fatalf("FactoryMock.New mock is already set by Set")
 	}
 
-	expectation := &FactoryMockNewExpectation{
+	expectation := &FactoryMockNewExpectation[T]{
 		mock:               mmNew.mock,
-		params:             &FactoryMockNewParams{ctx},
+		params:             &FactoryMockNewParams[T]{ctx},
 		expectationOrigins: FactoryMockNewExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmNew.expectations = append(mmNew.expectations, expectation)
@@ -204,13 +203,13 @@ func (mmNew *mFactoryMockNew) When(ctx context.Context) *FactoryMockNewExpectati
 }
 
 // Then sets up Factory.New return parameters for the expectation previously defined by the When method
-func (e *FactoryMockNewExpectation) Then(h1 mm_hook.Hook, err error) *FactoryMock {
-	e.results = &FactoryMockNewResults{h1, err}
+func (e *FactoryMockNewExpectation[T]) Then(t1 T, err error) *FactoryMock[T] {
+	e.results = &FactoryMockNewResults[T]{t1, err}
 	return e.mock
 }
 
 // Times sets number of times Factory.New should be invoked
-func (mmNew *mFactoryMockNew) Times(n uint64) *mFactoryMockNew {
+func (mmNew *mFactoryMockNew[T]) Times(n uint64) *mFactoryMockNew[T] {
 	if n == 0 {
 		mmNew.mock.t.Fatalf("Times of FactoryMock.New mock can not be zero")
 	}
@@ -219,7 +218,7 @@ func (mmNew *mFactoryMockNew) Times(n uint64) *mFactoryMockNew {
 	return mmNew
 }
 
-func (mmNew *mFactoryMockNew) invocationsDone() bool {
+func (mmNew *mFactoryMockNew[T]) invocationsDone() bool {
 	if len(mmNew.expectations) == 0 && mmNew.defaultExpectation == nil && mmNew.mock.funcNew == nil {
 		return true
 	}
@@ -230,8 +229,8 @@ func (mmNew *mFactoryMockNew) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// New implements mm_hook.Factory
-func (mmNew *FactoryMock) New(ctx context.Context) (h1 mm_hook.Hook, err error) {
+// New implements mm_plugin.Factory
+func (mmNew *FactoryMock[T]) New(ctx context.Context) (t1 T, err error) {
 	mm_atomic.AddUint64(&mmNew.beforeNewCounter, 1)
 	defer mm_atomic.AddUint64(&mmNew.afterNewCounter, 1)
 
@@ -241,7 +240,7 @@ func (mmNew *FactoryMock) New(ctx context.Context) (h1 mm_hook.Hook, err error) 
 		mmNew.inspectFuncNew(ctx)
 	}
 
-	mm_params := FactoryMockNewParams{ctx}
+	mm_params := FactoryMockNewParams[T]{ctx}
 
 	// Record call args
 	mmNew.NewMock.mutex.Lock()
@@ -251,7 +250,7 @@ func (mmNew *FactoryMock) New(ctx context.Context) (h1 mm_hook.Hook, err error) 
 	for _, e := range mmNew.NewMock.expectations {
 		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.h1, e.results.err
+			return e.results.t1, e.results.err
 		}
 	}
 
@@ -260,7 +259,7 @@ func (mmNew *FactoryMock) New(ctx context.Context) (h1 mm_hook.Hook, err error) 
 		mm_want := mmNew.NewMock.defaultExpectation.params
 		mm_want_ptrs := mmNew.NewMock.defaultExpectation.paramPtrs
 
-		mm_got := FactoryMockNewParams{ctx}
+		mm_got := FactoryMockNewParams[T]{ctx}
 
 		if mm_want_ptrs != nil {
 
@@ -278,7 +277,7 @@ func (mmNew *FactoryMock) New(ctx context.Context) (h1 mm_hook.Hook, err error) 
 		if mm_results == nil {
 			mmNew.t.Fatal("No results are set for the FactoryMock.New")
 		}
-		return (*mm_results).h1, (*mm_results).err
+		return (*mm_results).t1, (*mm_results).err
 	}
 	if mmNew.funcNew != nil {
 		return mmNew.funcNew(ctx)
@@ -288,21 +287,21 @@ func (mmNew *FactoryMock) New(ctx context.Context) (h1 mm_hook.Hook, err error) 
 }
 
 // NewAfterCounter returns a count of finished FactoryMock.New invocations
-func (mmNew *FactoryMock) NewAfterCounter() uint64 {
+func (mmNew *FactoryMock[T]) NewAfterCounter() uint64 {
 	return mm_atomic.LoadUint64(&mmNew.afterNewCounter)
 }
 
 // NewBeforeCounter returns a count of FactoryMock.New invocations
-func (mmNew *FactoryMock) NewBeforeCounter() uint64 {
+func (mmNew *FactoryMock[T]) NewBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&mmNew.beforeNewCounter)
 }
 
 // Calls returns a list of arguments used in each call to FactoryMock.New.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (mmNew *mFactoryMockNew) Calls() []*FactoryMockNewParams {
+func (mmNew *mFactoryMockNew[T]) Calls() []*FactoryMockNewParams[T] {
 	mmNew.mutex.RLock()
 
-	argCopy := make([]*FactoryMockNewParams, len(mmNew.callArgs))
+	argCopy := make([]*FactoryMockNewParams[T], len(mmNew.callArgs))
 	copy(argCopy, mmNew.callArgs)
 
 	mmNew.mutex.RUnlock()
@@ -312,7 +311,7 @@ func (mmNew *mFactoryMockNew) Calls() []*FactoryMockNewParams {
 
 // MinimockNewDone returns true if the count of the New invocations corresponds
 // the number of defined expectations
-func (m *FactoryMock) MinimockNewDone() bool {
+func (m *FactoryMock[T]) MinimockNewDone() bool {
 	if m.NewMock.optional {
 		// Optional methods provide '0 or more' call count restriction.
 		return true
@@ -328,7 +327,7 @@ func (m *FactoryMock) MinimockNewDone() bool {
 }
 
 // MinimockNewInspect logs each unmet expectation
-func (m *FactoryMock) MinimockNewInspect() {
+func (m *FactoryMock[T]) MinimockNewInspect() {
 	for _, e := range m.NewMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			m.t.Errorf("Expected call to FactoryMock.New at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
@@ -356,7 +355,7 @@ func (m *FactoryMock) MinimockNewInspect() {
 }
 
 // MinimockFinish checks that all mocked methods have been called the expected number of times
-func (m *FactoryMock) MinimockFinish() {
+func (m *FactoryMock[T]) MinimockFinish() {
 	m.finishOnce.Do(func() {
 		if !m.minimockDone() {
 			m.MinimockNewInspect()
@@ -365,7 +364,7 @@ func (m *FactoryMock) MinimockFinish() {
 }
 
 // MinimockWait waits for all mocked methods to be called the expected number of times
-func (m *FactoryMock) MinimockWait(timeout mm_time.Duration) {
+func (m *FactoryMock[T]) MinimockWait(timeout mm_time.Duration) {
 	timeoutCh := mm_time.After(timeout)
 	for {
 		if m.minimockDone() {
@@ -380,7 +379,7 @@ func (m *FactoryMock) MinimockWait(timeout mm_time.Duration) {
 	}
 }
 
-func (m *FactoryMock) minimockDone() bool {
+func (m *FactoryMock[T]) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockNewDone()

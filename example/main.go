@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/alx99/ika"
-	"github.com/alx99/ika/hook"
 	"github.com/alx99/ika/middleware"
+	"github.com/alx99/ika/plugin"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	version                       = "unknown"
-	_       hook.TransportHook    = &tracer{}
-	_       hook.MiddlewareHook   = &tracer{}
-	_       hook.FirstHandlerHook = &tracer{}
+	version                         = "unknown"
+	_       plugin.TransportHook    = &tracer{}
+	_       plugin.MiddlewareHook   = &tracer{}
+	_       plugin.FirstHandlerHook = &tracer{}
 )
 
 func init() {

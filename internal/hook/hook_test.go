@@ -6,15 +6,15 @@ import (
 	"reflect"
 	"testing"
 
-	pubHook "github.com/alx99/ika/hook"
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/mocks"
+	"github.com/alx99/ika/plugin"
 )
 
 func TestGetFactories(t *testing.T) {
 	type args struct {
 		ctx        context.Context
-		hooks      map[string]pubHook.Factory
+		hooks      map[string]plugin.Factory[plugin.Hook]
 		namespaces config.Namespaces
 	}
 	tests := []struct {
@@ -27,8 +27,8 @@ func TestGetFactories(t *testing.T) {
 			name: "Single namespace with one hook",
 			args: args{
 				ctx: context.Background(),
-				hooks: map[string]pubHook.Factory{
-					"hook1": mocks.NewFactoryMock(t),
+				hooks: map[string]plugin.Factory[plugin.Hook]{
+					"hook1": mocks.NewFactoryMock[plugin.Hook](t),
 				},
 				namespaces: config.Namespaces{
 					"namespace1": {
@@ -46,7 +46,7 @@ func TestGetFactories(t *testing.T) {
 				{
 					Name:       "hook1",
 					Namespaces: []string{"namespace1"},
-					Factory:    mocks.NewFactoryMock(t),
+					Factory:    mocks.NewFactoryMock[plugin.Hook](t),
 				},
 			},
 			wantErr: false,
@@ -135,8 +135,8 @@ func TestGetFactories(t *testing.T) {
 			name: "Hook not found",
 			args: args{
 				ctx: context.Background(),
-				hooks: map[string]pubHook.Factory{
-					"hook1": mocks.NewFactoryMock(t),
+				hooks: map[string]plugin.Factory[plugin.Hook]{
+					"hook1": mocks.NewFactoryMock[plugin.Hook](t),
 				},
 				namespaces: config.Namespaces{
 					"namespace1": {
@@ -157,8 +157,8 @@ func TestGetFactories(t *testing.T) {
 			name: "No hooks enabled",
 			args: args{
 				ctx: context.Background(),
-				hooks: map[string]pubHook.Factory{
-					"hook1": mocks.NewFactoryMock(t),
+				hooks: map[string]plugin.Factory[plugin.Hook]{
+					"hook1": mocks.NewFactoryMock[plugin.Hook](t),
 				},
 				namespaces: config.Namespaces{
 					"namespace1": {
@@ -211,7 +211,7 @@ func Test_createHooks(t *testing.T) {
 				factories: HookFactories{
 					{
 						Name: "hook1",
-						Factory: mocks.NewFactoryMock(t).
+						Factory: mocks.NewFactoryMock[plugin.Hook](t).
 							NewMock.
 							Expect(context.Background()).
 							Return(
@@ -237,7 +237,7 @@ func Test_createHooks(t *testing.T) {
 				factories: HookFactories{
 					{
 						Name: "hook1",
-						Factory: mocks.NewFactoryMock(t).NewMock.
+						Factory: mocks.NewFactoryMock[plugin.Hook](t).NewMock.
 							Expect(context.Background()).
 							Return(
 								mocks.NewHookMock(t).SetupMock.
@@ -261,7 +261,7 @@ func Test_createHooks(t *testing.T) {
 				factories: HookFactories{
 					{
 						Name: "hook1",
-						Factory: mocks.NewFactoryMock(t).NewMock.
+						Factory: mocks.NewFactoryMock[plugin.Hook](t).NewMock.
 							Expect(context.Background()).
 							Return(nil, fmt.Errorf("creation error")),
 					},
@@ -286,7 +286,7 @@ func Test_createHooks(t *testing.T) {
 				factories: HookFactories{
 					{
 						Name: "hook1",
-						Factory: mocks.NewFactoryMock(t).NewMock.
+						Factory: mocks.NewFactoryMock[plugin.Hook](t).NewMock.
 							Expect(context.Background()).
 							Return(
 								mocks.NewHookMock(t).SetupMock.
@@ -295,7 +295,7 @@ func Test_createHooks(t *testing.T) {
 					},
 					{
 						Name: "hook2",
-						Factory: mocks.NewFactoryMock(t).NewMock.
+						Factory: mocks.NewFactoryMock[plugin.Hook](t).NewMock.
 							Expect(context.Background()).
 							Return(
 								mocks.NewHookMock(t).SetupMock.
@@ -314,7 +314,7 @@ func Test_createHooks(t *testing.T) {
 				factories: HookFactories{
 					{
 						Name:    "hook1",
-						Factory: mocks.NewFactoryMock(t),
+						Factory: mocks.NewFactoryMock[plugin.Hook](t),
 					},
 				},
 			},
@@ -333,7 +333,7 @@ func Test_createHooks(t *testing.T) {
 				factories: HookFactories{
 					{
 						Name: "hook1",
-						Factory: mocks.NewFactoryMock(t).
+						Factory: mocks.NewFactoryMock[plugin.Hook](t).
 							NewMock.
 							Expect(context.Background()).
 							Return(
@@ -354,7 +354,7 @@ func Test_createHooks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, teardown, err := createHooks[pubHook.TransportHook](tt.args.ctx, tt.args.hooksCfg, tt.args.factories)
+			_, teardown, err := createHooks[plugin.TransportHook](tt.args.ctx, tt.args.hooksCfg, tt.args.factories)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createHooks() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -1,4 +1,4 @@
-package hook
+package plugin
 
 import (
 	"context"
@@ -6,8 +6,9 @@ import (
 )
 
 //go:generate minimock -i Factory,TransportHook,Hook -o ../mocks -s _mock.go
-type Factory interface {
-	New(context.Context) (Hook, error)
+
+type Factory[T any] interface {
+	New(context.Context) (T, error)
 }
 
 type Hook interface {

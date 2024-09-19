@@ -2,7 +2,7 @@
 
 package mocks
 
-//go:generate minimock -i github.com/alx99/ika/hook.Hook -o hook_mock.go -n HookMock -p mocks
+//go:generate minimock -i github.com/alx99/ika/plugin.Hook -o hook_mock.go -n HookMock -p mocks
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/gojuno/minimock/v3"
 )
 
-// HookMock implements mm_hook.Hook
+// HookMock implements mm_plugin.Hook
 type HookMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
@@ -33,7 +33,7 @@ type HookMock struct {
 	TeardownMock          mHookMockTeardown
 }
 
-// NewHookMock returns a mock for mm_hook.Hook
+// NewHookMock returns a mock for mm_plugin.Hook
 func NewHookMock(t minimock.Tester) *HookMock {
 	m := &HookMock{t: t}
 
@@ -264,7 +264,7 @@ func (mmSetup *mHookMockSetup) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Setup implements mm_hook.Hook
+// Setup implements mm_plugin.Hook
 func (mmSetup *HookMock) Setup(ctx context.Context, config map[string]any) (err error) {
 	mm_atomic.AddUint64(&mmSetup.beforeSetupCounter, 1)
 	defer mm_atomic.AddUint64(&mmSetup.afterSetupCounter, 1)
@@ -580,7 +580,7 @@ func (mmTeardown *mHookMockTeardown) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// Teardown implements mm_hook.Hook
+// Teardown implements mm_plugin.Hook
 func (mmTeardown *HookMock) Teardown(ctx context.Context) (err error) {
 	mm_atomic.AddUint64(&mmTeardown.beforeTeardownCounter, 1)
 	defer mm_atomic.AddUint64(&mmTeardown.afterTeardownCounter, 1)
