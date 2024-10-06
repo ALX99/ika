@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/alx99/ika/internal/hook"
+	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
 	"github.com/alx99/ika/plugin"
@@ -72,13 +72,13 @@ func run(ctx context.Context, sCfg startCfg) error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	// Setup all factories
-	factories, err := hook.GetFactories(ctx, sCfg.hooks, cfg.Namespaces)
-	if err != nil {
-		return err
+	pCfg := iplugin.NewConfig(cfg)
+
+	if err := pCfg.LoadHooks(ctx, sCfg.hooks); err != nil {
+		return fmt.Errorf("failed to load hooks: %w", err)
 	}
 
-	router, err := router.MakeRouter(ctx, cfg.Namespaces, factories)
+	router, err := router.MakeRouter(ctx, cfg.Namespaces, pCfg)
 	if err != nil {
 		return fmt.Errorf("failed to create router: %w", err)
 	}

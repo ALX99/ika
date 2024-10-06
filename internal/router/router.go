@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/alx99/ika/internal/hook"
+	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/middleware"
 	"github.com/alx99/ika/internal/proxy"
 	pubMW "github.com/alx99/ika/middleware"
@@ -44,7 +44,7 @@ func (r *Router) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook.HookFactories) (*Router, error) {
+func MakeRouter(ctx context.Context, namespaces config.Namespaces, pCfg iplugin.Config) (*Router, error) {
 	slog.Info("Building router", "namespaceCount", len(namespaces))
 	r := &Router{
 		mux: http.NewServeMux(),
@@ -55,7 +55,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 		var transport http.RoundTripper
 		transport = makeTransport(ns.Transport)
 
-		transport, teardown, err := hookFacs.ApplyTspHooks(ctx, ns.Hooks, transport)
+		transport, teardown, err := pCfg.WrapTransport(ctx, ns.Hooks, transport)
 		r.teardown = append(r.teardown, teardown)
 		if err != nil {
 			return nil, errors.Join(err, r.Shutdown(ctx))
@@ -72,7 +72,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 					Backends:       firstNonEmptyArr(routeCfg.Backends, ns.Backends),
 				})
 
-				handler, err := r.applyMiddlewares(ctx, log, hookFacs, p, routeCfg, ns)
+				handler, err := r.applyMiddlewares(ctx, log, pCfg, p, routeCfg, ns)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
@@ -82,7 +82,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
-				handler, teardown, err = hookFacs.ApplyFirstHandlerHook(ctx, ns.Hooks, handler)
+				handler, teardown, err = pCfg.WrapFirstHandler(ctx, ns.Hooks, handler)
 				r.teardown = append(r.teardown, teardown)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
@@ -101,7 +101,7 @@ func MakeRouter(ctx context.Context, namespaces config.Namespaces, hookFacs hook
 }
 
 // applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
-func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, hooks hook.HookFactories, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
+func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, pCfg iplugin.Config, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
 	for mwConfig := range path.MergedMiddlewares(ns) {
 		log.Debug("Setting up middleware", "name", mwConfig.Name)
 		mw, err := middleware.Get(ctx, mwConfig.Name, handler)
@@ -120,7 +120,7 @@ func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, hooks h
 		handler = mw
 
 		var teardown func(context.Context) error
-		handler, teardown, err = hooks.ApplyMiddlewareHooks(ctx, ns.Hooks, mwConfig.Name, handler)
+		handler, teardown, err = pCfg.WrapMiddleware(ctx, ns.Hooks, mwConfig.Name, handler)
 		r.teardown = append(r.teardown, teardown)
 		if err != nil {
 			return nil, err
