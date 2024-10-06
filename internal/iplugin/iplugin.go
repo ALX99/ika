@@ -136,13 +136,18 @@ func createHooks[T any](ctx context.Context, hooksCfg config.Hooks, factories ho
 			if err != nil {
 				return nil, teardown, fmt.Errorf("failed to setup hook %q: %w", factory.name, err)
 			}
-			teardowns = append(teardowns, hook.Teardown)
 
 			handlerHook, ok := hook.(T)
 			if !ok {
+				// wrong type, run teardown and continue
+				if err := hook.Teardown(ctx); err != nil {
+					return nil, teardown, nil
+				}
+
 				continue
 			}
 			hooks = append(hooks, handlerHook)
+			teardowns = append(teardowns, hook.Teardown)
 		}
 	}
 	return hooks, teardown, nil
