@@ -11,8 +11,11 @@ type Factory[T any] interface {
 	New(context.Context) (T, error)
 }
 
-type Hook interface {
+type Setupper interface {
 	Setup(ctx context.Context, config map[string]any) error
+}
+
+type Teardowner interface {
 	Teardown(ctx context.Context) error
 }
 

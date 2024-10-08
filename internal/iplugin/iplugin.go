@@ -16,7 +16,7 @@ type hookFactory struct {
 	name string
 	// namespaces is a list of namespaces where the hook is enabled.
 	namespaces []string
-	plugin.Factory[plugin.Hook]
+	plugin.Factory[any]
 }
 
 type hookFactories []hookFactory
@@ -30,7 +30,7 @@ func NewConfig(cfg config.Config) Config {
 	return Config{cfg: cfg}
 }
 
-func (c *Config) LoadHooks(ctx context.Context, hooks map[string]plugin.Factory[plugin.Hook]) error {
+func (c *Config) LoadEnabledHooks(ctx context.Context, hooks map[string]any) error {
 	var factories hookFactories
 
 	for _, ns := range c.cfg.Namespaces {
@@ -51,10 +51,14 @@ func (c *Config) LoadHooks(ctx context.Context, hooks map[string]plugin.Factory[
 				}
 			}
 			if !added {
+				fac, ok := factory.(plugin.Factory[any])
+				if !ok {
+					return fmt.Errorf("hook %q is not a valid factory", hookCfg.Name)
+				}
 				factories = append(factories, hookFactory{
 					name:       hookCfg.Name,
 					namespaces: []string{ns.Name},
-					Factory:    factory,
+					Factory:    fac,
 				})
 			}
 		}
@@ -132,22 +136,28 @@ func createHooks[T any](ctx context.Context, hooksCfg config.Hooks, factories ho
 				return nil, teardown, fmt.Errorf("failed to create hook %q: %w", factory.name, err)
 			}
 
-			err = hook.Setup(ctx, hookCfg.Config)
-			if err != nil {
-				return nil, teardown, fmt.Errorf("failed to setup hook %q: %w", factory.name, err)
+			if setupHook, ok := hook.(plugin.Setupper); ok {
+				err = setupHook.Setup(ctx, hookCfg.Config)
+				if err != nil {
+					return nil, teardown, fmt.Errorf("failed to setup hook %q: %w", factory.name, err)
+				}
 			}
 
 			handlerHook, ok := hook.(T)
 			if !ok {
 				// wrong type, run teardown and continue
-				if err := hook.Teardown(ctx); err != nil {
-					return nil, teardown, nil
+				if teardownHook, ok := hook.(plugin.Teardowner); ok {
+					if err := teardownHook.Teardown(ctx); err != nil {
+						return nil, teardown, nil
+					}
 				}
 
 				continue
 			}
 			hooks = append(hooks, handlerHook)
-			teardowns = append(teardowns, hook.Teardown)
+			if teardownHook, ok := hook.(plugin.Teardowner); ok {
+				teardowns = append(teardowns, teardownHook.Teardown)
+			}
 		}
 	}
 	return hooks, teardown, nil

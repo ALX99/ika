@@ -16,7 +16,6 @@ import (
 	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
-	"github.com/alx99/ika/plugin"
 	"github.com/lmittmann/tint"
 )
 
@@ -51,8 +50,8 @@ func Run(opts ...Option) {
 		}
 	}()
 
-	cfg := startCfg{
-		hooks: make(map[string]plugin.Factory[plugin.Hook]),
+	cfg := runOpts{
+		hooks: make(map[string]any),
 	}
 	for _, opt := range opts {
 		opt(&cfg)
@@ -66,7 +65,7 @@ func Run(opts ...Option) {
 	}
 }
 
-func run(ctx context.Context, sCfg startCfg) error {
+func run(ctx context.Context, opts runOpts) error {
 	cfg, err := config.Read(*configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config: %w", err)
@@ -74,7 +73,7 @@ func run(ctx context.Context, sCfg startCfg) error {
 
 	pCfg := iplugin.NewConfig(cfg)
 
-	if err := pCfg.LoadHooks(ctx, sCfg.hooks); err != nil {
+	if err := pCfg.LoadEnabledHooks(ctx, opts.hooks); err != nil {
 		return fmt.Errorf("failed to load hooks: %w", err)
 	}
 
