@@ -17,10 +17,10 @@ type pathRewriter interface {
 // indexRewriter is a rewriter that 100% accurately rewrite the request path.
 // This includes totally preserving the original path even if some parts have been encoded.
 type indexRewriter struct {
-	// toPattern is the path which the request will be rewritten
-	toPattern string
 	// segments is a map of segment index to their corresponding replacement
 	segments map[int]string
+	// toPattern is the path which the request will be rewritten
+	toPattern string
 }
 
 func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) indexRewriter {
@@ -49,7 +49,7 @@ func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) 
 }
 
 func (ar indexRewriter) rewrite(r *http.Request) string {
-	args := make([]string, 0, len(ar.segments)*2)
+	args := *strSlicePool.Get().(*[]string)
 	s := strings.Split(r.URL.EscapedPath(), "/")
 
 	for segmentIndex, replace := range ar.segments {
@@ -65,7 +65,12 @@ func (ar indexRewriter) rewrite(r *http.Request) string {
 		args = append(args, replace, s[segmentIndex])
 	}
 
-	return strings.NewReplacer(args...).Replace(ar.toPattern)
+	newPath := strings.NewReplacer(args...).Replace(ar.toPattern)
+
+	clear(args)
+	strSlicePool.Put(&args)
+
+	return newPath
 }
 
 // valueRewriter is a rewriter will rewrite the request path using
@@ -74,10 +79,10 @@ func (ar indexRewriter) rewrite(r *http.Request) string {
 // Specifically for wildcard segments, the segment will be decoded
 // before being replaced in the new path.
 type valueRewriter struct {
-	// toPattern is the path which the request will be rewritten
-	toPattern string
 	// segments is a map of segment names to their corresponding replacement
 	segments map[string]string
+	// toPattern is the path which the request will be rewritten
+	toPattern string
 }
 
 func newValueRewriter(toPattern string) valueRewriter {
@@ -94,7 +99,8 @@ func newValueRewriter(toPattern string) valueRewriter {
 }
 
 func (rw valueRewriter) rewrite(r *http.Request) string {
-	args := make([]string, 0, len(rw.segments)*2)
+	args := *strSlicePool.Get().(*[]string)
+
 	for segName, replace := range rw.segments {
 		if isWildcard(replace) {
 			val := r.PathValue(segName)
@@ -111,7 +117,12 @@ func (rw valueRewriter) rewrite(r *http.Request) string {
 		args = append(args, replace, url.PathEscape(r.PathValue(segName)))
 	}
 
-	return strings.NewReplacer(args...).Replace(rw.toPattern)
+	newPath := strings.NewReplacer(args...).Replace(rw.toPattern)
+
+	clear(args)
+	strSlicePool.Put(&args)
+
+	return newPath
 }
 
 func isWildcard(segment string) bool {

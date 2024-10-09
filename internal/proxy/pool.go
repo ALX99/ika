@@ -2,14 +2,19 @@ package proxy
 
 import "sync"
 
-var pool = &bufferPool{
-	sync.Pool{
-		New: func() any {
-			b := make([]byte, 5*1024)
-			return &b
+var (
+	bufPool = &bufferPool{
+		sync.Pool{
+			New: func() any {
+				b := make([]byte, 5*1024)
+				return &b
+			},
 		},
-	},
-}
+	}
+	strSlicePool = &sync.Pool{
+		New: func() any { return &[]string{} },
+	}
+)
 
 type bufferPool struct{ sync.Pool }
 
