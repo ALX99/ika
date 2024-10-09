@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.23-alpine AS build
 ARG VERSION
 
 WORKDIR /builder
@@ -16,10 +16,13 @@ COPY ./example ./example
 RUN echo "replace github.com/alx99/ika => ../ika">>./example/go.mod
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    cd example && go build -o /bin/ika -ldflags="-X main.version=${VERSION}" ./main.go
+    cd example && CGO_ENABLED=0 go build -o /bin/ika -ldflags="-X main.version=${VERSION}" ./main.go
 
-FROM gcr.io/distroless/static-debian12
+FROM scratch
+COPY --from=build \
+  /etc/ssl/certs/ca-certificates.crt \
+  /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /bin/ika /ika
 
-COPY --from=builder /bin/ika /ika
 
 CMD ["/ika"]

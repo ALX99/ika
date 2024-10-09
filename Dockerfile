@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.23-alpine AS build
 
 COPY go.* ./
 RUN go mod download
@@ -6,10 +6,12 @@ RUN go mod download
 COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    go build -o /bin/ika ./cmd/ika
+    CGO_ENABLED=0 go build -o /bin/ika ./cmd/ika
 
-FROM gcr.io/distroless/static-debian12
-
-COPY --from=builder /bin/ika /ika
+FROM scratch
+COPY --from=build \
+  /etc/ssl/certs/ca-certificates.crt \
+  /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /bin/ika /ika
 
 CMD ["/ika"]
