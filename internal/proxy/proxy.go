@@ -37,8 +37,9 @@ func NewProxy(cfg Config) *Proxy {
 	var rw pathRewriter = newIndexRewriter(cfg.RoutePattern, cfg.IsNamespaced, cfg.RewritePattern.V)
 
 	p.rp = &httputil.ReverseProxy{
-		Transport: p.transport,
-		ErrorLog:  log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
+		BufferPool: pool,
+		Transport:  p.transport,
+		ErrorLog:   log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
 		Rewrite: func(rp *httputil.ProxyRequest) {
 			rp.Out.URL.Scheme = backend.Scheme
 			rp.Out.URL.Host = backend.Host
