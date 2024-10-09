@@ -7,13 +7,27 @@ services:
     command: ["/ika", "-config", "/config.yaml", "-log-format", "text"]
     volumes:
       - ./tests/ika.yaml:/config.yaml
-  krakend:
-    image: devopsfaith/krakend
-    command: ["run", "-c", "/config.json"]
+  # krakend:
+  #   image: devopsfaith/krakend
+  #   command: ["run", "-c", "/config.json"]
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./tests/krakend.json:/config.json
+
+  example:
+    build:
+      context: .
+      dockerfile: ./example/Dockerfile
+      args:
+        VERSION: ${VERSION}
     ports:
-      - "8080:8080"
+      - "1111:8888"
+    env_file: example/.env
+    command: ["/ika", "-config", "/ika.yaml"]
     volumes:
-      - ./tests/krakend.json:/config.json
+      - ./example/ika.yaml:/ika.yaml
+
   httpbun-local:
     image: sharat87/httpbun
     expose: ["80"]

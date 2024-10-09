@@ -16,7 +16,7 @@ type hookFactory struct {
 	name string
 	// namespaces is a list of namespaces where the hook is enabled.
 	namespaces []string
-	plugin.Factory[any]
+	plugin.Factory
 }
 
 type hookFactories []hookFactory
@@ -51,9 +51,9 @@ func (c *Config) LoadEnabledHooks(ctx context.Context, hooks map[string]any) err
 				}
 			}
 			if !added {
-				fac, ok := factory.(plugin.Factory[any])
+				fac, ok := factory.(plugin.Factory)
 				if !ok {
-					return fmt.Errorf("hook %q is not a valid factory", hookCfg.Name)
+					return fmt.Errorf("hook %q is not a valid factory: %T", hookCfg.Name, factory)
 				}
 				factories = append(factories, hookFactory{
 					name:       hookCfg.Name,

@@ -1,4 +1,4 @@
-module example
+module github.com/alx99/ika/example
 
 go 1.23.0
 

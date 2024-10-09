@@ -17,16 +17,16 @@ type Option func(*runOpts)
 // WithHook registers a hook.
 func WithHook[T any](name string, hook T) Option {
 	return func(cfg *runOpts) {
-		if _, ok := any(hook).(plugin.Factory[T]); ok {
+		if _, ok := any(hook).(plugin.Factory); ok {
 			cfg.hooks[name] = hook
 			return
 		}
-		withGeneric(name, noopHookFactory[T]{})(cfg)
+		withGeneric[T](name, noopPluginFactory[T]{})(cfg)
 	}
 }
 
 // withGeneric adds a plugin of any kind
-func withGeneric[T any](name string, factory plugin.Factory[T]) Option {
+func withGeneric[T any](name string, factory any) Option {
 	return func(cfg *runOpts) {
 		var t T
 		if _, ok := any(t).(plugin.TransportHook); ok {
@@ -42,13 +42,15 @@ func withGeneric[T any](name string, factory plugin.Factory[T]) Option {
 			return
 		}
 
-		panic(fmt.Sprintf("register: unknown hook type %T", t))
+		panic(fmt.Sprintf("register: unknown plugin type %T", factory))
 	}
 }
 
-type noopHookFactory[T any] struct{}
+type noopPluginFactory[T any] struct{}
 
-func (noopHookFactory[T]) New(_ context.Context) (T, error) {
-	var hook T
-	return hook, nil
+var _ plugin.Factory = noopPluginFactory[any]{}
+
+func (noopPluginFactory[T]) New(_ context.Context) (any, error) {
+	var plugin T
+	return plugin, nil
 }

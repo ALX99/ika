@@ -3,8 +3,11 @@
 !/internal
 !/middleware
 !/plugin
+!/example
 !go.mod
 !go.sum
 !builder
 !ika.go
 !options.go
+example/go.work
+example/go.work.sum

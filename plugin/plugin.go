@@ -7,8 +7,8 @@ import (
 
 //go:generate minimock -i Factory,TransportHook,Hook -o ../mocks -s _mock.go
 
-type Factory[T any] interface {
-	New(context.Context) (T, error)
+type Factory interface {
+	New(context.Context) (any, error)
 }
 
 type Setupper interface {

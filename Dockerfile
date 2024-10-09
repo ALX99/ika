@@ -1,7 +1,7 @@
 FROM golang:1.23-alpine AS builder
 
 COPY go.* ./
-RUN  go mod download
+RUN go mod download
 
 COPY . .
 
