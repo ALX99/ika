@@ -12,11 +12,6 @@ import (
 	"github.com/alx99/ika/middleware"
 )
 
-type Proxy struct {
-	transport http.RoundTripper
-	rp        *httputil.ReverseProxy
-}
-
 type Config struct {
 	Transport      http.RoundTripper
 	RoutePattern   string
@@ -26,25 +21,23 @@ type Config struct {
 	Backends       []config.Backend
 }
 
-func NewProxy(cfg Config) *Proxy {
+func NewProxy(cfg Config) *httputil.ReverseProxy {
 	backend := cfg.Backends[0]
 	if len(cfg.Backends) > 1 {
 		panic("not implemented")
 	}
 
-	p := &Proxy{transport: cfg.Transport}
-
 	var rw pathRewriter = newIndexRewriter(cfg.RoutePattern, cfg.IsNamespaced, cfg.RewritePattern.V)
 
-	p.rp = &httputil.ReverseProxy{
+	rp := &httputil.ReverseProxy{
 		BufferPool: pool,
-		Transport:  p.transport,
+		Transport:  cfg.Transport,
 		ErrorLog:   log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
 		Rewrite: func(rp *httputil.ProxyRequest) {
 			rp.Out.URL.Scheme = backend.Scheme
 			rp.Out.URL.Host = backend.Host
 			rp.Out.Host = backend.Host
-			// Restore the query even if it can't be parsed (read [httputil.ReverseProxy])
+			// Restore the query even if it can't be parsed (see [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
 			if !cfg.RewritePattern.Set() {
@@ -58,11 +51,7 @@ func NewProxy(cfg Config) *Proxy {
 		},
 	}
 
-	return p
-}
-
-func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p.rp.ServeHTTP(w, r)
+	return rp
 }
 
 // setPath sets the path on the outgoing request
@@ -76,7 +65,7 @@ func setPath(rp *httputil.ProxyRequest, rawPath string) {
 		log.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
 			slog.String("err", err.Error()))
 	} else {
-		// remove qurey params from the path
+		// remove query params from the path
 		rp.Out.URL.Path = strings.SplitN(rp.Out.URL.Path, "?", 2)[0]
 	}
 
