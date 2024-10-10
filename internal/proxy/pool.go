@@ -6,7 +6,7 @@ var (
 	bufPool = &bufferPool{
 		sync.Pool{
 			New: func() any {
-				b := make([]byte, 5*1024)
+				b := make([]byte, 32*1024)
 				return &b
 			},
 		},
