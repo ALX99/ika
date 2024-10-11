@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/alx99/ika/internal/request"
 )
 
 func init() {
@@ -20,8 +22,7 @@ func accessLog(next http.Handler) http.Handler {
 		next.ServeHTTP(st, r)
 		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access",
 			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.String("escapedPath", r.URL.EscapedPath()),
+			slog.String("path", request.GetPath(r)),
 			slog.String("remote", r.RemoteAddr),
 			slog.String("userAgent", r.UserAgent()),
 			slog.Int("status", st.status),

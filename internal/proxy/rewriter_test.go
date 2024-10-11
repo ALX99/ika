@@ -56,7 +56,7 @@ func Test_indexRewriter_rewrite(t *testing.T) {
 				isNamespaced: false,
 				toPattern:    "/baz/{0}",
 			},
-			want: "/baz/foo%2520bar",
+			want: "/baz/foo%20bar",
 		},
 		{
 			name: "rewrite with multiple segments",

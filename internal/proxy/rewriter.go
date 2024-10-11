@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/alx99/ika/internal/request"
 )
 
 // regular expression to match segments in the rewrite path
@@ -50,7 +52,7 @@ func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) 
 
 func (ar indexRewriter) rewrite(r *http.Request) string {
 	args := *strSlicePool.Get().(*[]string)
-	s := strings.Split(r.URL.EscapedPath(), "/")
+	s := strings.Split(request.GetPath(r), "/")
 
 	for segmentIndex, replace := range ar.segments {
 		if segmentIndex >= len(s) {

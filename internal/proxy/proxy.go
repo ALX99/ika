@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/request"
 	"github.com/alx99/ika/middleware"
 )
 
@@ -43,7 +44,7 @@ func NewProxy(cfg Config) *httputil.ReverseProxy {
 			if !cfg.RewritePattern.Set() {
 				// If no rewrite path is set, and the route is namespaced, we will strip the namespace from the path
 				if cfg.IsNamespaced && cfg.Namespace != "root" {
-					setPath(rp, strings.TrimPrefix(rp.In.URL.EscapedPath(), "/"+cfg.Namespace))
+					setPath(rp, strings.TrimPrefix(request.GetPath(rp.In), "/"+cfg.Namespace))
 				}
 				return
 			}
@@ -55,12 +56,12 @@ func NewProxy(cfg Config) *httputil.ReverseProxy {
 }
 
 // setPath sets the path on the outgoing request
-func setPath(rp *httputil.ProxyRequest, rawPath string) {
+func setPath(rp *httputil.ProxyRequest, path string) {
 	log := slog.With(slog.String("namespace", middleware.GetMetadata(rp.In.Context()).Namespace))
 	var err error
-	prevPath := rp.Out.URL.EscapedPath()
-	rp.Out.URL.RawPath = rawPath
-	rp.Out.URL.Path, err = url.PathUnescape(rp.Out.URL.RawPath)
+	prevPath := request.GetPath(rp.Out)
+	rp.Out.URL.RawPath = path
+	rp.Out.URL.Path, err = url.PathUnescape(path)
 	if err != nil {
 		log.LogAttrs(rp.In.Context(), slog.LevelError, "impossible error made possible",
 			slog.String("err", err.Error()))
