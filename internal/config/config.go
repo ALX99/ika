@@ -6,6 +6,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type RunOpts struct {
+	Hooks map[string]any
+}
+
 type Config struct {
 	Server            Server     `yaml:"server"`
 	Namespaces        Namespaces `yaml:"namespaces"`
@@ -28,6 +32,12 @@ func Read(path string) (Config, error) {
 
 	cfg.ApplyOverride()
 	return cfg, nil
+}
+
+func NewRunOpts() RunOpts {
+	return RunOpts{
+		Hooks: make(map[string]any),
+	}
 }
 
 // ApplyOverride applies the NamespaceOverrides to the Config.

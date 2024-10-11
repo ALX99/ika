@@ -50,9 +50,7 @@ func Run(opts ...Option) {
 		}
 	}()
 
-	cfg := runOpts{
-		hooks: make(map[string]any),
-	}
+	cfg := config.NewRunOpts()
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -65,7 +63,7 @@ func Run(opts ...Option) {
 	}
 }
 
-func run(ctx context.Context, opts runOpts) error {
+func run(ctx context.Context, opts config.RunOpts) error {
 	cfg, err := config.Read(*configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config: %w", err)
@@ -73,7 +71,7 @@ func run(ctx context.Context, opts runOpts) error {
 
 	pCfg := iplugin.NewConfig(cfg)
 
-	if err := pCfg.LoadEnabledHooks(ctx, opts.hooks); err != nil {
+	if err := pCfg.LoadEnabledHooks(ctx, opts.Hooks); err != nil {
 		return fmt.Errorf("failed to load hooks: %w", err)
 	}
 

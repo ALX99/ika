@@ -33,7 +33,7 @@ run: build
 
 .PHONY: test
 test:
-	go test -v ./...
+	go test ./...
 
 .PHONY: e2e
 e2e: upd

@@ -4,21 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/plugin"
 )
 
-type runOpts struct {
-	hooks map[string]any
-}
-
 // Option represents an option for Run.
-type Option func(*runOpts)
+type Option func(*config.RunOpts)
 
 // WithHook registers a hook.
 func WithHook[T any](name string, hook T) Option {
-	return func(cfg *runOpts) {
+	return func(cfg *config.RunOpts) {
 		if _, ok := any(hook).(plugin.Factory); ok {
-			cfg.hooks[name] = hook
+			cfg.Hooks[name] = hook
 			return
 		}
 		withGeneric[T](name, noopPluginFactory[T]{})(cfg)
@@ -27,18 +24,18 @@ func WithHook[T any](name string, hook T) Option {
 
 // withGeneric adds a plugin of any kind
 func withGeneric[T any](name string, factory any) Option {
-	return func(cfg *runOpts) {
+	return func(cfg *config.RunOpts) {
 		var t T
 		if _, ok := any(t).(plugin.TransportHook); ok {
-			cfg.hooks[name] = factory
+			cfg.Hooks[name] = factory
 			return
 		}
 		if _, ok := any(t).(plugin.FirstHandlerHook); ok {
-			cfg.hooks[name] = factory
+			cfg.Hooks[name] = factory
 			return
 		}
 		if _, ok := any(t).(plugin.MiddlewareHook); ok {
-			cfg.hooks[name] = factory
+			cfg.Hooks[name] = factory
 			return
 		}
 
