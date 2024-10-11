@@ -67,7 +67,7 @@ func (ar indexRewriter) rewrite(r *http.Request) string {
 
 	newPath := strings.NewReplacer(args...).Replace(ar.toPattern)
 
-	clear(args)
+	args = args[:0]
 	strSlicePool.Put(&args)
 
 	return newPath
@@ -119,7 +119,7 @@ func (rw valueRewriter) rewrite(r *http.Request) string {
 
 	newPath := strings.NewReplacer(args...).Replace(rw.toPattern)
 
-	clear(args)
+	args = args[:0]
 	strSlicePool.Put(&args)
 
 	return newPath
