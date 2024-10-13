@@ -102,7 +102,7 @@ func run(ctx context.Context, opts config.RunOpts) error {
 }
 
 func initLogger() (flush func() error) {
-	w := bufio.NewWriter(os.Stdout)
+	w := bufio.NewWriterSize(os.Stdout, 32*1024)
 	var log *slog.Logger
 	if *logFormat == "text" {
 		log = slog.New(tint.NewHandler(w, &tint.Options{
