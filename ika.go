@@ -15,7 +15,7 @@ import (
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
-	"github.com/lmittmann/tint"
+	"github.com/golang-cz/devslog"
 )
 
 var (
@@ -103,10 +103,21 @@ func initLogger() (flush func() error) {
 	w := bufio.NewWriterSize(os.Stdout, 32*1024)
 	var log *slog.Logger
 	if *logFormat == "text" {
-		log = slog.New(tint.NewHandler(w, &tint.Options{
+		log = slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
-			// AddSource: true,
 		}))
+		if os.Getenv("IKA_DEBUG") != "" {
+			log = slog.New(devslog.NewHandler(w, &devslog.Options{
+				HandlerOptions: &slog.HandlerOptions{
+					Level:     slog.LevelDebug,
+					AddSource: true,
+				},
+			}))
+		}
+		// log = slog.New(tint.NewHandler(w, &tint.Options{
+		// 	Level: slog.LevelDebug,
+		// 	// AddSource: true,
+		// }))
 	} else {
 		log = slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
 			Level: slog.LevelDebug,

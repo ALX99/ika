@@ -7,6 +7,7 @@ services:
     command: ["/ika", "-config", "/config.yaml", "-log-format", "text"]
     volumes:
       - ./tests/ika.yaml:/config.yaml
+    env_file: example/.env
   # krakend:
   #   image: devopsfaith/krakend
   #   command: ["run", "-c", "/config.json"]
