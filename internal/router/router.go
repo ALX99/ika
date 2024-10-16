@@ -55,10 +55,10 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		transport = makeTransport(ns.Transport)
 
 		transport, teardown, err := cfg.WrapTransport(ctx, ns.Hooks, transport)
-		r.teardown = append(r.teardown, teardown)
 		if err != nil {
 			return nil, errors.Join(err, r.Shutdown(ctx))
 		}
+		r.teardown = append(r.teardown, teardown)
 
 		for pattern, routeCfg := range ns.Paths {
 			for _, route := range makeRoutes(pattern, ns, routeCfg) {
@@ -82,10 +82,10 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
 				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Hooks, handler)
-				r.teardown = append(r.teardown, teardown)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
+				r.teardown = append(r.teardown, teardown)
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
 					Namespace:      ns.Name,
@@ -120,10 +120,10 @@ func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, cfg con
 
 		var teardown func(context.Context) error
 		handler, teardown, err = cfg.WrapMiddleware(ctx, ns.Hooks, mwConfig.Name, handler)
-		r.teardown = append(r.teardown, teardown)
 		if err != nil {
 			return nil, err
 		}
+		r.teardown = append(r.teardown, teardown)
 	}
 
 	return handler, nil

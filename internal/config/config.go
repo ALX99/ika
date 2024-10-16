@@ -96,7 +96,7 @@ func (c *Config) loadHooks(factories map[string]HookFactory) error {
 func (c Config) WrapTransport(ctx context.Context, hooksCfg Hooks, tsp http.RoundTripper) (http.RoundTripper, func(context.Context) error, error) {
 	hooks, teardown, err := createHooks[plugin.TransportHook](ctx, hooksCfg, c.hookFactories)
 	if err != nil {
-		return nil, teardown, err
+		return nil, nil, err
 	}
 	for _, hook := range hooks {
 		tsp, err = hook.HookTransport(ctx, tsp)
@@ -110,12 +110,12 @@ func (c Config) WrapTransport(ctx context.Context, hooksCfg Hooks, tsp http.Roun
 func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Hooks, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
 	hooks, teardown, err := createHooks[plugin.MiddlewareHook](ctx, hooksCfg, c.hookFactories)
 	if err != nil {
-		return nil, teardown, err
+		return nil, nil, err
 	}
 	for _, hook := range hooks {
 		handler, err = hook.HookMiddleware(ctx, mwName, handler)
 		if err != nil {
-			return nil, teardown, fmt.Errorf("failed to apply hook: %w", err)
+			return nil, nil, fmt.Errorf("failed to apply hook: %w", err)
 		}
 	}
 	return handler, teardown, nil
@@ -151,9 +151,7 @@ func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []HookFac
 	teardown := func(ctx context.Context) error {
 		var err error
 		for _, t := range teardowns {
-			if e := t(ctx); e != nil {
-				err = errors.Join(err, e)
-			}
+			err = errors.Join(err, t(ctx))
 		}
 		return err
 	}
@@ -171,19 +169,28 @@ func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []HookFac
 
 			hook, err := factory.Factory.New(ctx)
 			if err != nil {
-				return nil, teardown, fmt.Errorf("failed to create hook %q: %w", factory.name, err)
+				return nil, nil, errors.Join(
+					fmt.Errorf("failed to create hook %q: %w", factory.name, err),
+					teardown(ctx),
+				)
 			}
 
 			if setupHook, ok := hook.(plugin.Setupper); ok {
 				err = setupHook.Setup(ctx, hookCfg.Config)
 				if err != nil {
-					return nil, teardown, fmt.Errorf("failed to setup hook %q: %w", factory.name, err)
+					return nil, nil, errors.Join(
+						fmt.Errorf("failed to setup hook %q: %w", factory.name, err),
+						teardown(ctx),
+					)
 				}
 			}
 
 			handlerHook, ok := hook.(T)
 			if !ok {
-				return nil, teardown, errors.New("developer error: failed to cast hook")
+				return nil, nil, errors.Join(
+					errors.New("developer error: failed to cast hook"),
+					teardown(ctx),
+				)
 			}
 			hooks = append(hooks, handlerHook)
 			if teardownHook, ok := hook.(plugin.Teardowner); ok {
