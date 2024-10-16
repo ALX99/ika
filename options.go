@@ -3,6 +3,7 @@ package ika
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/plugin"
@@ -14,8 +15,12 @@ type Option func(*config.RunOpts)
 // WithHook registers a hook.
 func WithHook[T any](name string, hook T) Option {
 	return func(cfg *config.RunOpts) {
+		var t T
 		if fac, ok := any(hook).(plugin.Factory); ok {
-			cfg.Hooks[name] = fac
+			cfg.Hooks[name] = config.HookFactory{
+				HookVal: reflect.ValueOf(t),
+				Factory: fac,
+			}
 			return
 		}
 		withGeneric[T](name, noopPluginFactory[T]{})(cfg)
@@ -27,15 +32,24 @@ func withGeneric[T any](name string, factory plugin.Factory) Option {
 	return func(cfg *config.RunOpts) {
 		var t T
 		if _, ok := any(t).(plugin.TransportHook); ok {
-			cfg.Hooks[name] = factory
+			cfg.Hooks[name] = config.HookFactory{
+				HookVal: reflect.ValueOf(t),
+				Factory: factory,
+			}
 			return
 		}
 		if _, ok := any(t).(plugin.FirstHandlerHook); ok {
-			cfg.Hooks[name] = factory
+			cfg.Hooks[name] = config.HookFactory{
+				HookVal: reflect.ValueOf(t),
+				Factory: factory,
+			}
 			return
 		}
 		if _, ok := any(t).(plugin.MiddlewareHook); ok {
-			cfg.Hooks[name] = factory
+			cfg.Hooks[name] = config.HookFactory{
+				HookVal: reflect.ValueOf(t),
+				Factory: factory,
+			}
 			return
 		}
 

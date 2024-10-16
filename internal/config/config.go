@@ -6,14 +6,25 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"slices"
 
 	"github.com/alx99/ika/plugin"
 	"gopkg.in/yaml.v3"
 )
 
+type HookFactory struct {
+	HookVal reflect.Value
+	Factory plugin.Factory
+
+	// name of the hook
+	name string
+	// namespaces is a list of namespaces where the hook is enabled
+	namespaces []string
+}
+
 type RunOpts struct {
-	Hooks map[string]plugin.Factory
+	Hooks map[string]HookFactory
 }
 
 type Config struct {
@@ -23,15 +34,7 @@ type Config struct {
 	Ika               Ika        `yaml:"ika"`
 
 	// runtime configuration
-	hookFactories []hookFactory
-}
-
-type hookFactory struct {
-	// name of the hook
-	name string
-	// namespaces is a list of namespaces where the hook is enabled.
-	namespaces []string
-	plugin.Factory
+	hookFactories []HookFactory
 }
 
 func Read(path string) (Config, error) {
@@ -53,7 +56,7 @@ func Read(path string) (Config, error) {
 
 func NewRunOpts() RunOpts {
 	return RunOpts{
-		Hooks: make(map[string]plugin.Factory),
+		Hooks: make(map[string]HookFactory),
 	}
 }
 
@@ -65,42 +68,27 @@ func (c *Config) SetRuntimeOpts(opts RunOpts) error {
 	return nil
 }
 
-func (c *Config) loadHooks(hooks map[string]plugin.Factory) error {
-	var factories []hookFactory
-
+func (c *Config) loadHooks(factories map[string]HookFactory) error {
 	for _, ns := range c.Namespaces {
 		for hookCfg := range ns.Hooks.Enabled() {
 			// Try to find the factory
-			factory, ok := hooks[hookCfg.Name]
+			factory, ok := factories[hookCfg.Name]
 			if !ok {
 				return fmt.Errorf("hook %q not found", hookCfg.Name)
 			}
 
-			added := false
-			for i := range factories {
-				if factories[i].name != hookCfg.Name {
-					continue
-				}
-
-				if !slices.Contains(factories[i].namespaces, ns.Name) {
-					factories[i].namespaces = append(factories[i].namespaces, ns.Name)
-					break
-				}
-				added = true
-			}
-
-			if added {
-				continue // it was already added
-			}
-
-			factories = append(factories, hookFactory{
-				name:       hookCfg.Name,
-				namespaces: []string{ns.Name},
-				Factory:    factory,
-			})
+			// Update information
+			factory.name = hookCfg.Name
+			factory.namespaces = slices.Compact(append(factory.namespaces, ns.Name))
+			factories[hookCfg.Name] = factory
 		}
 	}
-	c.hookFactories = factories
+
+	for _, factory := range factories {
+		if factory.namespaces != nil {
+			c.hookFactories = append(c.hookFactories, factory)
+		}
+	}
 
 	return nil
 }
@@ -156,7 +144,7 @@ func (c *Config) ApplyOverride() {
 }
 
 // createHooks creates hooks for the given namespace.
-func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []hookFactory) ([]T, func(context.Context) error, error) {
+func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []HookFactory) ([]T, func(context.Context) error, error) {
 	var hooks []T
 	var teardowns []func(context.Context) error
 
@@ -176,7 +164,11 @@ func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []hookFac
 				continue
 			}
 
-			hook, err := factory.New(ctx)
+			if _, ok := factory.HookVal.Interface().(T); !ok {
+				continue
+			}
+
+			hook, err := factory.Factory.New(ctx)
 			if err != nil {
 				return nil, teardown, fmt.Errorf("failed to create hook %q: %w", factory.name, err)
 			}
@@ -190,14 +182,7 @@ func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []hookFac
 
 			handlerHook, ok := hook.(T)
 			if !ok {
-				// wrong type, run teardown and continue
-				if teardownHook, ok := hook.(plugin.Teardowner); ok {
-					if err := teardownHook.Teardown(ctx); err != nil {
-						return nil, teardown, nil
-					}
-				}
-
-				continue
+				return nil, teardown, errors.New("developer error: failed to cast hook")
 			}
 			hooks = append(hooks, handlerHook)
 			if teardownHook, ok := hook.(plugin.Teardowner); ok {
