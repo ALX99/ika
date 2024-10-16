@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
 	"github.com/lmittmann/tint"
@@ -69,13 +68,12 @@ func run(ctx context.Context, opts config.RunOpts) error {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
 
-	pCfg := iplugin.NewConfig(cfg)
-
-	if err := pCfg.LoadEnabledHooks(ctx, opts.Hooks); err != nil {
-		return fmt.Errorf("failed to load hooks: %w", err)
+	err = cfg.SetRuntimeOpts(opts)
+	if err != nil {
+		return fmt.Errorf("failed to set runtime options: %w", err)
 	}
 
-	router, err := router.MakeRouter(ctx, cfg.Namespaces, pCfg)
+	router, err := router.MakeRouter(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create router: %w", err)
 	}
