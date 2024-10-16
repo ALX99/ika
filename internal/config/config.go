@@ -13,7 +13,7 @@ import (
 )
 
 type RunOpts struct {
-	Hooks map[string]any
+	Hooks map[string]plugin.Factory
 }
 
 type Config struct {
@@ -53,7 +53,7 @@ func Read(path string) (Config, error) {
 
 func NewRunOpts() RunOpts {
 	return RunOpts{
-		Hooks: make(map[string]any),
+		Hooks: make(map[string]plugin.Factory),
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *Config) SetRuntimeOpts(opts RunOpts) error {
 	return nil
 }
 
-func (c *Config) loadHooks(hooks map[string]any) error {
+func (c *Config) loadHooks(hooks map[string]plugin.Factory) error {
 	var factories []hookFactory
 
 	for _, ns := range c.Namespaces {
@@ -93,14 +93,10 @@ func (c *Config) loadHooks(hooks map[string]any) error {
 				continue // it was already added
 			}
 
-			fac, ok := factory.(plugin.Factory)
-			if !ok {
-				return fmt.Errorf("hook %q of type %T is not a valid factory", hookCfg.Name, factory)
-			}
 			factories = append(factories, hookFactory{
 				name:       hookCfg.Name,
 				namespaces: []string{ns.Name},
-				Factory:    fac,
+				Factory:    factory,
 			})
 		}
 	}
