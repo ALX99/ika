@@ -54,7 +54,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		var transport http.RoundTripper
 		transport = makeTransport(ns.Transport)
 
-		transport, teardown, err := cfg.WrapTransport(ctx, ns.Hooks, transport)
+		transport, teardown, err := cfg.WrapTransport(ctx, ns.Plugins, transport)
 		if err != nil {
 			return nil, errors.Join(err, r.Shutdown(ctx))
 		}
@@ -81,7 +81,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					"namespace", ns.Name,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
-				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Hooks, handler)
+				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Plugins, handler)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
@@ -119,7 +119,7 @@ func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, cfg con
 		handler = mw
 
 		var teardown func(context.Context) error
-		handler, teardown, err = cfg.WrapMiddleware(ctx, ns.Hooks, mwConfig.Name, handler)
+		handler, teardown, err = cfg.WrapMiddleware(ctx, ns.Plugins, mwConfig.Name, handler)
 		if err != nil {
 			return nil, err
 		}

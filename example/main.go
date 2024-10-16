@@ -45,7 +45,7 @@ func init() {
 
 func main() {
 	defer setupMonitoring()()
-	ika.Run(ika.WithHook("tracer", &tracer{}))
+	ika.Run(ika.WithPlugin("tracer", &tracer{}))
 }
 
 type tracer struct{}

@@ -6,20 +6,20 @@ import (
 	"reflect"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/alx99/ika/plugin"
+	pplugin "github.com/alx99/ika/plugin"
 )
 
 // Option represents an option for Run.
 type Option func(*config.RunOpts)
 
-// WithHook registers a hook.
-func WithHook[T any](name string, hook T) Option {
+// WithPlugin registers a plugin.
+func WithPlugin[T any](name string, plugin T) Option {
 	return func(cfg *config.RunOpts) {
 		var t T
-		if fac, ok := any(hook).(plugin.Factory); ok {
-			cfg.Hooks[name] = config.HookFactory{
-				HookVal: reflect.ValueOf(t),
-				Factory: fac,
+		if fac, ok := any(plugin).(pplugin.Factory); ok {
+			cfg.Plugins[name] = config.PluginFactory{
+				PluginVal: reflect.ValueOf(t),
+				Factory:   fac,
 			}
 			return
 		}
@@ -28,27 +28,27 @@ func WithHook[T any](name string, hook T) Option {
 }
 
 // withGeneric adds a plugin of any kind
-func withGeneric[T any](name string, factory plugin.Factory) Option {
+func withGeneric[T any](name string, factory pplugin.Factory) Option {
 	return func(cfg *config.RunOpts) {
 		var t T
-		if _, ok := any(t).(plugin.TransportHook); ok {
-			cfg.Hooks[name] = config.HookFactory{
-				HookVal: reflect.ValueOf(t),
-				Factory: factory,
+		if _, ok := any(t).(pplugin.TransportHook); ok {
+			cfg.Plugins[name] = config.PluginFactory{
+				PluginVal: reflect.ValueOf(t),
+				Factory:   factory,
 			}
 			return
 		}
-		if _, ok := any(t).(plugin.FirstHandlerHook); ok {
-			cfg.Hooks[name] = config.HookFactory{
-				HookVal: reflect.ValueOf(t),
-				Factory: factory,
+		if _, ok := any(t).(pplugin.FirstHandlerHook); ok {
+			cfg.Plugins[name] = config.PluginFactory{
+				PluginVal: reflect.ValueOf(t),
+				Factory:   factory,
 			}
 			return
 		}
-		if _, ok := any(t).(plugin.MiddlewareHook); ok {
-			cfg.Hooks[name] = config.HookFactory{
-				HookVal: reflect.ValueOf(t),
-				Factory: factory,
+		if _, ok := any(t).(pplugin.MiddlewareHook); ok {
+			cfg.Plugins[name] = config.PluginFactory{
+				PluginVal: reflect.ValueOf(t),
+				Factory:   factory,
 			}
 			return
 		}
@@ -59,7 +59,7 @@ func withGeneric[T any](name string, factory plugin.Factory) Option {
 
 type noopPluginFactory[T any] struct{}
 
-var _ plugin.Factory = noopPluginFactory[any]{}
+var _ pplugin.Factory = noopPluginFactory[any]{}
 
 func (noopPluginFactory[T]) New(_ context.Context) (any, error) {
 	var plugin T

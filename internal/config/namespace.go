@@ -13,7 +13,7 @@ type (
 		Transport              Transport      `yaml:"transport"`
 		Paths                  Paths          `yaml:"paths"`
 		Middlewares            Middlewares    `yaml:"middlewares"`
-		Hooks                  Hooks          `yaml:"hooks"`
+		Plugins                Plugins        `yaml:"plugins"`
 		Hosts                  []string       `yaml:"hosts"`
 		DisableNamespacedPaths Nullable[bool] `yaml:"disableNamespacedPaths"`
 	}

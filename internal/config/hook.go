@@ -5,17 +5,17 @@ import (
 )
 
 type (
-	Hook struct {
+	Plugin struct {
 		Name    string         `yaml:"name"`
 		Enabled Nullable[bool] `yaml:"enabled"`
 		Config  map[string]any `yaml:"config"`
 	}
-	Hooks []Hook
+	Plugins []Plugin
 )
 
-// Enabled returns an iterator that yields all Enabled hooks.
-func (h Hooks) Enabled() iter.Seq[Hook] {
-	return func(yield func(Hook) bool) {
+// Enabled returns an iterator that yields all Enabled plugins.
+func (h Plugins) Enabled() iter.Seq[Plugin] {
+	return func(yield func(Plugin) bool) {
 		for _, h := range h {
 			if h.Enabled.Or(true) {
 				if !yield(h) {

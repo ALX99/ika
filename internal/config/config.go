@@ -9,22 +9,22 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/alx99/ika/plugin"
+	pplugin "github.com/alx99/ika/plugin"
 	"gopkg.in/yaml.v3"
 )
 
-type HookFactory struct {
-	HookVal reflect.Value
-	Factory plugin.Factory
+type PluginFactory struct {
+	PluginVal reflect.Value
+	Factory   pplugin.Factory
 
-	// name of the hook
+	// name of the plugin
 	name string
-	// namespaces is a list of namespaces where the hook is enabled
+	// namespaces is a list of namespaces where the plugin is enabled
 	namespaces []string
 }
 
 type RunOpts struct {
-	Hooks map[string]HookFactory
+	Plugins map[string]PluginFactory
 }
 
 type Config struct {
@@ -34,7 +34,7 @@ type Config struct {
 	Ika               Ika        `yaml:"ika"`
 
 	// runtime configuration
-	hookFactories []HookFactory
+	pluginFactories []PluginFactory
 }
 
 func Read(path string) (Config, error) {
@@ -56,45 +56,45 @@ func Read(path string) (Config, error) {
 
 func NewRunOpts() RunOpts {
 	return RunOpts{
-		Hooks: make(map[string]HookFactory),
+		Plugins: make(map[string]PluginFactory),
 	}
 }
 
 func (c *Config) SetRuntimeOpts(opts RunOpts) error {
-	if err := c.loadHooks(opts.Hooks); err != nil {
+	if err := c.loadPlugins(opts.Plugins); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Config) loadHooks(factories map[string]HookFactory) error {
+func (c *Config) loadPlugins(factories map[string]PluginFactory) error {
 	for _, ns := range c.Namespaces {
-		for hookCfg := range ns.Hooks.Enabled() {
+		for cfg := range ns.Plugins.Enabled() {
 			// Try to find the factory
-			factory, ok := factories[hookCfg.Name]
+			factory, ok := factories[cfg.Name]
 			if !ok {
-				return fmt.Errorf("hook %q not found", hookCfg.Name)
+				return fmt.Errorf("plugin %q not found", cfg.Name)
 			}
 
 			// Update information
-			factory.name = hookCfg.Name
+			factory.name = cfg.Name
 			factory.namespaces = slices.Compact(append(factory.namespaces, ns.Name))
-			factories[hookCfg.Name] = factory
+			factories[cfg.Name] = factory
 		}
 	}
 
 	for _, factory := range factories {
 		if factory.namespaces != nil {
-			c.hookFactories = append(c.hookFactories, factory)
+			c.pluginFactories = append(c.pluginFactories, factory)
 		}
 	}
 
 	return nil
 }
 
-func (c Config) WrapTransport(ctx context.Context, hooksCfg Hooks, tsp http.RoundTripper) (http.RoundTripper, func(context.Context) error, error) {
-	hooks, teardown, err := createHooks[plugin.TransportHook](ctx, hooksCfg, c.hookFactories)
+func (c Config) WrapTransport(ctx context.Context, pluginsCfg Plugins, tsp http.RoundTripper) (http.RoundTripper, func(context.Context) error, error) {
+	hooks, teardown, err := createPlugins[pplugin.TransportHook](ctx, pluginsCfg, c.pluginFactories)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -107,8 +107,8 @@ func (c Config) WrapTransport(ctx context.Context, hooksCfg Hooks, tsp http.Roun
 	return tsp, teardown, nil
 }
 
-func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Hooks, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
-	hooks, teardown, err := createHooks[plugin.MiddlewareHook](ctx, hooksCfg, c.hookFactories)
+func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Plugins, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
+	hooks, teardown, err := createPlugins[pplugin.MiddlewareHook](ctx, hooksCfg, c.pluginFactories)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -121,8 +121,8 @@ func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Hooks, mwName strin
 	return handler, teardown, nil
 }
 
-func (c Config) WrapFirstHandler(ctx context.Context, hooksCfg Hooks, handler http.Handler) (http.Handler, func(context.Context) error, error) {
-	hooks, teardown, err := createHooks[plugin.FirstHandlerHook](ctx, hooksCfg, c.hookFactories)
+func (c Config) WrapFirstHandler(ctx context.Context, hooksCfg Plugins, handler http.Handler) (http.Handler, func(context.Context) error, error) {
+	hooks, teardown, err := createPlugins[pplugin.FirstHandlerHook](ctx, hooksCfg, c.pluginFactories)
 	if err != nil {
 		return nil, teardown, err
 	}
@@ -143,9 +143,9 @@ func (c *Config) ApplyOverride() {
 	}
 }
 
-// createHooks creates hooks for the given namespace.
-func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []HookFactory) ([]T, func(context.Context) error, error) {
-	var hooks []T
+// createPlugins creates plugins for the given namespace.
+func createPlugins[T any](ctx context.Context, pluginsCfg Plugins, factories []PluginFactory) ([]T, func(context.Context) error, error) {
+	var plugins []T
 	var teardowns []func(context.Context) error
 
 	teardown := func(ctx context.Context) error {
@@ -156,47 +156,47 @@ func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []HookFac
 		return err
 	}
 
-	for hookCfg := range hooksCfg.Enabled() {
+	for pluginCfg := range pluginsCfg.Enabled() {
 		for _, factory := range factories {
-			if factory.name != hookCfg.Name {
+			if factory.name != pluginCfg.Name {
 				continue
 			}
 
-			if _, ok := factory.HookVal.Interface().(T); !ok {
+			if _, ok := factory.PluginVal.Interface().(T); !ok {
 				var t T
-				return nil, teardown, fmt.Errorf("plugin %q of type %T does not implement %T", factory.name, factory.HookVal.Interface(), t)
+				return nil, teardown, fmt.Errorf("plugin %q of type %T does not implement %T", factory.name, factory.PluginVal.Interface(), t)
 			}
 
-			hook, err := factory.Factory.New(ctx)
+			plugin, err := factory.Factory.New(ctx)
 			if err != nil {
 				return nil, nil, errors.Join(
-					fmt.Errorf("failed to create hook %q: %w", factory.name, err),
+					fmt.Errorf("failed to create plugin %q: %w", factory.name, err),
 					teardown(ctx),
 				)
 			}
 
-			if setupHook, ok := hook.(plugin.Setupper); ok {
-				err = setupHook.Setup(ctx, hookCfg.Config)
+			if setupper, ok := plugin.(pplugin.Setupper); ok {
+				err = setupper.Setup(ctx, pluginCfg.Config)
 				if err != nil {
 					return nil, nil, errors.Join(
-						fmt.Errorf("failed to setup hook %q: %w", factory.name, err),
+						fmt.Errorf("failed to setup plugin %q: %w", factory.name, err),
 						teardown(ctx),
 					)
 				}
 			}
 
-			handlerHook, ok := hook.(T)
+			typedPlugin, ok := plugin.(T)
 			if !ok {
 				return nil, nil, errors.Join(
-					errors.New("developer error: failed to cast hook"),
+					errors.New("developer error: failed to cast plugin"),
 					teardown(ctx),
 				)
 			}
-			hooks = append(hooks, handlerHook)
-			if teardownHook, ok := hook.(plugin.Teardowner); ok {
-				teardowns = append(teardowns, teardownHook.Teardown)
+			plugins = append(plugins, typedPlugin)
+			if teardowner, ok := plugin.(pplugin.Teardowner); ok {
+				teardowns = append(teardowns, teardowner.Teardown)
 			}
 		}
 	}
-	return hooks, teardown, nil
+	return plugins, teardown, nil
 }
