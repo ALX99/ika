@@ -165,7 +165,8 @@ func createHooks[T any](ctx context.Context, hooksCfg Hooks, factories []HookFac
 			}
 
 			if _, ok := factory.HookVal.Interface().(T); !ok {
-				continue
+				var t T
+				return nil, teardown, fmt.Errorf("plugin %q of type %T does not implement %T", factory.name, factory.HookVal.Interface(), t)
 			}
 
 			hook, err := factory.Factory.New(ctx)
