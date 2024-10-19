@@ -69,7 +69,7 @@ func (c *Config) SetRuntimeOpts(opts RunOpts) error {
 }
 
 func (c *Config) loadPlugins(factories map[string]PluginFactory) error {
-	for _, ns := range c.Namespaces {
+	for nsName, ns := range c.Namespaces {
 		for cfg := range ns.Plugins.Enabled() {
 			// Try to find the factory
 			factory, ok := factories[cfg.Name]
@@ -79,7 +79,7 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory) error {
 
 			// Update information
 			factory.name = cfg.Name
-			factory.namespaces = slices.Compact(append(factory.namespaces, ns.Name))
+			factory.namespaces = slices.Compact(append(factory.namespaces, nsName))
 			factories[cfg.Name] = factory
 		}
 	}

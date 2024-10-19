@@ -49,8 +49,8 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		mux: http.NewServeMux(),
 	}
 
-	for _, ns := range cfg.Namespaces {
-		log := slog.With(slog.String("namespace", ns.Name))
+	for nsName, ns := range cfg.Namespaces {
+		log := slog.With(slog.String("namespace", nsName))
 		var transport http.RoundTripper
 		transport = makeTransport(ns.Transport)
 
@@ -61,12 +61,12 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		r.teardown = append(r.teardown, teardown)
 
 		for pattern, routeCfg := range ns.Paths {
-			for _, route := range makeRoutes(pattern, ns, routeCfg) {
+			for _, route := range makeRoutes(pattern, nsName, ns, routeCfg) {
 				p := proxy.NewProxy(proxy.Config{
 					Transport:      transport,
 					RoutePattern:   pattern,
 					IsNamespaced:   route.isNamespaced,
-					Namespace:      ns.Name,
+					Namespace:      nsName,
 					RewritePattern: routeCfg.RewritePath,
 					Backends:       firstNonEmptyArr(routeCfg.Backends, ns.Backends),
 				})
@@ -78,7 +78,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 				log.Debug("Setting up path",
 					"pattern", route,
-					"namespace", ns.Name,
+					"namespace", nsName,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
 				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Plugins, handler)
@@ -88,7 +88,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				r.teardown = append(r.teardown, teardown)
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
-					Namespace:      ns.Name,
+					Namespace:      nsName,
 					Route:          pattern,
 					GeneratedRoute: route.pattern,
 				}, handler))
@@ -139,10 +139,10 @@ func firstNonEmptyArr[T any](vs ...[]T) []T {
 	return empty
 }
 
-func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePattern {
+func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path) []routePattern {
 	var patterns []routePattern
 	sb := strings.Builder{}
-	isNamespaced := !ns.IsRoot()
+	isNamespaced := nsName != "root"
 
 	// if the routepattern is empty, it is impossible to route by hosts
 	// since 'example.com' is not a valid route for example
@@ -155,7 +155,7 @@ func makeRoutes(rp string, ns config.Namespace, route config.Path) []routePatter
 		if isRoot {
 			// Add namespaced route
 			sb.WriteString("/")
-			sb.WriteString(ns.Name)
+			sb.WriteString(nsName)
 			sb.WriteString(rp)
 		} else {
 			sb.WriteString(rp)
