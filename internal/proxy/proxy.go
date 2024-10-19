@@ -45,7 +45,7 @@ func NewProxy(cfg Config) *httputil.ReverseProxy {
 			if !cfg.RewritePattern.Set() {
 				// If no rewrite path is set, and the route is namespaced, we will strip the namespace from the path
 				if cfg.IsNamespaced && cfg.Namespace != "root" {
-					setPath(rp, strings.TrimPrefix(request.GetPath(rp.In), "/"+cfg.Namespace))
+					setPath(rp, strings.TrimPrefix(request.GetPath(rp.In), cfg.Namespace))
 				}
 				return
 			}

@@ -5,7 +5,7 @@ server:
   addr: :8888
 
 namespaces:
-  example:
+  /example:
     plugins:
       - name: tracer
     backends:
@@ -19,12 +19,9 @@ namespaces:
     paths:
       /: {}
 
-  google-proxy:
+  google.dozy.dev: &google-proxy
     plugins:
       - name: tracer
-    hosts:
-      - ika-demo.onrender.com
-      - google.dozy.dev
     backends:
       - host: www.google.com
         scheme: https
@@ -33,11 +30,13 @@ namespaces:
     paths:
       /: {}
       /maps/: {}
-  go-proxy:
+
+  ika-demo.onrender.com:
+    <<: *google-proxy
+
+  go.dozy.dev:
     plugins:
       - name: tracer
-    hosts:
-      - go.dozy.dev
     backends:
       - host: go.dev
         scheme: https

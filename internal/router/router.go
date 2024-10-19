@@ -141,68 +141,41 @@ func firstNonEmptyArr[T any](vs ...[]T) []T {
 func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path) []routePattern {
 	var patterns []routePattern
 	sb := strings.Builder{}
-	isNamespaced := nsName != "root"
+	isRoot := nsName == "root"
+	isHost := nsName[0] != '/' && !isRoot
+	isNamespaced := !isHost && !isRoot
 
-	// if the routepattern is empty, it is impossible to route by hosts
-	// since 'example.com' is not a valid route for example
-	if rp == "" {
-		ns.Hosts = []string{}
+	// impossible to register a route like this
+	if isHost && rp == "" {
+		return patterns
 	}
 
-	// writeNamespacedRoute writes the namespaced route if isRoot is false, otherwise it writes the route pattern
-	writeNamespacedRoute := func(isRoot bool) {
-		if isRoot {
-			// Add namespaced route
-			sb.WriteString("/")
+	// writeRoute writes the namespaced route if isRoot is false, otherwise it writes the route pattern
+	writeRoute := func() {
+		if isNamespaced {
+			sb.WriteString(nsName)
+			sb.WriteString(rp)
+		} else if isHost {
 			sb.WriteString(nsName)
 			sb.WriteString(rp)
 		} else {
+			// must be root namespace
 			sb.WriteString(rp)
-		}
-	}
-
-	if len(ns.Hosts) == 0 {
-		if ns.DisableNamespacedPaths.V {
-			return patterns // nothing to do
 		}
 	}
 
 	if len(route.Methods) == 0 {
-		if !ns.DisableNamespacedPaths.V {
-			writeNamespacedRoute(isNamespaced)
-			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
-		}
-
-		for _, host := range ns.Hosts {
-			sb.Reset()
-			sb.WriteString(string(host))
-			sb.WriteString(rp)
-			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: false})
-		}
+		writeRoute()
+		patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
+		return patterns
 	}
 
 	for _, method := range route.Methods {
-		sb.Reset()
 		sb.WriteString(string(method))
 		sb.WriteString(" ")
 
-		if !ns.DisableNamespacedPaths.V {
-			backup := sb.String()
-			writeNamespacedRoute(isNamespaced)
-			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
-			sb.Reset()
-			sb.WriteString(backup)
-		}
-
-		backup := sb.String()
-		for _, host := range ns.Hosts {
-			sb.Reset()
-			sb.WriteString(backup)
-
-			sb.WriteString(string(host))
-			sb.WriteString(rp)
-			patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: false})
-		}
+		writeRoute()
+		patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
 	}
 
 	return patterns

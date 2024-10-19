@@ -185,17 +185,6 @@
         "^[a-zA-Z0-9]+$": {
           "type": "object",
           "properties": {
-            "disableNamespacedPaths": {
-              "type": "boolean",
-              "description": "If true, disables automatically prepending \"/namespace-name\" to all paths without at least one host specified."
-            },
-            "hosts": {
-              "description": "Allowed hosts for this namespace",
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
             "backends": {
               "type": "array",
               "description": "Specify the backends that will be used by default for all routes.",

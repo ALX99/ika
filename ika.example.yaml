@@ -19,9 +19,6 @@ namespaceOverrides:
 
 namespaces:
   api:
-    # Don't allow namespaced paths
-    disableNamespacedPaths: true
-    hosts: [api.myapp.com]
     backends:
       - host: api-backend
         scheme: https
@@ -40,7 +37,6 @@ namespaces:
         rewritePath: /orders  # Rewrite to base orders endpoint
 
   admin:
-    hosts: [admin.myapp.com]
     backends:
       - host: admin-backend
         scheme: https
@@ -59,7 +55,6 @@ namespaces:
         rewritePath: /admin/users  # Admin manage users endpoint
 
   public:
-    hosts: [www.myapp.com]
     backends:
       - host: public-backend
         scheme: https

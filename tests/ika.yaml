@@ -11,8 +11,7 @@ namespaces:
         scheme: http
     paths:
       /headers: {}
-  testns1:
-    hosts: [testns1.com]
+  testns1.com: &testns1
     backends:
       - host: httpbun-local
         scheme: http
@@ -40,7 +39,11 @@ namespaces:
       /terminated/{any}/{$}:
         methods: [GET]
         rewritePath: /any
-  testns2:
+
+  /testns1:
+    <<: *testns1
+
+  /testns2:
     backends:
       - host: httpbun-local
         scheme: http
@@ -48,9 +51,8 @@ namespaces:
     - name: accessLog
     paths:
       /any/{any...}: {}
-  passthrough:
-    hosts:
-      - passthrough.com
+
+  passthrough.com: &passthrough
     backends:
       - host: httpbun-local
         scheme: http
@@ -59,3 +61,6 @@ namespaces:
     paths:
       "": {}
       "/": {}
+
+  /passthrough:
+    <<: *passthrough
