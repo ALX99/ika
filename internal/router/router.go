@@ -11,8 +11,10 @@ import (
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/middleware"
+	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/proxy"
 	pubMW "github.com/alx99/ika/middleware"
+	"github.com/valyala/bytebufferpool"
 )
 
 type Router struct {
@@ -50,6 +52,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 	}
 
 	for nsName, ns := range cfg.Namespaces {
+		bPool := &pool.BufferPool{Pool: bytebufferpool.Pool{}}
 		log := slog.With(slog.String("namespace", nsName))
 		var transport http.RoundTripper
 		transport = makeTransport(ns.Transport)
@@ -69,6 +72,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Namespace:      nsName,
 					RewritePattern: routeCfg.RewritePath,
 					Backends:       firstNonEmptyArr(routeCfg.Backends, ns.Backends),
+					BufferPool:     bPool,
 				})
 
 				handler, err := r.applyMiddlewares(ctx, log, cfg, p, routeCfg, ns)

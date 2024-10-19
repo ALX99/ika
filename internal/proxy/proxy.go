@@ -11,7 +11,6 @@ import (
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/request"
 	"github.com/alx99/ika/middleware"
-	"github.com/valyala/bytebufferpool"
 )
 
 type Config struct {
@@ -21,6 +20,7 @@ type Config struct {
 	Namespace      string
 	RewritePattern config.Nullable[string]
 	Backends       []config.Backend
+	BufferPool     httputil.BufferPool
 }
 
 func NewProxy(cfg Config) *httputil.ReverseProxy {
@@ -32,7 +32,7 @@ func NewProxy(cfg Config) *httputil.ReverseProxy {
 	var rw pathRewriter = newIndexRewriter(cfg.RoutePattern, cfg.IsNamespaced, cfg.RewritePattern.V)
 
 	rp := &httputil.ReverseProxy{
-		BufferPool: &bufferPool{bytebufferpool.Pool{}},
+		BufferPool: cfg.BufferPool,
 		Transport:  cfg.Transport,
 		ErrorLog:   log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
 		Rewrite: func(rp *httputil.ProxyRequest) {
