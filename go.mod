@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/golang-cz/devslog v0.0.11 // only used when IKA_DEBUG is set
 	github.com/stretchr/testify v1.9.0 // only for tests
+	github.com/valyala/bytebufferpool v1.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
