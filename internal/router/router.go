@@ -77,8 +77,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 
 				log.Debug("Setting up path",
-					"pattern", route,
-					"namespace", nsName,
+					"pattern", route.pattern,
 					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
 				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Plugins, handler)
