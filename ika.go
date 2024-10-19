@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -84,7 +85,7 @@ func run(ctx context.Context, opts config.RunOpts) error {
 		return fmt.Errorf("failed to start: %w", err)
 	}
 
-	slog.Info("ika has started")
+	slog.Info("ika has started", slog.String("goVersion", runtime.Version()))
 	<-ctx.Done()
 	slog.Info("Caught shutdown signal, shutting down gracefully...")
 
