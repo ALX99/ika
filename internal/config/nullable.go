@@ -36,3 +36,7 @@ func (n Nullable[T]) Set() bool {
 func NewNullable[T any](v T) Nullable[T] {
 	return Nullable[T]{V: v, set: true}
 }
+
+func NewNull[T any]() Nullable[T] {
+	return Nullable[T]{set: false}
+}

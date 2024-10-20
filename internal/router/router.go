@@ -65,13 +65,22 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 		for pattern, routeCfg := range ns.Paths {
 			for _, route := range makeRoutes(pattern, nsName, ns, routeCfg) {
+				rewritePath := config.NewNull[string]()
+
+				if len(routeCfg.Redirect.Paths) > 1 {
+					panic("not implemented")
+				}
+				if len(routeCfg.Redirect.Paths) == 1 {
+					rewritePath = config.NewNullable(routeCfg.Redirect.Paths[0])
+				}
+
 				p, err := proxy.NewProxy(proxy.Config{
 					Transport:      transport,
 					RoutePattern:   pattern,
 					IsNamespaced:   route.isNamespaced,
 					Namespace:      nsName,
-					RewritePattern: routeCfg.RewritePath,
-					Backends:       firstNonEmptyArr(routeCfg.Backends, ns.Backends),
+					RewritePattern: rewritePath,
+					Backends:       firstNonEmptyArr(routeCfg.Redirect.Backends, ns.Backends),
 					BufferPool:     bPool,
 				})
 				if err != nil {

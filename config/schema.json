@@ -202,9 +202,25 @@
                   "type": "object",
                   "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
                   "properties": {
-                    "rewritePath": {
-                      "type": "string",
-                      "description": "Rewrite the received path before the request is sent to the backends."
+                    "redirect": {
+                      "type": "object",
+                      "description": "Configuration for redirecting requests.",
+                      "properties": {
+                        "paths": {
+                          "type": "array",
+                          "description": "Paths to redirect to.",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "backends": {
+                          "type": "array",
+                          "description": "Override the namespace backends for this path.",
+                          "items": {
+                            "$ref": "#/definitions/backend"
+                          }
+                        }
+                      }
                     },
                     "methods": {
                       "type": "array",

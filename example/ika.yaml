@@ -40,7 +40,8 @@ namespaces:
     paths:
       /: {}
       /trigger-rewrite/{anything...}:
-        rewritePath: /{anything...}
+        redirect:
+          paths: ["/{anything...}"]
 
   ika-demo.onrender.com:
     <<: *google-proxy

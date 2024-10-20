@@ -2,10 +2,14 @@ package config
 
 type (
 	Path struct {
-		RewritePath Nullable[string] `yaml:"rewritePath"`
-		Methods     []Method         `yaml:"methods"`
-		Backends    []Backend        `yaml:"backends"`
-		Middlewares Middlewares      `yaml:"middlewares"`
+		Methods     []Method    `yaml:"methods"`
+		Middlewares Middlewares `yaml:"middlewares"`
+		Redirect    Redirect    `yaml:"redirect"`
 	}
 	Paths map[string]Path
+
+	Redirect struct {
+		Paths    []string  `yaml:"paths"`
+		Backends []Backend `yaml:"backends"`
+	}
 )
