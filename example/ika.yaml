@@ -17,17 +17,6 @@ namespaces:
     paths:
       /: {}
 
-  google.dozy.dev: &google-proxy
-    plugins:
-      - name: tracer
-    backends:
-      - host: https://www.google.com
-    middlewares:
-      - name: accessLog
-    paths:
-      /: {}
-      /maps/: {}
-
   httpbun.dozy.dev:
     transport:
       maxIdleConnsPerHost: 250
@@ -42,9 +31,6 @@ namespaces:
       /trigger-rewrite/{anything...}:
         redirect:
           paths: ["/{anything...}"]
-
-  ika-demo.onrender.com:
-    <<: *google-proxy
 
   go.dozy.dev:
     plugins:
