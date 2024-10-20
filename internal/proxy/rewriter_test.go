@@ -88,6 +88,46 @@ func Test_indexRewriter_rewrite(t *testing.T) {
 			},
 			want: "/new/foo/baz/qux",
 		},
+		{
+			name: "trailing slash are preserved",
+			args: args{
+				r:            &http.Request{URL: &url.URL{Path: "/foo/bar/"}},
+				routePattern: "/{0}/bar/",
+				isNamespaced: false,
+				toPattern:    "/baz/{0}/",
+			},
+			want: "/baz/foo/",
+		},
+		{
+			name: "trailing slash is added",
+			args: args{
+				r:            &http.Request{URL: &url.URL{Path: "/foo"}},
+				routePattern: "/{0}",
+				isNamespaced: false,
+				toPattern:    "/baz/{0}/",
+			},
+			want: "/baz/foo/",
+		},
+		{
+			name: "trailingslash are removed 1",
+			args: args{
+				r:            &http.Request{URL: &url.URL{Path: "/foo/"}},
+				routePattern: "/{0}",
+				isNamespaced: false,
+				toPattern:    "/baz/{0}",
+			},
+			want: "/baz/foo",
+		},
+		{
+			name: "trailingslash are removed 2",
+			args: args{
+				r:            &http.Request{URL: &url.URL{Path: "/foo"}},
+				routePattern: "/{0}",
+				isNamespaced: false,
+				toPattern:    "/baz/{0}",
+			},
+			want: "/baz/foo",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
