@@ -3,7 +3,6 @@ package proxy
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -86,58 +85,6 @@ func (ar indexRewriter) rewrite(r *http.Request) string {
 
 done:
 	return fmt.Sprintf(ar.replacePattern, args...)
-}
-
-// valueRewriter is a rewriter will rewrite the request path using
-// request.PathValue() to get the value of the segment.
-// However, this might not 100% preserve encoded parts of the original path.
-// Specifically for wildcard segments, the segment will be decoded
-// before being replaced in the new path.
-type valueRewriter struct {
-	// segments is a map of segment names to their corresponding replacement
-	segments map[string]string
-	// toPattern is the path which the request will be rewritten
-	toPattern string
-}
-
-func newValueRewriter(toPattern string) valueRewriter {
-	rw := valueRewriter{segments: make(map[string]string), toPattern: toPattern}
-
-	matches := segmentRe.FindAllStringSubmatch(toPattern, -1)
-	for _, match := range matches {
-		if match[1] == "$" {
-			continue // special token, not a segment
-		}
-		rw.segments[strings.TrimSuffix(match[1], "...")] = match[0]
-	}
-	return rw
-}
-
-func (rw valueRewriter) rewrite(r *http.Request) string {
-	args := *strSlicePool.Get().(*[]string)
-
-	for segName, replace := range rw.segments {
-		if isWildcard(replace) {
-			val := r.PathValue(segName)
-
-			// Dilemma! Impossible to tell if the slash was originally '/' or '%2F'
-			// The only safe fallback is to keep the unescaped value
-			if strings.Contains(val, "/") {
-				args = append(args, replace, r.PathValue(segName))
-				continue
-			}
-		}
-
-		// Otherwise, escape the value to ensure that values such
-		args = append(args, replace, url.PathEscape(r.PathValue(segName)))
-	}
-
-	newPath := strings.NewReplacer(args...).Replace(rw.toPattern)
-
-	args = args[:0]
-	strSlicePool.Put(&args)
-
-	return newPath
 }
 
 func isWildcard(segment string) bool {
