@@ -138,3 +138,15 @@ func Test_indexRewriter_rewrite(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkRewriter(b *testing.B) {
+	r := &http.Request{URL: &url.URL{Path: "/foo/bar/baz/qux"}}
+	routePattern := "/{0}/bar/{1...}"
+	isNamespaced := false
+	toPattern := "/new/{0}/{1...}"
+	ar := newIndexRewriter(routePattern, isNamespaced, toPattern)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ar.rewrite(r)
+	}
+}
