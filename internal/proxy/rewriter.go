@@ -1,10 +1,12 @@
 package proxy
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/alx99/ika/internal/request"
 )
@@ -20,14 +22,26 @@ type pathRewriter interface {
 // This includes totally preserving the original path even if some parts have been encoded.
 type indexRewriter struct {
 	// segments is a map of segment index to their corresponding replacement
-	segments map[int]string
-	// toPattern is the path which the request will be rewritten
-	toPattern string
+	segments []string
+
+	// replacePattern is in the format of /example/%s/path
+	// where %s should be replaced with the corresponding segment
+	replacePattern string
+	pool           *sync.Pool
 }
 
 func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) indexRewriter {
-	rw := indexRewriter{segments: make(map[int]string), toPattern: toPattern}
+	rw := indexRewriter{
+		segments: make([]string, len(strings.Split(routePattern, "/"))+1),
+		pool:     &sync.Pool{New: func() any { b := make([]any, 0, 10); return &b }},
+	}
 	s := strings.Split(routePattern, "/")
+
+	if isNamespaced {
+		// The first path segment of a namespaced route is the namespace itself
+		rw.replacePattern = strings.Split(routePattern, "/")[0]
+	}
+	rw.replacePattern += segmentRe.ReplaceAllString(toPattern, "%s")
 
 	matches := segmentRe.FindAllStringSubmatch(toPattern, -1)
 	for _, match := range matches {
@@ -51,28 +65,27 @@ func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) 
 }
 
 func (ar indexRewriter) rewrite(r *http.Request) string {
-	args := *strSlicePool.Get().(*[]string)
-	s := strings.Split(request.GetPath(r), "/")
+	reqPath := strings.Split(request.GetPath(r), "/")
 
-	for segmentIndex, replace := range ar.segments {
-		if segmentIndex >= len(s) {
-			continue
+	args := make([]any, 0, 10)
+
+	for segmentIndex, repl := range ar.segments {
+		if repl == "" {
+			continue // skip if no replacement
 		}
-
-		if isWildcard(replace) {
-			args = append(args, replace, strings.Join(s[segmentIndex:], "/"))
-			continue
+		for i, v := range reqPath {
+			if i == segmentIndex {
+				args = append(args, v)
+			}
+			if isWildcard(repl) {
+				args = append(args, strings.Join(reqPath[segmentIndex:], "/"))
+				goto done // bail, wildcard must always be the last segment
+			}
 		}
-
-		args = append(args, replace, s[segmentIndex])
 	}
 
-	newPath := strings.NewReplacer(args...).Replace(ar.toPattern)
-
-	args = args[:0]
-	strSlicePool.Put(&args)
-
-	return newPath
+done:
+	return fmt.Sprintf(ar.replacePattern, args...)
 }
 
 // valueRewriter is a rewriter will rewrite the request path using
