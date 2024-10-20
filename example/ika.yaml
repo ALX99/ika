@@ -31,6 +31,20 @@ namespaces:
       /: {}
       /maps/: {}
 
+  httpbun.dozy.dev:
+    plugins:
+      - name: tracer
+    backends:
+      - host: httpbun.com
+        scheme: https
+    middlewares:
+      - name: accessLog
+    paths:
+      /: {}
+      /trigger-rewrite/{anything...}:
+        rewritePath: /{anything...}
+
+
   ika-demo.onrender.com:
     <<: *google-proxy
 
