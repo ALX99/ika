@@ -32,6 +32,8 @@ namespaces:
       /maps/: {}
 
   httpbun.dozy.dev:
+    transport:
+      maxIdleConnsPerHost: 250
     plugins:
       - name: tracer
     backends:
