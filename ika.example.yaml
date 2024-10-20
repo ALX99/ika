@@ -64,7 +64,6 @@ namespaces:
       idleConnTimeout: 30s
     middlewares:
       - name: cache
-        enabled: true  # Caching middleware for public endpoints
     paths:
       /:
         rewritePath: /home  # Homepage route

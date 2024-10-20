@@ -107,7 +107,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 // applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
 func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, cfg config.Config, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
-	for mwConfig := range path.MergedMiddlewares(ns) {
+	for _, mwConfig := range firstNonEmptyArr(path.Middlewares, ns.Middlewares) {
 		log.Debug("Setting up middleware", "name", mwConfig.Name)
 		mw, err := middleware.Get(ctx, mwConfig.Name, handler)
 		if err != nil {

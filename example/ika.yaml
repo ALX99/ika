@@ -13,7 +13,6 @@ namespaces:
 
     middlewares:
       - name: accessLog
-        enabled: true
       - name: noCache
     paths:
       /: {}
@@ -42,7 +41,6 @@ namespaces:
       /: {}
       /trigger-rewrite/{anything...}:
         rewritePath: /{anything...}
-
 
   ika-demo.onrender.com:
     <<: *google-proxy

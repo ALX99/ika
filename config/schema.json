@@ -108,11 +108,6 @@
           "type": "string",
           "description": "The name of the middleware"
         },
-        "enabled": {
-          "type": "boolean",
-          "description": "Whether the middleware is enabled or not.",
-          "default": true
-        },
         "config": {
           "type": "object",
           "description": "Configuration for the middleware",

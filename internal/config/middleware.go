@@ -4,32 +4,18 @@ import "iter"
 
 type (
 	Middleware struct {
-		Name    string         `yaml:"name"`
-		Enabled Nullable[bool] `yaml:"enabled"`
-		Config  map[string]any `yaml:"config"`
+		Name   string         `yaml:"name"`
+		Config map[string]any `yaml:"config"`
 	}
 	Middlewares []Middleware
 )
 
-// Names returns an iterator that yields the names of all enabled middlewares.
+// Names returns an iterator that yields the names of all middlewares.
 func (m Middlewares) Names() iter.Seq[string] {
 	return func(yield func(string) bool) {
-		for mw := range m.enabled() {
+		for _, mw := range m {
 			if !yield(mw.Name) {
 				return
-			}
-		}
-	}
-}
-
-// enabled returns an iterator that yields all enabled middlewares.
-func (m Middlewares) enabled() iter.Seq[Middleware] {
-	return func(yield func(Middleware) bool) {
-		for _, mw := range m {
-			if mw.Enabled.Or(true) {
-				if !yield(mw) {
-					return
-				}
 			}
 		}
 	}
