@@ -7,20 +7,11 @@
       "properties": {
         "host": {
           "type": "string",
-          "description": "Host or host:port (see Hostname and Port methods)"
-        },
-        "scheme": {
-          "type": "string",
-          "description": "Scheme, either http or https",
-          "enum": [
-            "http",
-            "https"
-          ]
+          "description": "Scheme and host for the backend."
         }
       },
       "required": [
-        "host",
-        "scheme"
+        "host"
       ]
     },
     "server": {

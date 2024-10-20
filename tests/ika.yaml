@@ -7,14 +7,12 @@ server:
 namespaces:
   root:
     backends:
-      - host: httpbun-local
-        scheme: http
+      - host: http://httpbun-local
     paths:
       /headers: {}
   testns1.com: &testns1
     backends:
-      - host: httpbun-local
-        scheme: http
+      - host: http://httpbun-local
 
     middlewares:
     - name: accessLog
@@ -45,8 +43,7 @@ namespaces:
 
   /testns2:
     backends:
-      - host: httpbun-local
-        scheme: http
+      - host: http://httpbun-local
     middlewares:
     - name: accessLog
     paths:
@@ -54,8 +51,7 @@ namespaces:
 
   passthrough.com: &passthrough
     backends:
-      - host: httpbun-local
-        scheme: http
+      - host: http://httpbun-local
     middlewares:
     - name: accessLog
     paths:

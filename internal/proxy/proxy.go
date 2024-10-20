@@ -23,7 +23,7 @@ type Config struct {
 	BufferPool     httputil.BufferPool
 }
 
-func NewProxy(cfg Config) *httputil.ReverseProxy {
+func NewProxy(cfg Config) (*httputil.ReverseProxy, error) {
 	backend := cfg.Backends[0]
 	if len(cfg.Backends) > 1 {
 		panic("not implemented")
@@ -31,14 +31,20 @@ func NewProxy(cfg Config) *httputil.ReverseProxy {
 
 	var rw pathRewriter = newIndexRewriter(cfg.RoutePattern, cfg.IsNamespaced, cfg.RewritePattern.V)
 
+	u, err := url.Parse(backend.Host)
+	if err != nil {
+		return nil, err
+	}
+
 	rp := &httputil.ReverseProxy{
 		BufferPool: cfg.BufferPool,
 		Transport:  cfg.Transport,
 		ErrorLog:   log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
+
 		Rewrite: func(rp *httputil.ProxyRequest) {
-			rp.Out.URL.Scheme = backend.Scheme
-			rp.Out.URL.Host = backend.Host
-			rp.Out.Host = backend.Host
+			rp.Out.URL.Scheme = u.Scheme
+			rp.Out.URL.Host = u.Host
+			rp.Out.Host = u.Host
 			// Restore the query even if it can't be parsed (see [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
@@ -53,7 +59,7 @@ func NewProxy(cfg Config) *httputil.ReverseProxy {
 		},
 	}
 
-	return rp
+	return rp, nil
 }
 
 // setPath sets the path on the outgoing request

@@ -65,7 +65,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 		for pattern, routeCfg := range ns.Paths {
 			for _, route := range makeRoutes(pattern, nsName, ns, routeCfg) {
-				p := proxy.NewProxy(proxy.Config{
+				p, err := proxy.NewProxy(proxy.Config{
 					Transport:      transport,
 					RoutePattern:   pattern,
 					IsNamespaced:   route.isNamespaced,
@@ -74,6 +74,9 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Backends:       firstNonEmptyArr(routeCfg.Backends, ns.Backends),
 					BufferPool:     bPool,
 				})
+				if err != nil {
+					return nil, errors.Join(err, r.Shutdown(ctx))
+				}
 
 				handler, err := r.applyMiddlewares(ctx, log, cfg, p, routeCfg, ns)
 				if err != nil {

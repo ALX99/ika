@@ -1,6 +1,5 @@
 package config
 
 type Backend struct {
-	Host   string `yaml:"host"`
-	Scheme string `yaml:"scheme"`
+	Host string `yaml:"host"`
 }

@@ -9,8 +9,7 @@ namespaces:
     plugins:
       - name: tracer
     backends:
-      - host: httpbun
-        scheme: http
+      - host: http://httpbun
 
     middlewares:
       - name: accessLog
@@ -23,8 +22,7 @@ namespaces:
     plugins:
       - name: tracer
     backends:
-      - host: www.google.com
-        scheme: https
+      - host: https://www.google.com
     middlewares:
       - name: accessLog
     paths:
@@ -37,8 +35,7 @@ namespaces:
     plugins:
       - name: tracer
     backends:
-      - host: httpbun.com
-        scheme: https
+      - host: https://httpbun.com
     middlewares:
       - name: accessLog
     paths:
@@ -54,8 +51,7 @@ namespaces:
     plugins:
       - name: tracer
     backends:
-      - host: go.dev
-        scheme: https
+      - host: https://go.dev
     middlewares:
       - name: accessLog
     paths:
