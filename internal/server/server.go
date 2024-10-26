@@ -13,13 +13,13 @@ import (
 
 // Server represents an HTTP server.
 type Server struct {
-	server http.Server
+	servers []http.Server
 }
 
 // NewServer creates a new server with the given handler and configuration.
 func NewServer(handler http.Handler, config config.Server) *Server {
 	return &Server{
-		server: http.Server{
+		servers: []http.Server{{
 			Handler:                      handler,
 			Addr:                         config.Addr.V,
 			DisableGeneralOptionsHandler: config.DisableGeneralOptionsHandler.V,
@@ -28,35 +28,39 @@ func NewServer(handler http.Handler, config config.Server) *Server {
 			WriteTimeout:                 config.WriteTimeout.V,
 			IdleTimeout:                  config.IdleTimeout.V,
 			MaxHeaderBytes:               config.MaxHeaderBytes.V,
-		},
+		}},
 	}
 }
 
 // ListenAndServe starts the server and listens for incoming connections.
 func (s *Server) ListenAndServe() error {
-	var err error
+	var errs error
+	var mutex sync.Mutex
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		wg.Done()
-		err = s.server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server.ListenAndServe", "err", err)
-		}
-	}()
+	for i := range s.servers {
+		wg.Add(1)
+		go func() {
+			wg.Done()
+			err := s.servers[i].ListenAndServe()
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
+				mutex.Lock()
+				errs = errors.Join(err, s.servers[i].ListenAndServe())
+				mutex.Unlock()
+				slog.Error("server.ListenAndServe", "err", err)
+			}
+		}()
+	}
 	wg.Wait()
 	// Wait a little to give the server time to start
 	time.Sleep(1 * time.Second)
-	return err
+	return errs
 }
 
 // Shutdown gracefully shuts down the server without interrupting any active connections.
 func (s *Server) Shutdown(ctx context.Context) error {
-	err := s.server.Shutdown(ctx)
-	if err != nil {
-		if ctx.Err() != nil {
-			return context.Cause(ctx)
-		}
+	var err error
+	for i := range s.servers {
+		err = errors.Join(err, s.servers[i].Shutdown(ctx))
 	}
 	return err
 }
