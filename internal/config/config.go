@@ -50,6 +50,10 @@ func Read(path string) (Config, error) {
 		return cfg, err
 	}
 
+	if len(cfg.Servers) < 1 {
+		return cfg, errors.New("at least one server must be specified")
+	}
+
 	cfg.ApplyOverride()
 	return cfg, nil
 }
