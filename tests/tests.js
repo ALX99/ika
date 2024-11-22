@@ -132,7 +132,7 @@ export default function tests() {
   describe("Accept-Encoding is gzip by default", () => {
     const resp = http.get(`${baseURL}/headers`);
     expect(resp.status, resp.status).to.equal(200);
-    expect(resp.json()["Accept-Encoding"], resp.json()["Accept-Encoding"]).to.equal('gzip');
+    expect(resp.json()["headers"]["Accept-Encoding"], resp.json()["Accept-Encoding"]).to.equal('gzip');
   });
 
   describe("noRewritePath is handled correctly", () => {
