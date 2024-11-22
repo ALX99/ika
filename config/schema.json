@@ -174,7 +174,7 @@
     "namespaces": {
       "type": "object",
       "patternProperties": {
-        "^[a-zA-Z0-9]+$": {
+        "^\/*[a-zA-Z0-9.]+$": {
           "type": "object",
           "properties": {
             "backends": {
@@ -256,14 +256,18 @@
                   "required": []
                 }
               }
-            }
+            },
+            "additionalProperties": false
           },
           "required": [
             "backends",
             "paths"
-          ]
-        }
-      }
+          ],
+          "additionalProperties": false
+        },
+        "additionalProperties": false
+      },
+      "additionalProperties": false
     }
   },
   "required": [
