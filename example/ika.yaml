@@ -1,8 +1,8 @@
 ika:
   gracefulShutdownTimeout: 1s
 
-server:
-  addr: :8888
+servers:
+  - addr: :8888
 
 namespaces:
   /example:

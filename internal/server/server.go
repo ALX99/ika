@@ -17,19 +17,22 @@ type Server struct {
 }
 
 // NewServer creates a new server with the given handler and configuration.
-func NewServer(handler http.Handler, config config.Server) *Server {
-	return &Server{
-		servers: []http.Server{{
+func NewServer(handler http.Handler, config []config.Server) *Server {
+	var servers []http.Server
+	for _, c := range config {
+		servers = append(servers, http.Server{
 			Handler:                      handler,
-			Addr:                         config.Addr.V,
-			DisableGeneralOptionsHandler: config.DisableGeneralOptionsHandler.V,
-			ReadTimeout:                  config.ReadTimeout.V,
-			ReadHeaderTimeout:            config.ReadHeaderTimeout.V,
-			WriteTimeout:                 config.WriteTimeout.V,
-			IdleTimeout:                  config.IdleTimeout.V,
-			MaxHeaderBytes:               config.MaxHeaderBytes.V,
-		}},
+			Addr:                         c.Addr,
+			DisableGeneralOptionsHandler: c.DisableGeneralOptionsHandler.V,
+			ReadTimeout:                  c.ReadTimeout.V,
+			ReadHeaderTimeout:            c.ReadHeaderTimeout.V,
+			WriteTimeout:                 c.WriteTimeout.V,
+			IdleTimeout:                  c.IdleTimeout.V,
+			MaxHeaderBytes:               c.MaxHeaderBytes.V,
+		})
 	}
+
+	return &Server{servers: servers}
 }
 
 // ListenAndServe starts the server and listens for incoming connections.

@@ -3,7 +3,7 @@ package config
 import "time"
 
 type Server struct {
-	Addr                         Nullable[string]        `yaml:"addr"`
+	Addr                         string                  `yaml:"addr"`
 	DisableGeneralOptionsHandler Nullable[bool]          `yaml:"disableGeneralOptionsHandler"`
 	ReadTimeout                  Nullable[time.Duration] `yaml:"readTimeout"`
 	ReadHeaderTimeout            Nullable[time.Duration] `yaml:"readHeaderTimeout"`

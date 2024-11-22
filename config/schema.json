@@ -47,7 +47,9 @@
           "description": "Controls the maximum number of bytes the server will read while parsing the request header's keys and values, including the request line. It does not limit the size of the request body."
         }
       },
-      "required": []
+      "required": [
+        "addr"
+      ]
     },
     "transport": {
       "type": "object",
@@ -154,8 +156,12 @@
         }
       }
     },
-    "server": {
-      "$ref": "#/definitions/server"
+    "servers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/server"
+      },
+      "minItems": 1
     },
     "namespaceOverrides": {
       "description": "Override settings for all namespaces",
@@ -261,6 +267,7 @@
     }
   },
   "required": [
-    "namespaces"
+    "namespaces",
+    "servers"
   ]
 }

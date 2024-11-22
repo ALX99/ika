@@ -28,7 +28,7 @@ type RunOpts struct {
 }
 
 type Config struct {
-	Server            Server     `yaml:"server"`
+	Servers           []Server   `yaml:"servers"`
 	Namespaces        Namespaces `yaml:"namespaces"`
 	NamespaceOverride Namespace  `yaml:"namespaceOverrides"`
 	Ika               Ika        `yaml:"ika"`

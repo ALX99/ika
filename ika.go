@@ -79,7 +79,7 @@ func run(ctx context.Context, opts config.RunOpts) error {
 		return fmt.Errorf("failed to create router: %w", err)
 	}
 
-	s := server.NewServer(router, cfg.Server)
+	s := server.NewServer(router, cfg.Servers)
 	err = s.ListenAndServe()
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
