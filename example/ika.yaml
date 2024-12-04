@@ -30,9 +30,9 @@ namespaces:
       /: {}
       /trigger-rewrite/{anything...}:
         plugins:
-          - name: path-rewriter
+          - name: req-modifier
             config:
-              to: /{anything...}
+              path: /{anything...}
 
   go.dozy.dev:
     plugins:

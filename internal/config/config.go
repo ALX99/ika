@@ -101,7 +101,7 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pp
 	}
 
 	c.RequestModifiers = make(map[string]pplugin.NFactory)
-	c.RequestModifiers["path-rewriter"] = plugins.RewriterFactory{} // hack
+	c.RequestModifiers["req-modifier"] = plugins.RewriterFactory{} // hack
 	for _, factory := range factories2 {
 		plugin, err := factory.New(context.TODO())
 		if err != nil {

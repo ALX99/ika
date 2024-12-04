@@ -19,19 +19,19 @@ import (
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
 var (
-	_ plugin.Plugin          = &rewriter{}
-	_ plugin.RequestModifier = rewriter{}
+	_ plugin.Plugin          = &reqModifier{}
+	_ plugin.RequestModifier = reqModifier{}
 )
 
 type RewriterFactory struct{}
 
 func (RewriterFactory) New(context.Context) (plugin.Plugin, error) {
-	return &rewriter{}, nil
+	return &reqModifier{}, nil
 }
 
-// rewriter is a rewriter that 100% accurately rewrite the request path.
+// reqModifier is a reqModifier that 100% accurately rewrite the request path.
 // This includes totally preserving the original path even if some parts have been encoded.
-type rewriter struct {
+type reqModifier struct {
 	// segments is a map of segment index to their corresponding replacement
 	segments []string
 
@@ -40,29 +40,29 @@ type rewriter struct {
 	replacePattern string
 }
 
-func (rewriter) Name() string {
-	return "path-rewriter"
+func (reqModifier) Name() string {
+	return "req-modifier"
 }
 
-func (rewriter) Capabilities() []plugin.Capability {
+func (reqModifier) Capabilities() []plugin.Capability {
 	return []plugin.Capability{plugin.CapModifyRequests}
 }
 
-func (rw *rewriter) Setup(ctx context.Context, context plugin.Context, config map[string]any) error {
+func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
 	isNamespaced := strings.HasPrefix(context.Namespace, "/")
-	toPattern := config["to"].(string)
+	toPath := config["path"].(string)
 
-	rw.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
+	rm.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
 	s := strings.Split(routePattern, "/")
 
 	if isNamespaced {
 		// The first path segment of a namespaced route is the namespace itself
-		rw.replacePattern = strings.Split(routePattern, "/")[0]
+		rm.replacePattern = strings.Split(routePattern, "/")[0]
 	}
-	rw.replacePattern += segmentRe.ReplaceAllString(toPattern, "%s")
+	rm.replacePattern += segmentRe.ReplaceAllString(toPath, "%s")
 
-	matches := segmentRe.FindAllStringSubmatch(toPattern, -1)
+	matches := segmentRe.FindAllStringSubmatch(toPath, -1)
 	for _, match := range matches {
 		if match[1] == "$" {
 			continue // special token, not a segment
@@ -73,9 +73,9 @@ func (rw *rewriter) Setup(ctx context.Context, context plugin.Context, config ma
 				if isNamespaced {
 					// If a route is namespaced, the first segment is the namespace
 					// which is impossible to to match with a rewritePath
-					rw.segments[i+1] = match[0]
+					rm.segments[i+1] = match[0]
 				} else {
-					rw.segments[i] = match[0]
+					rm.segments[i] = match[0]
 				}
 			}
 		}
@@ -84,12 +84,12 @@ func (rw *rewriter) Setup(ctx context.Context, context plugin.Context, config ma
 	return nil
 }
 
-func (rw rewriter) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
+func (rm reqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
 	reqPath := strings.Split(request.GetPath(r), "/")
 
 	args := make([]any, 0, 10)
 
-	for segmentIndex, repl := range rw.segments {
+	for segmentIndex, repl := range rm.segments {
 		if repl == "" {
 			continue // skip if no replacement
 		}
@@ -107,7 +107,7 @@ func (rw rewriter) ModifyRequest(ctx context.Context, r *http.Request) (*http.Re
 done:
 	log := slog.With(slog.String("namespace", middleware.GetMetadata(r.Context()).Namespace))
 	prevPath := request.GetPath(r)
-	path := fmt.Sprintf(rw.replacePattern, args...)
+	path := fmt.Sprintf(rm.replacePattern, args...)
 	var err error
 
 	r.URL.RawPath = path
@@ -123,7 +123,7 @@ done:
 	return r, nil
 }
 
-func (rewriter) Teardown(context.Context) error { return nil }
+func (reqModifier) Teardown(context.Context) error { return nil }
 
 func isWildcard(segment string) bool {
 	return strings.HasSuffix(segment, "...}")

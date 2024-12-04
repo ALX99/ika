@@ -22,28 +22,28 @@ namespaces:
       /get:
         plugins:
           - &any-rewrite
-            name: path-rewriter
+            name: req-modifier
             config:
-              to: /any
+              path: /any
       /only-get:
         methods: [GET]
         plugins:
           - *any-rewrite
       /httpbun/{any...}:
         plugins:
-          - name: path-rewriter
+          - name: req-modifier
             config:
-              to: /{any...}
+              path: /{any...}
       /wildcard-rewrite/{any...}:
         plugins:
-          - name: path-rewriter
+          - name: req-modifier
             config:
-              to: "/any/{any...}"
+              path: "/any/{any...}"
       /path-rewrite/{a1}/{a2}:
         plugins:
-          - name: path-rewriter
+          - name: req-modifier
             config:
-              to: "/any/{a1}/{a2}"
+              path: "/any/{a1}/{a2}"
       /not-terminated/{any}/:
         methods: [GET]
         plugins:

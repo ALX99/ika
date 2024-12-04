@@ -98,9 +98,10 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 						return nil, errors.Join(err, r.Shutdown(ctx))
 					}
 
-					err = p.Setup(ctx, plugin.Context{
+					err = p.Setup(ctx, plugin.InjectionContext{
 						Namespace:   nsName,
 						PathPattern: pattern,
+						Level:       plugin.PathLevel,
 					}, pluginCfg.Config)
 					if err != nil {
 						return nil, errors.Join(err, r.Shutdown(ctx))

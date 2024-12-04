@@ -31,11 +31,16 @@ type TransportHook interface {
 	HookTransport(ctx context.Context, transport http.RoundTripper) (http.RoundTripper, error)
 }
 
-type Capability uint16
+type (
+	Capability     uint16
+	InjectionLevel uint8
+)
 
 const (
 	// The plugins which report this capability must implement the [RequestModifier] interface
 	CapModifyRequests Capability = iota
+
+	PathLevel InjectionLevel = iota
 )
 
 type NFactory interface {
@@ -50,6 +55,8 @@ type InjectionContext struct {
 	// The path pattern the plugin as injected into.
 	// If it was not injected on a path level, it will be empty.
 	PathPattern string
+	// The level of where the plugin was injected.
+	Level InjectionLevel
 }
 
 type Plugin interface {
