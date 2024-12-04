@@ -98,6 +98,10 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 						return nil, errors.Join(err, r.Shutdown(ctx))
 					}
 
+					if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
+						return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
+					}
+
 					err = p.Setup(ctx, plugin.InjectionContext{
 						Namespace:   nsName,
 						PathPattern: pattern,

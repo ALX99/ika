@@ -48,6 +48,10 @@ func (reqModifier) Capabilities() []plugin.Capability {
 	return []plugin.Capability{plugin.CapModifyRequests}
 }
 
+func (reqModifier) InjectionLevels() []plugin.InjectionLevel {
+	return []plugin.InjectionLevel{plugin.PathLevel}
+}
+
 func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
 	isNamespaced := strings.HasPrefix(context.Namespace, "/")
