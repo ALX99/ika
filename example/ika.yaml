@@ -29,8 +29,10 @@ namespaces:
     paths:
       /: {}
       /trigger-rewrite/{anything...}:
-        redirect:
-          paths: ["/{anything...}"]
+        plugins:
+          - name: path-rewriter
+            config:
+              to: /{anything...}
 
   go.dozy.dev:
     plugins:

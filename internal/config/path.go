@@ -5,11 +5,11 @@ type (
 		Methods     []Method    `yaml:"methods"`
 		Middlewares Middlewares `yaml:"middlewares"`
 		Redirect    Redirect    `yaml:"redirect"`
+		Plugins     Plugins     `yaml:"plugins"`
 	}
 	Paths map[string]Path
 
 	Redirect struct {
-		Paths    []string  `yaml:"paths"`
 		Backends []Backend `yaml:"backends"`
 	}
 )

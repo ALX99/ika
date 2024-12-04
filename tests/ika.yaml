@@ -20,30 +20,38 @@ namespaces:
     paths:
       /any: {}
       /get:
-        redirect:
-          paths: ["/any"]
+        plugins:
+          - &any-rewrite
+            name: path-rewriter
+            config:
+              to: /any
       /only-get:
         methods: [GET]
-        redirect:
-          paths: ["/any"]
-
+        plugins:
+          - *any-rewrite
       /httpbun/{any...}:
-        redirect:
-          paths: ["/{any...}"]
+        plugins:
+          - name: path-rewriter
+            config:
+              to: /{any...}
       /wildcard-rewrite/{any...}:
-        redirect:
-          paths: ["/any/{any...}"]
+        plugins:
+          - name: path-rewriter
+            config:
+              to: "/any/{any...}"
       /path-rewrite/{a1}/{a2}:
-        redirect:
-          paths: ["/any/{a1}/{a2}"]
+        plugins:
+          - name: path-rewriter
+            config:
+              to: "/any/{a1}/{a2}"
       /not-terminated/{any}/:
         methods: [GET]
-        redirect:
-          paths: ["/any"]
+        plugins:
+          - *any-rewrite
       /terminated/{any}/{$}:
         methods: [GET]
-        redirect:
-          paths: ["/any"]
+        plugins:
+          - *any-rewrite
 
   /testns1:
     <<: *testns1

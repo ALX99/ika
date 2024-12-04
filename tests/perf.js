@@ -20,5 +20,5 @@ export const options = {
 };
 
 export default function() {
-  http.get("http://localhost:8888/testns1/something");
+  http.get("https://httpbun.dozy.dev/trigger-rewrite/any");
 }

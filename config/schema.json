@@ -210,17 +210,17 @@
                   "type": "object",
                   "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
                   "properties": {
+                    "plugins": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "$ref": "#/definitions/plugin"
+                      }
+                    },
                     "redirect": {
                       "type": "object",
                       "description": "Configuration for redirecting requests.",
                       "properties": {
-                        "paths": {
-                          "type": "array",
-                          "description": "Paths to redirect to.",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
                         "backends": {
                           "type": "array",
                           "description": "Override the namespace backends for this path.",

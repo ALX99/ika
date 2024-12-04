@@ -1,39 +1,59 @@
-package proxy
+// Package plugins contains built-in plugins for the ika API Gateway.
+package plugins
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/alx99/ika/internal/request"
+	"github.com/alx99/ika/middleware"
+	"github.com/alx99/ika/plugin"
 )
 
 // regular expression to match segments in the rewrite path
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
-type pathRewriter interface {
-	rewrite(r *http.Request) (rawPath string)
+var (
+	_ plugin.Plugin          = &rewriter{}
+	_ plugin.RequestModifier = rewriter{}
+)
+
+type RewriterFactory struct{}
+
+func (RewriterFactory) New(context.Context) (plugin.Plugin, error) {
+	return &rewriter{}, nil
 }
 
-// indexRewriter is a rewriter that 100% accurately rewrite the request path.
+// rewriter is a rewriter that 100% accurately rewrite the request path.
 // This includes totally preserving the original path even if some parts have been encoded.
-type indexRewriter struct {
+type rewriter struct {
 	// segments is a map of segment index to their corresponding replacement
 	segments []string
 
 	// replacePattern is in the format of /example/%s/path
 	// where %s should be replaced with the corresponding segment
 	replacePattern string
-	pool           *sync.Pool
 }
 
-func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) indexRewriter {
-	rw := indexRewriter{
-		segments: make([]string, len(strings.Split(routePattern, "/"))+1),
-		pool:     &sync.Pool{New: func() any { b := make([]any, 0, 10); return &b }},
-	}
+func (rewriter) Name() string {
+	return "path-rewriter"
+}
+
+func (rewriter) Capabilities() []plugin.Capability {
+	return []plugin.Capability{plugin.CapModifyRequests}
+}
+
+func (rw *rewriter) Setup(ctx context.Context, context plugin.Context, config map[string]any) error {
+	routePattern := context.PathPattern
+	isNamespaced := strings.HasPrefix(context.Namespace, "/")
+	toPattern := config["to"].(string)
+
+	rw.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
 	s := strings.Split(routePattern, "/")
 
 	if isNamespaced {
@@ -60,15 +80,16 @@ func newIndexRewriter(routePattern string, isNamespaced bool, toPattern string) 
 			}
 		}
 	}
-	return rw
+
+	return nil
 }
 
-func (ar indexRewriter) rewrite(r *http.Request) string {
+func (rw rewriter) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
 	reqPath := strings.Split(request.GetPath(r), "/")
 
 	args := make([]any, 0, 10)
 
-	for segmentIndex, repl := range ar.segments {
+	for segmentIndex, repl := range rw.segments {
 		if repl == "" {
 			continue // skip if no replacement
 		}
@@ -84,8 +105,25 @@ func (ar indexRewriter) rewrite(r *http.Request) string {
 	}
 
 done:
-	return fmt.Sprintf(ar.replacePattern, args...)
+	log := slog.With(slog.String("namespace", middleware.GetMetadata(r.Context()).Namespace))
+	prevPath := request.GetPath(r)
+	path := fmt.Sprintf(rw.replacePattern, args...)
+	var err error
+
+	r.URL.RawPath = path
+	r.URL.Path, err = url.PathUnescape(path)
+	if err != nil {
+		return nil, err
+	}
+	// remove query params from the path
+	r.URL.Path = strings.SplitN(r.URL.Path, "?", 2)[0]
+
+	log.LogAttrs(r.Context(), slog.LevelDebug, "Path rewritten",
+		slog.String("from", prevPath), slog.String("to", r.URL.RawPath))
+	return r, nil
 }
+
+func (rewriter) Teardown(context.Context) error { return nil }
 
 func isWildcard(segment string) bool {
 	return strings.HasSuffix(segment, "...}")

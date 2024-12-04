@@ -27,6 +27,12 @@ func WithPlugin[T any](name string, plugin T) Option {
 	}
 }
 
+func WithPlugin2(plugin pplugin.NFactory) Option {
+	return func(cfg *config.RunOpts) {
+		cfg.Plugins2 = append(cfg.Plugins2, plugin)
+	}
+}
+
 // withGeneric adds a plugin of any kind
 func withGeneric[T any](name string, factory pplugin.Factory) Option {
 	return func(cfg *config.RunOpts) {

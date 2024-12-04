@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"reflect"
 	"slices"
 
+	"github.com/alx99/ika/internal/plugins"
 	pplugin "github.com/alx99/ika/plugin"
 	"gopkg.in/yaml.v3"
 )
@@ -25,6 +27,8 @@ type PluginFactory struct {
 
 type RunOpts struct {
 	Plugins map[string]PluginFactory
+
+	Plugins2 []pplugin.NFactory
 }
 
 type Config struct {
@@ -35,6 +39,8 @@ type Config struct {
 
 	// runtime configuration
 	pluginFactories []PluginFactory
+
+	RequestModifiers map[string]pplugin.NFactory
 }
 
 func Read(path string) (Config, error) {
@@ -65,14 +71,14 @@ func NewRunOpts() RunOpts {
 }
 
 func (c *Config) SetRuntimeOpts(opts RunOpts) error {
-	if err := c.loadPlugins(opts.Plugins); err != nil {
+	if err := c.loadPlugins(opts.Plugins, opts.Plugins2); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Config) loadPlugins(factories map[string]PluginFactory) error {
+func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pplugin.NFactory) error {
 	for nsName, ns := range c.Namespaces {
 		for cfg := range ns.Plugins.Enabled() {
 			// Try to find the factory
@@ -91,6 +97,26 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory) error {
 	for _, factory := range factories {
 		if factory.namespaces != nil {
 			c.pluginFactories = append(c.pluginFactories, factory)
+		}
+	}
+
+	c.RequestModifiers = make(map[string]pplugin.NFactory)
+	c.RequestModifiers["path-rewriter"] = plugins.RewriterFactory{} // hack
+	for _, factory := range factories2 {
+		plugin, err := factory.New(context.TODO())
+		if err != nil {
+			return err
+		}
+		c.RequestModifiers[plugin.Name()] = factory
+	}
+
+	for _, ns := range c.Namespaces {
+		for _, path := range ns.Paths {
+			for plugin := range path.Plugins.Enabled() {
+				if !slices.Contains(slices.Collect(maps.Keys(c.RequestModifiers)), plugin.Name) {
+					return fmt.Errorf("plugin %q not found", plugin.Name)
+				}
+			}
 		}
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/proxy"
 	pubMW "github.com/alx99/ika/middleware"
+	"github.com/alx99/ika/plugin"
 	"github.com/valyala/bytebufferpool"
 )
 
@@ -65,23 +66,11 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 		for pattern, routeCfg := range ns.Paths {
 			for _, route := range makeRoutes(pattern, nsName, ns, routeCfg) {
-				rewritePath := config.NewNull[string]()
-
-				if len(routeCfg.Redirect.Paths) > 1 {
-					panic("not implemented")
-				}
-				if len(routeCfg.Redirect.Paths) == 1 {
-					rewritePath = config.NewNullable(routeCfg.Redirect.Paths[0])
-				}
-
 				p, err := proxy.NewProxy(proxy.Config{
-					Transport:      transport,
-					RoutePattern:   pattern,
-					IsNamespaced:   route.isNamespaced,
-					Namespace:      nsName,
-					RewritePattern: rewritePath,
-					Backends:       firstNonEmptyArr(routeCfg.Redirect.Backends, ns.Backends),
-					BufferPool:     bPool,
+					Transport:  transport,
+					Namespace:  nsName,
+					Backends:   firstNonEmptyArr(routeCfg.Redirect.Backends, ns.Backends),
+					BufferPool: bPool,
 				})
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
@@ -102,11 +91,39 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 				r.teardown = append(r.teardown, teardown)
 
+				requestModifiers := []plugin.RequestModifier{}
+				for pluginCfg := range routeCfg.Plugins.Enabled() {
+					p, err := cfg.RequestModifiers[pluginCfg.Name].New(ctx)
+					if err != nil {
+						return nil, errors.Join(err, r.Shutdown(ctx))
+					}
+
+					err = p.Setup(ctx, plugin.Context{
+						Namespace:   nsName,
+						PathPattern: pattern,
+					}, pluginCfg.Config)
+					if err != nil {
+						return nil, errors.Join(err, r.Shutdown(ctx))
+					}
+					requestModifiers = append(requestModifiers, any(p).(plugin.RequestModifier))
+				}
+
+				newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					for _, rm := range requestModifiers {
+						r, err = rm.ModifyRequest(ctx, r)
+						if err != nil {
+							panic(err) // todo
+						}
+					}
+
+					handler.ServeHTTP(w, r)
+				})
+
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
 					Namespace:      nsName,
 					Route:          pattern,
 					GeneratedRoute: route.pattern,
-				}, handler))
+				}, newHandler))
 			}
 		}
 	}
