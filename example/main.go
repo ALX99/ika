@@ -36,13 +36,6 @@ var (
 	_       plugin.FirstHandlerHook = &tracer{}
 )
 
-func init() {
-	err := middleware.RegisterFunc("noCache", chimw.NoCache)
-	if err != nil {
-		panic(err)
-	}
-}
-
 var _ plugin.Middleware = &noCache{}
 
 type noCache struct{}

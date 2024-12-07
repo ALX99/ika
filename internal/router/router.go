@@ -300,6 +300,7 @@ func makeMiddlewaresHandler(ctx context.Context,
 				panic(err) // todo
 			}
 		}
+		nextE.ServeHTTP(w, r)
 	}), nil
 }
 
