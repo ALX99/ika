@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -13,37 +14,50 @@ import (
 func makePlugins[T any](ctx context.Context,
 	iCtx plugin.InjectionContext,
 	next http.Handler,
-	plugins config.Plugins,
+	pConfig config.Plugins,
 	pFactories map[string]plugin.NFactory,
 	makeHandlerFunc func(next http.Handler, t []T) http.Handler,
-) (http.Handler, error) {
-	ps := []T{}
-	for _, pluginCfg := range plugins {
-		p, err := pFactories[pluginCfg.Name].New(ctx)
+) (http.Handler, func(context.Context) error, error) {
+	plugins := []T{}
+
+	var teardowns []func(context.Context) error
+	teardown := func(ctx context.Context) error {
+		var err error
+		for _, t := range teardowns {
+			if e := t(ctx); e != nil {
+				err = errors.Join(err, e)
+			}
+		}
+		return err
+	}
+
+	for _, pluginCfg := range pConfig {
+		plugin, err := pFactories[pluginCfg.Name].New(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
+			return nil, teardown, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
+		}
+		teardowns = append(teardowns, plugin.Teardown)
+
+		if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
+			return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", plugin.Name())
 		}
 
-		if !slices.Contains(p.InjectionLevels(), iCtx.Level) {
-			return nil, fmt.Errorf("plugin %q can not be injected at the specified level", p.Name())
-		}
-
-		err = p.Setup(ctx, iCtx, pluginCfg.Config)
+		err = plugin.Setup(ctx, iCtx, pluginCfg.Config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup plugin %q: %w", p.Name(), err)
+			return nil, teardown, fmt.Errorf("failed to setup plugin %q: %w", plugin.Name(), err)
 		}
 
-		mw, ok := p.(T)
+		castedPlugin, ok := plugin.(T)
 		if !ok {
-			return nil, fmt.Errorf("plugin %q does not implement Middleware", p.Name())
+			return nil, teardown, fmt.Errorf("plugin %q does not implement Middleware", plugin.Name())
 		}
 
-		ps = append(ps, mw)
+		plugins = append(plugins, castedPlugin)
 	}
-	if len(ps) == 0 {
-		return next, nil
+	if len(plugins) == 0 {
+		return next, teardown, nil
 	}
-	return makeHandlerFunc(next, ps), nil
+	return makeHandlerFunc(next, plugins), teardown, nil
 }
 
 func handlerFromMiddlewares(next http.Handler, middlewares []plugin.Middleware) http.Handler {

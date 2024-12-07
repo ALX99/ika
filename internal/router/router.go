@@ -51,10 +51,8 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 	}
 
 	for nsName, ns := range cfg.Namespaces {
-		bPool := &pool.BufferPool{Pool: bytebufferpool.Pool{}}
 		log := slog.With(slog.String("namespace", nsName))
-		var transport http.RoundTripper
-		transport = makeTransport(ns.Transport)
+		var transport http.RoundTripper = makeTransport(ns.Transport)
 
 		transport, teardown, err := cfg.WrapTransport(ctx, ns.Plugins, transport)
 		if err != nil {
@@ -72,16 +70,17 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				p, err := proxy.NewProxy(proxy.Config{
 					Transport:  transport,
 					Namespace:  nsName,
-					BufferPool: bPool,
+					BufferPool: &pool.BufferPool{Pool: bytebufferpool.Pool{}},
 				})
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				handler, err := makePlugins(ctx, iCtx, p, path.Middlewares, cfg.PluginFacs2, handlerFromMiddlewares)
+				handler, teardown, err := makePlugins(ctx, iCtx, p, path.Middlewares, cfg.PluginFacs2, handlerFromMiddlewares)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
+				r.teardown = append(r.teardown, teardown)
 
 				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Plugins, handler)
 				if err != nil {
@@ -89,11 +88,13 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				handler, err = makePlugins(ctx, iCtx, handler, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
+				handler, teardown, err = makePlugins(ctx, iCtx, handler, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
 					cfg.PluginFacs2, handlerFromRequestModifiers)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
+				r.teardown = append(r.teardown, teardown)
+
 				log.Debug("Path registered",
 					"pattern", route.pattern,
 					"middlewares", slices.Collect(path.Middlewares.Names()),
