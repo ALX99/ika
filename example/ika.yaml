@@ -13,9 +13,10 @@ namespaces:
 
     middlewares:
       - name: accessLog
-      - name: noCache
     paths:
-      /: {}
+      /:
+        plugins:
+          - name: noCache
 
   httpbun.dozy.dev:
     transport:
