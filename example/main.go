@@ -92,7 +92,7 @@ func (w *tracer) Setup(_ context.Context, _ plugin.InjectionContext, config map[
 }
 
 func (w *tracer) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelNamespace}
+	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
 }
 
 func (w *tracer) Name() string {

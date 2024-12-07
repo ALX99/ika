@@ -92,7 +92,7 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	for _, cfg := range pluginCfg {
 		plugin, setup, err := setupper.getPlugin(ctx, iCtx, cfg)
 		if err != nil {
-			return v, teardown, fmt.Errorf("failed to get plugin %q: %w", cfg.Name, err)
+			return v, teardown, err
 		}
 
 		if setup {
