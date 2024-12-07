@@ -27,10 +27,6 @@ type FirstHandlerHook interface {
 	HookFirstHandler(ctx context.Context, handler http.Handler) (http.Handler, error)
 }
 
-type TransportHook interface {
-	HookTransport(ctx context.Context, transport http.RoundTripper) (http.RoundTripper, error)
-}
-
 type (
 	Capability     uint16
 	InjectionLevel uint8
@@ -41,8 +37,11 @@ const (
 	CapModifyRequests Capability = iota
 	// Plugins which report this capability must implement the [Middleware] interface
 	CapMiddleware
+	// Plugins which report this capability must implement the [TransportHook] interface
+	CapModifyTransport
 
 	LevelPath InjectionLevel = iota
+	LevelNamespace
 )
 
 type NFactory interface {
@@ -100,4 +99,10 @@ type RequestModifier interface {
 type Middleware interface {
 	Plugin
 	Handler(next ErrHandler) ErrHandler
+}
+
+// TransportHook is an interface that plugins can implement to modify the transport that ika uses.
+type TransportHook interface {
+	Plugin
+	HookTransport(ctx context.Context, transport http.RoundTripper) (http.RoundTripper, error)
 }

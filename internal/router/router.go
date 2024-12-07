@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/proxy"
 	"github.com/alx99/ika/internal/router/chain"
@@ -55,11 +56,22 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		log := slog.With(slog.String("namespace", nsName))
 		var transport http.RoundTripper = makeTransport(ns.Transport)
 
-		transport, teardown, err := cfg.WrapTransport(ctx, ns.Plugins, transport)
+		setupper := iplugin.NewSetupper(cfg.PluginFacs2)
+		iCtx := plugin.InjectionContext{
+			Namespace: nsName,
+			Level:     plugin.LevelNamespace,
+		}
+
+		wrapTransport, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
 		if err != nil {
 			return nil, errors.Join(err, r.Shutdown(ctx))
 		}
 		r.teardown = append(r.teardown, teardown)
+
+		transport, err = wrapTransport(ctx, transport)
+		if err != nil {
+			return nil, errors.Join(err, r.Shutdown(ctx))
+		}
 
 		p, err := proxy.NewProxy(proxy.Config{
 			Transport:  transport,
@@ -81,14 +93,14 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Level:       plugin.LevelPath,
 				}
 
-				mwChain, teardown, err := makePluginChain(ctx, iCtx, collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled()), cfg.PluginFacs2, handlerFromMiddlewares)
+				mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled()), iplugin.ChainFromMiddlewares)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				reqModChain, teardown, err := makePluginChain(ctx, iCtx, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
-					cfg.PluginFacs2, handlerFromRequestModifiers)
+				reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
+					iplugin.ChainFromReqModifiers)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}

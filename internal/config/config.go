@@ -120,20 +120,6 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pp
 	return nil
 }
 
-func (c Config) WrapTransport(ctx context.Context, pluginsCfg Plugins, tsp http.RoundTripper) (http.RoundTripper, func(context.Context) error, error) {
-	hooks, teardown, err := createPlugins[pplugin.TransportHook](ctx, pluginsCfg, c.pluginFactories)
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, hook := range hooks {
-		tsp, err = hook.HookTransport(ctx, tsp)
-		if err != nil {
-			return nil, teardown, fmt.Errorf("failed to apply hook: %w", err)
-		}
-	}
-	return tsp, teardown, nil
-}
-
 func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Plugins, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
 	hooks, teardown, err := createPlugins[pplugin.MiddlewareHook](ctx, hooksCfg, c.pluginFactories)
 	if err != nil {

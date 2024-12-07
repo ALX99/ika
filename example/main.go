@@ -76,13 +76,32 @@ func main() {
 	ika.Run(
 		ika.WithPlugin("tracer", &tracer{}),
 		ika.WithPlugin2(&noCache{}),
+		ika.WithPlugin2(&tracer{}),
 	)
 }
 
 type tracer struct{}
 
-func (w *tracer) Setup(_ context.Context, config map[string]any) error {
+var _ plugin.TransportHook = &tracer{}
+
+func (w *tracer) New(context.Context) (plugin.Plugin, error) {
+	return &tracer{}, nil
+}
+
+func (w *tracer) Setup(_ context.Context, _ plugin.InjectionContext, config map[string]any) error {
 	return nil
+}
+
+func (w *tracer) InjectionLevels() []plugin.InjectionLevel {
+	return []plugin.InjectionLevel{plugin.LevelNamespace}
+}
+
+func (w *tracer) Name() string {
+	return "tracer"
+}
+
+func (w *tracer) Capabilities() []plugin.Capability {
+	return []plugin.Capability{plugin.CapModifyTransport}
 }
 
 func (w *tracer) Teardown(context.Context) error {

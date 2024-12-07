@@ -9,6 +9,8 @@ servers:
 
 namespaces:
   /example:
+    hooks:
+      - name: tracer
     plugins:
       - name: tracer
     reqModifiers:
