@@ -64,19 +64,19 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		}
 		r.teardown = append(r.teardown, teardown)
 
-		for pattern, routeCfg := range ns.Paths {
-			for _, route := range makeRoutes(pattern, nsName, ns, routeCfg) {
+		for pattern, path := range ns.Paths {
+			for _, route := range makeRoutes(pattern, nsName, ns, path) {
 				p, err := proxy.NewProxy(proxy.Config{
 					Transport:  transport,
 					Namespace:  nsName,
-					Backends:   firstNonEmptyArr(routeCfg.Redirect.Backends, ns.Backends),
+					Backends:   firstNonEmptyArr(path.Redirect.Backends, ns.Backends),
 					BufferPool: bPool,
 				})
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				handler, err := r.applyMiddlewares(ctx, log, cfg, p, routeCfg, ns)
+				handler, err := r.applyMiddlewares(ctx, log, cfg, p, path, ns)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
@@ -91,44 +91,16 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				requestModifiers := []plugin.RequestModifier{}
-				for pluginCfg := range routeCfg.Plugins.Enabled() {
-					p, err := cfg.RequestModifiers[pluginCfg.Name].New(ctx)
-					if err != nil {
-						return nil, errors.Join(err, r.Shutdown(ctx))
-					}
-
-					if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
-						return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
-					}
-
-					err = p.Setup(ctx, plugin.InjectionContext{
-						Namespace:   nsName,
-						PathPattern: pattern,
-						Level:       plugin.PathLevel,
-					}, pluginCfg.Config)
-					if err != nil {
-						return nil, errors.Join(err, r.Shutdown(ctx))
-					}
-					requestModifiers = append(requestModifiers, any(p).(plugin.RequestModifier))
+				handler, err = makeRequestModifierHandler(ctx, handler, path, pattern, ns, nsName, cfg.RequestModifiers)
+				if err != nil {
+					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
-
-				newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					for _, rm := range requestModifiers {
-						r, err = rm.ModifyRequest(ctx, r)
-						if err != nil {
-							panic(err) // todo
-						}
-					}
-
-					handler.ServeHTTP(w, r)
-				})
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
 					Namespace:      nsName,
 					Route:          pattern,
 					GeneratedRoute: route.pattern,
-				}, newHandler))
+				}, handler))
 			}
 		}
 	}
@@ -217,6 +189,47 @@ func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path
 	}
 
 	return patterns
+}
+
+func makeRequestModifierHandler(ctx context.Context,
+	next http.Handler,
+	path config.Path,
+	pathPattern string,
+	ns config.Namespace,
+	nsName string,
+	requestModifiersFaqs map[string]plugin.NFactory,
+) (http.Handler, error) {
+	requestModifiers := []plugin.RequestModifier{}
+	for pluginCfg := range path.Plugins.Enabled() {
+		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
+			return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
+		}
+
+		err = p.Setup(ctx, plugin.InjectionContext{
+			Namespace:   nsName,
+			PathPattern: pathPattern,
+			Level:       plugin.PathLevel,
+		}, pluginCfg.Config)
+		if err != nil {
+			return nil, err
+		}
+		requestModifiers = append(requestModifiers, any(p).(plugin.RequestModifier))
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		for _, rm := range requestModifiers {
+			r, err = rm.ModifyRequest(ctx, r)
+			if err != nil {
+				panic(err) // todo
+			}
+		}
+		next.ServeHTTP(w, r)
+	}), nil
 }
 
 func makeTransport(cfg config.Transport) *http.Transport {
