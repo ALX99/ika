@@ -60,20 +60,21 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		}
 		r.teardown = append(r.teardown, teardown)
 
+		p, err := proxy.NewProxy(proxy.Config{
+			Transport:  transport,
+			Namespace:  nsName,
+			BufferPool: &pool.BufferPool{Pool: bytebufferpool.Pool{}},
+		})
+		if err != nil {
+			return nil, errors.Join(err, r.Shutdown(ctx))
+		}
+
 		for pattern, path := range ns.Paths {
 			for _, route := range makeRoutes(pattern, nsName, ns, path) {
 				iCtx := plugin.InjectionContext{
 					Namespace:   nsName,
 					PathPattern: pattern,
 					Level:       plugin.LevelPath,
-				}
-				p, err := proxy.NewProxy(proxy.Config{
-					Transport:  transport,
-					Namespace:  nsName,
-					BufferPool: &pool.BufferPool{Pool: bytebufferpool.Pool{}},
-				})
-				if err != nil {
-					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
 				handler, teardown, err := makePlugins(ctx, iCtx, p, path.Middlewares, cfg.PluginFacs2, handlerFromMiddlewares)
