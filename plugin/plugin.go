@@ -46,6 +46,11 @@ const (
 )
 
 type NFactory interface {
+	// New returns an instance of the plugin.
+	//
+	// It is allowed to return the same instance for multiple calls.
+	// However, do note that this might lead to difficult to debug issues.
+	// For this reason, it is recommended to return a new instance for each call.
 	New(ctx context.Context) (Plugin, error)
 }
 
@@ -66,6 +71,9 @@ type Plugin interface {
 	Name() string
 
 	// Capabilities must return the capabilities of the plugin.
+	//
+	// It is used for validation purposes to ensure the plugin satisfies
+	// the correct interface(s).
 	Capabilities() []Capability
 
 	// InjectionLevels must return the levels of injection the plugin supports.
@@ -78,6 +86,7 @@ type Plugin interface {
 	Setup(ctx context.Context, iCtx InjectionContext, config map[string]any) error
 
 	// Teardown should do the necessary teardown for the plugin.
+	// It is called once the plugin is no longer needed.
 	Teardown(ctx context.Context) error
 }
 
