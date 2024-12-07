@@ -14,11 +14,13 @@ import (
 func makePlugins[T any](ctx context.Context,
 	iCtx plugin.InjectionContext,
 	next http.Handler,
-	pConfig config.Plugins,
+	pluginCfg config.Plugins,
 	pFactories map[string]plugin.NFactory,
 	makeHandlerFunc func(next http.Handler, t []T) http.Handler,
 ) (http.Handler, func(context.Context) error, error) {
-	plugins := []T{}
+	var t T
+	// plugins that have been set up
+	plugins := make(map[string]plugin.Plugin)
 
 	var teardowns []func(context.Context) error
 	teardown := func(ctx context.Context) error {
@@ -31,33 +33,45 @@ func makePlugins[T any](ctx context.Context,
 		return err
 	}
 
-	for _, pluginCfg := range pConfig {
-		plugin, err := pFactories[pluginCfg.Name].New(ctx)
-		if err != nil {
-			return nil, teardown, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
-		}
-		teardowns = append(teardowns, plugin.Teardown)
+	for _, cfg := range pluginCfg {
+		plugin, ok := plugins[cfg.Name]
 
-		if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
-			return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", plugin.Name())
+		// Create a new plugin and set it up
+		if !ok {
+			var err error
+			plugin, err = pFactories[cfg.Name].New(ctx)
+			if err != nil {
+				return nil, teardown, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
+			}
+			teardowns = append(teardowns, plugin.Teardown)
+
+			if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
+				return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", plugin.Name())
+			}
+
+			if _, ok := plugin.(T); !ok {
+				return nil, teardown, fmt.Errorf("plugin %q does not implement %T", plugin.Name(), t)
+			}
+			plugins[plugin.Name()] = plugin
 		}
 
-		err = plugin.Setup(ctx, iCtx, pluginCfg.Config)
+		// NOTE this setup might happen more than once for the same plugin
+		err := plugin.Setup(ctx, iCtx, cfg.Config)
 		if err != nil {
 			return nil, teardown, fmt.Errorf("failed to setup plugin %q: %w", plugin.Name(), err)
 		}
-
-		castedPlugin, ok := plugin.(T)
-		if !ok {
-			return nil, teardown, fmt.Errorf("plugin %q does not implement Middleware", plugin.Name())
-		}
-
-		plugins = append(plugins, castedPlugin)
 	}
+
 	if len(plugins) == 0 {
 		return next, teardown, nil
 	}
-	return makeHandlerFunc(next, plugins), teardown, nil
+
+	castedPlugins := make([]T, 0, len(plugins))
+	for _, plugins := range plugins {
+		castedPlugins = append(castedPlugins, plugins.(T))
+	}
+
+	return makeHandlerFunc(next, castedPlugins), teardown, nil
 }
 
 func handlerFromMiddlewares(next http.Handler, middlewares []plugin.Middleware) http.Handler {

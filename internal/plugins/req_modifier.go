@@ -55,7 +55,7 @@ func (reqModifier) Capabilities() []plugin.Capability {
 }
 
 func (reqModifier) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
+	return []plugin.InjectionLevel{plugin.LevelPath}
 }
 
 func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
@@ -72,13 +72,13 @@ func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 		host = config["host"].(string)
 	}
 
-	rm.pathRewriteEnabled = toPath != ""
-	if rm.pathRewriteEnabled {
+	if toPath != "" {
+		rm.pathRewriteEnabled = true
 		rm.setupPathRewrite(routePattern, isNamespaced, toPath)
 	}
 
-	rm.hostRewriteEnabled = host != ""
-	if rm.hostRewriteEnabled {
+	if host != "" {
+		rm.hostRewriteEnabled = true
 		if err := rm.setupHostRewrite(host); err != nil {
 			return err
 		}

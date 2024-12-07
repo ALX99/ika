@@ -43,7 +43,6 @@ const (
 	CapMiddleware
 
 	LevelPath InjectionLevel = iota
-	LevelNamespace
 )
 
 type NFactory interface {
@@ -65,14 +64,19 @@ type InjectionContext struct {
 type Plugin interface {
 	// Name must return the name of the plugin
 	Name() string
+
 	// Capabilities must return the capabilities of the plugin.
 	Capabilities() []Capability
+
 	// InjectionLevels must return the levels of injection the plugin supports.
 	InjectionLevels() []InjectionLevel
+
 	// Setup should do the necessary setup for the plugin given the configuration.
-	// In case the plugin is injected multiple times, this function will be called for each injection.
-	// It is up to the plugin itself, to handle this correctly.
+	//
+	// In case the same plugin is injected on multiple multiple levels [Plugin.Setup] will be called multiple times.
+	// It is up to individual plugins to handle this case.
 	Setup(ctx context.Context, iCtx InjectionContext, config map[string]any) error
+
 	// Teardown should do the necessary teardown for the plugin.
 	Teardown(ctx context.Context) error
 }
