@@ -7,9 +7,7 @@ build:
 .PHONY: image
 image:
 	docker build -t ika:$(VERSION) .
-	docker build -t ika-builder:$(VERSION) -f Dockerfile.builder .
 	docker tag ika:$(VERSION) ika:latest
-	docker tag ika-builder:$(VERSION) ika-builder:latest
 
 .PHONY: up
 up:
