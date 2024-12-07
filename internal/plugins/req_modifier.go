@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/request"
-	"github.com/alx99/ika/middleware"
 	"github.com/alx99/ika/plugin"
 )
 
@@ -44,6 +43,8 @@ type reqModifier struct {
 
 	pathRewriteEnabled bool
 	hostRewriteEnabled bool
+
+	log *slog.Logger
 }
 
 func (reqModifier) Name() string {
@@ -84,6 +85,7 @@ func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 		}
 	}
 
+	rm.log = slog.With(slog.String("namespace", context.Namespace))
 	return nil
 }
 
@@ -124,7 +126,6 @@ func (rm *reqModifier) rewritePath(r *http.Request) error {
 	}
 
 done:
-	log := slog.With(slog.String("namespace", middleware.GetMetadata(r.Context()).Namespace))
 	prevPath := request.GetPath(r)
 	path := fmt.Sprintf(rm.replacePattern, args...)
 	var err error
@@ -137,7 +138,7 @@ done:
 	// remove query params from the path
 	r.URL.Path = strings.SplitN(r.URL.Path, "?", 2)[0]
 
-	log.LogAttrs(r.Context(), slog.LevelDebug, "Path rewritten",
+	rm.log.LogAttrs(r.Context(), slog.LevelDebug, "Path rewritten",
 		slog.String("from", prevPath), slog.String("to", r.URL.RawPath))
 	return nil
 }
