@@ -8,13 +8,6 @@ import (
 	"github.com/alx99/ika/internal/request"
 )
 
-func init() {
-	err := RegisterFunc("accessLog", accessLog)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func accessLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		st := &statusRecorder{ResponseWriter: w}

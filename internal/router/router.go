@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/alx99/ika/internal/middleware"
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/proxy"
 	pubMW "github.com/alx99/ika/middleware"
@@ -106,36 +105,6 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 	}
 
 	return r, nil
-}
-
-// applyMiddlewares initializes the given middlewares and returns a handler that chains them for the given path and namespace
-func (r *Router) applyMiddlewares(ctx context.Context, log *slog.Logger, cfg config.Config, handler http.Handler, path config.Path, ns config.Namespace) (http.Handler, error) {
-	for _, mwConfig := range firstNonEmptyArr(path.Middlewares, ns.Middlewares) {
-		log.Debug("Setting up middleware", "name", mwConfig.Name)
-		mw, err := middleware.Get(ctx, mwConfig.Name, handler)
-		if err != nil {
-			return nil, err
-		}
-
-		// Be nice to the user
-		if mwConfig.Config == nil {
-			mwConfig.Config = make(map[string]any)
-		}
-		err = mw.Setup(ctx, mwConfig.Config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup middleware %q: %w", mwConfig.Name, err)
-		}
-		handler = mw
-
-		var teardown func(context.Context) error
-		handler, teardown, err = cfg.WrapMiddleware(ctx, ns.Plugins, mwConfig.Name, handler)
-		if err != nil {
-			return nil, err
-		}
-		r.teardown = append(r.teardown, teardown)
-	}
-
-	return handler, nil
 }
 
 func firstNonEmptyArr[T any](vs ...[]T) []T {
