@@ -30,6 +30,7 @@ func WithPlugin[T any](name string, plugin T) Option {
 func WithPlugin2(plugin pplugin.NFactory) Option {
 	return func(cfg *config.RunOpts) {
 		cfg.Plugins2 = append(cfg.Plugins2, plugin)
+		// todo check that is correctly implements the right interface
 	}
 }
 

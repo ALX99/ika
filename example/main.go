@@ -64,7 +64,7 @@ func (w *noCache) Teardown(context.Context) error {
 	return nil
 }
 
-func (w *noCache) Handler(_ context.Context, next plugin.ErrHandler) (plugin.ErrHandler, error) {
+func (w *noCache) Handler(next plugin.ErrHandler) (plugin.ErrHandler, error) {
 	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		chimw.NoCache(plugin.WrapErrHandler(next)).ServeHTTP(w, r)
 		return nil

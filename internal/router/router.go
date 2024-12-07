@@ -3,7 +3,6 @@ package router
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -65,6 +64,11 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 		for pattern, path := range ns.Paths {
 			for _, route := range makeRoutes(pattern, nsName, ns, path) {
+				iCtx := plugin.InjectionContext{
+					Namespace:   nsName,
+					PathPattern: pattern,
+					Level:       plugin.LevelPath,
+				}
 				p, err := proxy.NewProxy(proxy.Config{
 					Transport:  transport,
 					Namespace:  nsName,
@@ -74,7 +78,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				handler, err := makeMiddlewaresHandler(ctx, p, path, pattern, ns, nsName, cfg.PluginFacs2)
+				handler, err := makePlugins(ctx, iCtx, p, path.Middlewares, cfg.PluginFacs2, handlerFromMiddlewares)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
@@ -85,7 +89,8 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				handler, err = makeRequestModifierHandler(ctx, handler, path, pattern, ns, nsName, cfg.PluginFacs2)
+				handler, err = makePlugins(ctx, iCtx, handler, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
+					cfg.PluginFacs2, handlerFromRequestModifiers)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
@@ -105,16 +110,6 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 	}
 
 	return r, nil
-}
-
-func firstNonEmptyArr[T any](vs ...[]T) []T {
-	for _, v := range vs {
-		if len(v) > 0 {
-			return v
-		}
-	}
-	var empty []T
-	return empty
 }
 
 func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path) []routePattern {
@@ -158,119 +153,6 @@ func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path
 	}
 
 	return patterns
-}
-
-func makeRequestModifierHandler(ctx context.Context,
-	next http.Handler,
-	path config.Path,
-	pathPattern string,
-	ns config.Namespace,
-	nsName string,
-	requestModifiersFaqs map[string]plugin.NFactory,
-) (http.Handler, error) {
-	requestModifiers := []plugin.RequestModifier{}
-	for _, pluginCfg := range append(slices.Collect(path.ReqModifiers.Enabled()), slices.Collect(ns.ReqModifiers.Enabled())...) {
-		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
-		}
-
-		// Does not support modifying requests
-		if !slices.Contains(p.Capabilities(), plugin.CapModifyRequests) {
-			continue
-		}
-
-		if !slices.Contains(p.InjectionLevels(), plugin.LevelPath) {
-			return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
-		}
-
-		err = p.Setup(ctx, plugin.InjectionContext{
-			Namespace:   nsName,
-			PathPattern: pathPattern,
-			Level:       plugin.LevelPath,
-		}, pluginCfg.Config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup plugin %q: %w", p.Name(), err)
-		}
-
-		rm, ok := p.(plugin.RequestModifier)
-		if !ok {
-			return nil, fmt.Errorf("plugin %q does not implement RequestModifier", p.Name())
-		}
-
-		requestModifiers = append(requestModifiers, rm)
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		for _, rm := range requestModifiers {
-			r, err = rm.ModifyRequest(ctx, r)
-			if err != nil {
-				panic(err) // todo
-			}
-		}
-		next.ServeHTTP(w, r)
-	}), nil
-}
-
-func makeMiddlewaresHandler(ctx context.Context,
-	next http.Handler,
-	path config.Path,
-	pathPattern string,
-	ns config.Namespace,
-	nsName string,
-	requestModifiersFaqs map[string]plugin.NFactory,
-) (http.Handler, error) {
-	middlewares := []plugin.Middleware{}
-	for pluginCfg := range path.Middlewares.Enabled() {
-		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
-		}
-
-		// Does not support middleware
-		if !slices.Contains(p.Capabilities(), plugin.CapMiddleware) {
-			continue
-		}
-
-		if !slices.Contains(p.InjectionLevels(), plugin.LevelPath) {
-			return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
-		}
-
-		err = p.Setup(ctx, plugin.InjectionContext{
-			Namespace:   nsName,
-			PathPattern: pathPattern,
-			Level:       plugin.LevelPath,
-		}, pluginCfg.Config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup plugin %q: %w", p.Name(), err)
-		}
-
-		mw, ok := p.(plugin.Middleware)
-		if !ok {
-			return nil, fmt.Errorf("plugin %q does not implement Middleware", p.Name())
-		}
-
-		middlewares = append(middlewares, mw)
-	}
-
-	if len(middlewares) == 0 {
-		return next, nil
-	}
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var nextE plugin.ErrHandler = plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			next.ServeHTTP(w, r)
-			return nil
-		})
-		for _, middleware := range middlewares {
-			var err error
-			nextE, err = middleware.Handler(ctx, nextE)
-			if err != nil {
-				panic(err) // todo
-			}
-		}
-		nextE.ServeHTTP(w, r)
-	}), nil
 }
 
 func makeTransport(cfg config.Transport) *http.Transport {

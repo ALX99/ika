@@ -72,7 +72,7 @@ type Plugin interface {
 	// Setup should do the necessary setup for the plugin given the configuration.
 	// In case the plugin is injected multiple times, this function will be called for each injection.
 	// It is up to the plugin itself, to handle this correctly.
-	Setup(ctx context.Context, context InjectionContext, config map[string]any) error
+	Setup(ctx context.Context, iCtx InjectionContext, config map[string]any) error
 	// Teardown should do the necessary teardown for the plugin.
 	Teardown(ctx context.Context) error
 }
@@ -87,5 +87,5 @@ type RequestModifier interface {
 type Middleware interface {
 	Plugin
 	// Handler should return an [ErrHandler] which will be called for each request.
-	Handler(ctx context.Context, next ErrHandler) (ErrHandler, error)
+	Handler(next ErrHandler) (ErrHandler, error)
 }
