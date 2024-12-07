@@ -1,5 +1,8 @@
 ika:
   gracefulShutdownTimeout: 1s
+  logger:
+    level: debug
+    format: text
 
 servers:
   - addr: :8888

@@ -1,7 +1,6 @@
 package ika
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -11,18 +10,16 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/logger"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
-	"github.com/golang-cz/devslog"
 )
 
 var (
 	printVersion = flag.Bool("version", false, "Print the version and exit.")
 	configPath   = flag.String("config", "ika.yaml", "Path to the configuration file.")
-	logFormat    = flag.String("log-format", "json", "Log format (json or text)")
 )
 
 // Run starts Ika
@@ -34,21 +31,6 @@ func Run(opts ...Option) {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 	defer cancel()
-
-	flush := initLogger()
-	defer flush()
-
-	// flush every 5 seconds
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(time.Second):
-				flush()
-			}
-		}
-	}()
 
 	cfg := config.NewRunOpts()
 	for _, opt := range opts {
@@ -68,6 +50,9 @@ func run(ctx context.Context, opts config.RunOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
+
+	flush := logger.Initialize(cfg.Ika.Logger)
+	defer flush()
 
 	err = cfg.SetRuntimeOpts(opts)
 	if err != nil {
@@ -98,35 +83,4 @@ func run(ctx context.Context, opts config.RunOpts) error {
 
 	// Shutdown
 	return errors.Join(s.Shutdown(ctx), router.Shutdown(ctx))
-}
-
-func initLogger() (flush func() error) {
-	w := bufio.NewWriterSize(os.Stdout, 32*1024)
-	var log *slog.Logger
-	if *logFormat == "text" {
-		log = slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		}))
-		if os.Getenv("IKA_DEBUG") != "" {
-			log = slog.New(devslog.NewHandler(w, &devslog.Options{
-				HandlerOptions: &slog.HandlerOptions{
-					Level:     slog.LevelDebug,
-					AddSource: true,
-				},
-			}))
-		}
-		// log = slog.New(tint.NewHandler(w, &tint.Options{
-		// 	Level: slog.LevelDebug,
-		// 	// AddSource: true,
-		// }))
-	} else {
-		log = slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-			// AddSource: true,
-		}))
-	}
-
-	slog.SetDefault(log)
-
-	return w.Flush
 }

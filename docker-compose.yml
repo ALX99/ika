@@ -4,7 +4,7 @@ services:
     ports:
       - "8888:8888"
       - "6060:6060"
-    command: ["/ika", "-config", "/config.yaml", "-log-format", "text"]
+    command: ["/ika", "-config", "/config.yaml"]
     volumes:
       - ./tests/ika.yaml:/config.yaml
     env_file: example/.env

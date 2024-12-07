@@ -1,4 +1,5 @@
 ika:
+  logLevel: debug
   gracefulShutdownTimeout: 1s
 
 servers:
