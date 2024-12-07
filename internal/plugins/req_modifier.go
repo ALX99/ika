@@ -87,7 +87,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 	return nil
 }
 
-func (rm *ReqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
+func (rm *ReqModifier) ModifyRequest(r *http.Request) (*http.Request, error) {
 	if rm.pathRewriteEnabled {
 		if err := rm.rewritePath(r); err != nil {
 			return nil, err

@@ -124,7 +124,7 @@ func ChainFromReqModifiers(requestModifiers []plugin.RequestModifier) chain.Chai
 		return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 			var err error
 			for _, requestModifier := range requestModifiers {
-				r, err = requestModifier.ModifyRequest(r.Context(), r)
+				r, err = requestModifier.ModifyRequest(r)
 				if err != nil {
 					return err
 				}

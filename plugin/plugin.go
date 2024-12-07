@@ -77,7 +77,7 @@ type Plugin interface {
 // RequestModifier is an interface that plugins can implement to modify requests.
 type RequestModifier interface {
 	Plugin
-	ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error)
+	ModifyRequest(r *http.Request) (*http.Request, error)
 }
 
 // Middleware is an interface that plugins can implement to modify both requests and responses.
