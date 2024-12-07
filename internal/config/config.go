@@ -134,20 +134,6 @@ func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Plugins, mwName str
 	return handler, teardown, nil
 }
 
-func (c Config) WrapFirstHandler(ctx context.Context, hooksCfg Plugins, handler http.Handler) (http.Handler, func(context.Context) error, error) {
-	hooks, teardown, err := createPlugins[pplugin.FirstHandlerHook](ctx, hooksCfg, c.pluginFactories)
-	if err != nil {
-		return nil, teardown, err
-	}
-	for _, hook := range hooks {
-		handler, err = hook.HookFirstHandler(ctx, handler)
-		if err != nil {
-			return nil, teardown, fmt.Errorf("failed to apply hook: %w", err)
-		}
-	}
-	return handler, teardown, nil
-}
-
 // ApplyOverride applies the NamespaceOverrides to the Config.
 func (c *Config) ApplyOverride() {
 	for name, ns := range c.Namespaces {

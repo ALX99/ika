@@ -145,6 +145,14 @@ func MakeTransportWrapper(hooks []plugin.TransportHook) func(context.Context, ht
 	return fn
 }
 
+func ChainFirstHandler(hooks []plugin.FirstHandlerHook) chain.Chain {
+	cons := make([]chain.Constructor, len(hooks))
+	for i := range hooks {
+		cons[i] = hooks[i].HookFirstHandler
+	}
+	return chain.New(cons...)
+}
+
 func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugin.Capability) error {
 	var t1 plugin.RequestModifier
 	var t2 plugin.Middleware
@@ -156,6 +164,10 @@ func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugi
 			}
 		case plugin.CapMiddleware:
 			if _, ok := p.(plugin.Middleware); !ok {
+				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
+			}
+		case plugin.CapFirstHandler:
+			if _, ok := p.(plugin.FirstHandlerHook); !ok {
 				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
 			}
 

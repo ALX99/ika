@@ -23,10 +23,6 @@ type MiddlewareHook interface {
 	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
 }
 
-type FirstHandlerHook interface {
-	HookFirstHandler(ctx context.Context, handler http.Handler) (http.Handler, error)
-}
-
 type (
 	Capability     uint16
 	InjectionLevel uint8
@@ -39,6 +35,8 @@ const (
 	CapMiddleware
 	// Plugins which report this capability must implement the [TransportHook] interface
 	CapModifyTransport
+	// Plugins which report this capability must implement the [FirstHandlerHook] interface
+	CapFirstHandler
 
 	LevelPath InjectionLevel = iota
 	LevelNamespace
@@ -105,4 +103,10 @@ type Middleware interface {
 type TransportHook interface {
 	Plugin
 	HookTransport(ctx context.Context, transport http.RoundTripper) (http.RoundTripper, error)
+}
+
+// FirstHandlerHook is an interface that plugins can implement to modify the first handler that get executed for each path.
+type FirstHandlerHook interface {
+	Plugin
+	HookFirstHandler(handler ErrHandler) ErrHandler
 }

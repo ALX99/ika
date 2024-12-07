@@ -106,13 +106,14 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				ch := chain.New().Extend(reqModChain).Extend(mwChain)
-
-				handler, teardown, err := cfg.WrapFirstHandler(ctx, ns.Plugins, ch.Then(plugin.WrapHTTPHandler(p)))
+				firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()),
+					iplugin.ChainFirstHandler)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 				r.teardown = append(r.teardown, teardown)
+
+				ch := chain.New().Extend(firstHandlerChain).Extend(reqModChain).Extend(mwChain)
 
 				log.Debug("Path registered",
 					"pattern", route.pattern,
@@ -124,7 +125,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Namespace:      nsName,
 					Route:          pattern,
 					GeneratedRoute: route.pattern,
-				}, handler))
+				}, ch.Then(plugin.WrapHTTPHandler(p))))
 			}
 		}
 	}

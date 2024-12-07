@@ -101,7 +101,7 @@ func (w *tracer) Name() string {
 }
 
 func (w *tracer) Capabilities() []plugin.Capability {
-	return []plugin.Capability{plugin.CapModifyTransport}
+	return []plugin.Capability{plugin.CapModifyTransport, plugin.CapFirstHandler}
 }
 
 func (w *tracer) Teardown(context.Context) error {
@@ -114,21 +114,22 @@ func (w *tracer) HookTransport(_ context.Context, tsp http.RoundTripper) (http.R
 	), nil
 }
 
-func (w *tracer) HookFirstHandler(_ context.Context, handler http.Handler) (http.Handler, error) {
+func (w *tracer) HookFirstHandler(next plugin.ErrHandler) plugin.ErrHandler {
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attr := metaDataAttrs(r)
 		trace.SpanFromContext(r.Context()).
 			SetAttributes(attr...)
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(attr...)
-		handler.ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	})
 
-	return otelhttp.NewHandler(newHandler, "Request",
-			otelhttp.WithPublicEndpoint(),
-			otelhttp.WithMetricAttributesFn(metaDataAttrs),
-		),
-		nil
+	otelHandler := otelhttp.NewHandler(newHandler, "Request",
+		otelhttp.WithPublicEndpoint(),
+		otelhttp.WithMetricAttributesFn(metaDataAttrs),
+	)
+
+	return plugin.WrapHTTPHandler(otelHandler)
 }
 
 func (w *tracer) HookMiddleware(_ context.Context, name string, next http.Handler) (http.Handler, error) {
