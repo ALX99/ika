@@ -43,9 +43,47 @@ func init() {
 	}
 }
 
+var _ plugin.Middleware = &noCache{}
+
+type noCache struct{}
+
+func (w *noCache) New(context.Context) (plugin.Plugin, error) {
+	return &noCache{}, nil
+}
+
+func (w *noCache) Name() string {
+	return "noCache"
+}
+
+func (w *noCache) Capabilities() []plugin.Capability {
+	return []plugin.Capability{plugin.CapMiddleware}
+}
+
+func (w *noCache) InjectionLevels() []plugin.InjectionLevel {
+	return []plugin.InjectionLevel{plugin.PathLevel}
+}
+
+func (w *noCache) Setup(_ context.Context, _ plugin.InjectionContext, config map[string]any) error {
+	return nil
+}
+
+func (w *noCache) Teardown(context.Context) error {
+	return nil
+}
+
+func (w *noCache) Handler(_ context.Context, next plugin.ErrHandler) (plugin.ErrHandler, error) {
+	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		chimw.NoCache(plugin.WrapErrHandler(next)).ServeHTTP(w, r)
+		return nil
+	}), nil
+}
+
 func main() {
 	defer setupMonitoring()()
-	ika.Run(ika.WithPlugin("tracer", &tracer{}))
+	ika.Run(
+		ika.WithPlugin("tracer", &tracer{}),
+		ika.WithPlugin2(&noCache{}),
+	)
 }
 
 type tracer struct{}
