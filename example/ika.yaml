@@ -36,11 +36,6 @@ namespaces:
       - name: accessLog
     paths:
       /: {}
-      /trigger-rewrite/{anything...}:
-        reqModifiers:
-          - name: basic-modifier
-            config:
-              path: /{anything...}
 
   go.dozy.dev:
     hooks:

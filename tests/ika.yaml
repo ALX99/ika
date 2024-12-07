@@ -1,6 +1,8 @@
 ika:
-  logLevel: debug
   gracefulShutdownTimeout: 1s
+  logger:
+    level: debug
+    format: text
 
 servers:
   - addr: :8888
@@ -60,6 +62,17 @@ namespaces:
 
   /testns1:
     <<: *testns1
+
+  /perf:
+    transport:
+      maxIdleConnsPerHost: 250
+    paths:
+      "/a/{something}":
+        reqModifiers:
+          - name: basic-modifier
+            config:
+              host: http://httpbun-local
+              path: /any/{something}
 
   /testns2:
     reqModifiers:

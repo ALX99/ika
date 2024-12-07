@@ -8,7 +8,7 @@
   "disable_rest": true,
   "endpoints": [
     {
-      "endpoint": "/testns1/{something}",
+      "endpoint": "/perf/a/{something}",
       "method": "GET",
       "output_encoding": "no-op",
       "backend": [

@@ -54,15 +54,19 @@ Ika is configured using a YAML file. The most basic configuration file might loo
 ```yaml
 ika:
   gracefulShutdownTimeout: 30s
+  logger:
+    level: debug
+    format: text
 
 server:
   addr: :8888  # The server will listen on port 8080 for incoming traffic
 
 namespaces:
   api:
-    backends:
-      - host: dummyjson.com
-        scheme: https
+    reqModifiers:
+      - name: basic-modifier
+        config:
+          host: https://dummyjson.com
     middlewares:
       - name: accessLog
     paths:

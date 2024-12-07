@@ -13,12 +13,12 @@ export const options = {
     breaking: {
       executor: 'ramping-vus',
       stages: [
-        { duration: '50s', target: 500 },
+        { duration: '30s', target: 1000 },
       ],
     },
   },
 };
 
 export default function() {
-  http.get("https://httpbun.dozy.dev/trigger-rewrite/any");
+  http.get("http://localhost:8888/perf/a/hello");
 }
