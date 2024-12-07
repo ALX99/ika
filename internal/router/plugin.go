@@ -46,19 +46,19 @@ func makePlugins[T any](ctx context.Context,
 			teardowns = append(teardowns, plugin.Teardown)
 
 			if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
-				return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", plugin.Name())
+				return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
 			}
 
 			if _, ok := plugin.(T); !ok {
-				return nil, teardown, fmt.Errorf("plugin %q does not implement %T", plugin.Name(), t)
+				return nil, teardown, fmt.Errorf("plugin %q does not implement %T", cfg.Name, t)
 			}
-			plugins[plugin.Name()] = plugin
+			plugins[cfg.Name] = plugin
 		}
 
 		// NOTE this setup might happen more than once for the same plugin
 		err := plugin.Setup(ctx, iCtx, cfg.Config)
 		if err != nil {
-			return nil, teardown, fmt.Errorf("failed to setup plugin %q: %w", plugin.Name(), err)
+			return nil, teardown, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
 		}
 	}
 

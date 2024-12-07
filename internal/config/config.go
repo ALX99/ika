@@ -101,14 +101,10 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pp
 	}
 
 	c.PluginFacs2 = make(map[string]pplugin.NFactory)
-	c.PluginFacs2["basic-modifier"] = plugins.RewriterFactory{} // hack
-	c.PluginFacs2["accessLog"] = plugins.AccessLogger{}         // hack
+	c.PluginFacs2["basic-modifier"] = plugins.ReqModifier{} // hack
+	c.PluginFacs2["accessLog"] = plugins.AccessLogger{}     // hack
 	for _, factory := range factories2 {
-		plugin, err := factory.New(context.TODO())
-		if err != nil {
-			return err
-		}
-		c.PluginFacs2[plugin.Name()] = factory
+		c.PluginFacs2[factory.Name()] = factory
 	}
 
 	for _, ns := range c.Namespaces {

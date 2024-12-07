@@ -18,19 +18,13 @@ import (
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
 var (
-	_ plugin.Plugin          = &reqModifier{}
-	_ plugin.RequestModifier = &reqModifier{}
+	_ plugin.Plugin          = &ReqModifier{}
+	_ plugin.RequestModifier = &ReqModifier{}
 )
 
-type RewriterFactory struct{}
-
-func (RewriterFactory) New(context.Context) (plugin.Plugin, error) {
-	return &reqModifier{}, nil
-}
-
-// reqModifier is a reqModifier that 100% accurately rewrite the request path.
+// ReqModifier is a ReqModifier that 100% accurately rewrite the request path.
 // This includes totally preserving the original path even if some parts have been encoded.
-type reqModifier struct {
+type ReqModifier struct {
 	// segments is a map of segment index to their corresponding replacement
 	segments []string
 
@@ -47,19 +41,23 @@ type reqModifier struct {
 	log *slog.Logger
 }
 
-func (reqModifier) Name() string {
+func (ReqModifier) New(context.Context) (plugin.Plugin, error) {
+	return &ReqModifier{}, nil
+}
+
+func (ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
-func (reqModifier) Capabilities() []plugin.Capability {
+func (ReqModifier) Capabilities() []plugin.Capability {
 	return []plugin.Capability{plugin.CapModifyRequests}
 }
 
-func (reqModifier) InjectionLevels() []plugin.InjectionLevel {
+func (ReqModifier) InjectionLevels() []plugin.InjectionLevel {
 	return []plugin.InjectionLevel{plugin.LevelPath}
 }
 
-func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
+func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
 	isNamespaced := strings.HasPrefix(context.Namespace, "/") && context.Namespace != "root"
 
@@ -89,7 +87,7 @@ func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 	return nil
 }
 
-func (rm *reqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
+func (rm *ReqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
 	if rm.pathRewriteEnabled {
 		if err := rm.rewritePath(r); err != nil {
 			return nil, err
@@ -103,9 +101,9 @@ func (rm *reqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*htt
 	return r, nil
 }
 
-func (reqModifier) Teardown(context.Context) error { return nil }
+func (ReqModifier) Teardown(context.Context) error { return nil }
 
-func (rm *reqModifier) rewritePath(r *http.Request) error {
+func (rm *ReqModifier) rewritePath(r *http.Request) error {
 	reqPath := strings.Split(request.GetPath(r), "/")
 
 	args := make([]any, 0, 10)
@@ -143,14 +141,14 @@ done:
 	return nil
 }
 
-func (rm *reqModifier) rewriteHost(r *http.Request) {
+func (rm *ReqModifier) rewriteHost(r *http.Request) {
 	r.Host = rm.host
 	r.URL.Host = rm.host
 	r.URL.Scheme = rm.scheme
 }
 
 // setupPathRewrite sets up the path rewrite
-func (rm *reqModifier) setupPathRewrite(routePattern string, isNamespaced bool, toPath string) {
+func (rm *ReqModifier) setupPathRewrite(routePattern string, isNamespaced bool, toPath string) {
 	rm.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
 	s := strings.Split(routePattern, "/")
 
@@ -181,7 +179,7 @@ func (rm *reqModifier) setupPathRewrite(routePattern string, isNamespaced bool, 
 }
 
 // setupHostRewrite sets up the host rewrite
-func (rm *reqModifier) setupHostRewrite(host string) error {
+func (rm *ReqModifier) setupHostRewrite(host string) error {
 	u, err := url.Parse(host)
 	if err != nil {
 		return err

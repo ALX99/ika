@@ -46,6 +46,9 @@ const (
 )
 
 type NFactory interface {
+	// Name must return the name of the plugin that the factory creates.
+	Name() string
+
 	// New returns an instance of the plugin.
 	//
 	// It is allowed to return the same instance for multiple calls.
@@ -67,9 +70,6 @@ type InjectionContext struct {
 }
 
 type Plugin interface {
-	// Name must return the name of the plugin
-	Name() string
-
 	// Capabilities must return the capabilities of the plugin.
 	//
 	// It is used for validation purposes to ensure the plugin satisfies
