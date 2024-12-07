@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/alx99/ika/internal/request"
@@ -56,7 +57,7 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 			slog.String("pathPattern", a.pathPattern),
 			slog.String("remote", r.RemoteAddr),
 			slog.String("userAgent", r.UserAgent()),
-			slog.Int("status", st.status),
+			slog.Int64("status", st.status.Load()),
 			slog.Int64("duration", time.Since(now).Milliseconds()),
 			slog.String("namespace", a.namespace),
 		}
@@ -71,17 +72,15 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 
 type statusRecorder struct {
 	http.ResponseWriter
-	status int
+	status atomic.Int64
 }
 
 func (w *statusRecorder) WriteHeader(statusCode int) {
-	w.status = statusCode
+	w.status.Store(int64(statusCode))
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
 func (w *statusRecorder) Write(b []byte) (int, error) {
-	if w.status == 0 {
-		w.status = http.StatusOK
-	}
+	w.status.CompareAndSwap(0, http.StatusOK)
 	return w.ResponseWriter.Write(b)
 }
