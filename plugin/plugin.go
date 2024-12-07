@@ -99,5 +99,5 @@ type RequestModifier interface {
 // Middleware is an interface that plugins can implement to modify both requests and responses.
 type Middleware interface {
 	Plugin
-	Handler(next ErrHandler) (ErrHandler, error)
+	Handler(next ErrHandler) ErrHandler
 }

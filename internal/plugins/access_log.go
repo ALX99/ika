@@ -44,7 +44,7 @@ func (a *AccessLogger) Setup(ctx context.Context, context plugin.InjectionContex
 
 func (AccessLogger) Teardown(context.Context) error { return nil }
 
-func (a *AccessLogger) Handler(next plugin.ErrHandler) (plugin.ErrHandler, error) {
+func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		now := time.Now()
 		st := statusRecorder{ResponseWriter: w}
@@ -60,7 +60,7 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) (plugin.ErrHandler, error
 			slog.String("namespace", a.namespace),
 		)
 		return nil
-	}), nil
+	})
 }
 
 type statusRecorder struct {

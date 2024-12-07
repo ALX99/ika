@@ -8,16 +8,17 @@ import (
 	"slices"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/router/chain"
 	"github.com/alx99/ika/plugin"
 )
 
-func makePlugins[T plugin.Plugin](ctx context.Context,
+func makePluginChain[T plugin.Plugin](ctx context.Context,
 	iCtx plugin.InjectionContext,
-	next http.Handler,
 	pluginCfg config.Plugins,
 	pFactories map[string]plugin.NFactory,
-	makeHandlerFunc func(next http.Handler, t []T) http.Handler,
-) (http.Handler, func(context.Context) error, error) {
+	makeHandlerFunc func(t []T) chain.Chain,
+) (chain.Chain, func(context.Context) error, error) {
+	var ch chain.Chain
 	// plugins that have been set up
 	plugins := []T{}
 	initializedPluginIndexes := make(map[string]int)
@@ -40,21 +41,21 @@ func makePlugins[T plugin.Plugin](ctx context.Context,
 			var err error
 			plugin, err = pFactories[cfg.Name].New(ctx)
 			if err != nil {
-				return nil, teardown, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
+				return ch, teardown, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
 			}
 			teardowns = append(teardowns, plugin.Teardown)
 
 			if err := verifyCapabilities(cfg.Name, plugin, pFactories[cfg.Name].Capabilities()); err != nil {
-				return nil, teardown, err
+				return ch, teardown, err
 			}
 
 			if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
-				return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
+				return ch, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
 			}
 
 			casted, ok := plugin.(T)
 			if !ok {
-				return nil, teardown, fmt.Errorf("plugin %q does not implement %T", cfg.Name, casted)
+				return ch, teardown, fmt.Errorf("plugin %q does not implement %T", cfg.Name, casted)
 			}
 
 			plugins = append(plugins, casted)
@@ -63,45 +64,36 @@ func makePlugins[T plugin.Plugin](ctx context.Context,
 		// NOTE this setup might happen more than once for the same plugin
 		err := plugin.Setup(ctx, iCtx, cfg.Config)
 		if err != nil {
-			return nil, teardown, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
+			return ch, teardown, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
 		}
 	}
 
-	if len(plugins) == 0 {
-		return next, teardown, nil
-	}
-
-	return makeHandlerFunc(next, plugins), teardown, nil
+	return makeHandlerFunc(plugins), teardown, nil
 }
 
-func handlerFromMiddlewares(next http.Handler, middlewares []plugin.Middleware) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var nextE plugin.ErrHandler = plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			next.ServeHTTP(w, r)
-			return nil
-		})
-		for _, middleware := range middlewares {
+func handlerFromMiddlewares(middlewares []plugin.Middleware) chain.Chain {
+	cons := make([]chain.Constructor, len(middlewares))
+	for i := range middlewares {
+		cons[i] = middlewares[i].Handler
+	}
+	return chain.New(cons...)
+}
+
+func handlerFromRequestModifiers(requestModifiers []plugin.RequestModifier) chain.Chain {
+	fn := func(eh plugin.ErrHandler) plugin.ErrHandler {
+		return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 			var err error
-			nextE, err = middleware.Handler(nextE)
-			if err != nil {
-				panic(err) // todo
+			for _, requestModifier := range requestModifiers {
+				r, err = requestModifier.ModifyRequest(r.Context(), r)
+				if err != nil {
+					return err
+				}
 			}
-		}
-		nextE.ServeHTTP(w, r)
-	})
-}
+			return eh.ServeHTTP(w, r)
+		})
+	}
 
-func handlerFromRequestModifiers(next http.Handler, requestModifiers []plugin.RequestModifier) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		for _, rm := range requestModifiers {
-			r, err = rm.ModifyRequest(context.Background(), r)
-			if err != nil {
-				panic(err) // todo
-			}
-		}
-		next.ServeHTTP(w, r)
-	})
+	return chain.New(fn)
 }
 
 func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugin.Capability) error {

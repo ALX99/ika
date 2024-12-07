@@ -11,6 +11,7 @@ import (
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/proxy"
+	"github.com/alx99/ika/internal/router/chain"
 	pubMW "github.com/alx99/ika/middleware"
 	"github.com/alx99/ika/plugin"
 	"github.com/valyala/bytebufferpool"
@@ -69,6 +70,9 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 			return nil, errors.Join(err, r.Shutdown(ctx))
 		}
 
+		// TODO don't explode namespace level request modifiers / middlewares into paths
+		// create multiple subrouters for each namespace in the future
+		// Then plugins will be able to run on both namespace and path level
 		for pattern, path := range ns.Paths {
 			for _, route := range makeRoutes(pattern, nsName, ns, path) {
 				iCtx := plugin.InjectionContext{
@@ -77,20 +81,22 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Level:       plugin.LevelPath,
 				}
 
-				handler, teardown, err := makePlugins(ctx, iCtx, p, collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled()), cfg.PluginFacs2, handlerFromMiddlewares)
+				mwChain, teardown, err := makePluginChain(ctx, iCtx, collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled()), cfg.PluginFacs2, handlerFromMiddlewares)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Plugins, handler)
-				if err != nil {
-					return nil, errors.Join(err, r.Shutdown(ctx))
-				}
-				r.teardown = append(r.teardown, teardown)
-
-				handler, teardown, err = makePlugins(ctx, iCtx, handler, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
+				reqModChain, teardown, err := makePluginChain(ctx, iCtx, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
 					cfg.PluginFacs2, handlerFromRequestModifiers)
+				if err != nil {
+					return nil, errors.Join(err, r.Shutdown(ctx))
+				}
+				r.teardown = append(r.teardown, teardown)
+
+				ch := chain.New().Extend(reqModChain).Extend(mwChain)
+
+				handler, teardown, err := cfg.WrapFirstHandler(ctx, ns.Plugins, ch.Then(plugin.WrapHTTPHandler(p)))
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
