@@ -203,6 +203,13 @@
                 "$ref": "#/definitions/plugin"
               }
             },
+            "req-modifiers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "$ref": "#/definitions/plugin"
+              }
+            },
             "paths": {
               "type": "object",
               "patternProperties": {
@@ -210,7 +217,7 @@
                   "type": "object",
                   "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
                   "properties": {
-                    "plugins": {
+                    "req-modifiers": {
                       "type": "array",
                       "items": {
                         "type": "object",

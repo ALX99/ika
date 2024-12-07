@@ -20,7 +20,7 @@ var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
 var (
 	_ plugin.Plugin          = &reqModifier{}
-	_ plugin.RequestModifier = reqModifier{}
+	_ plugin.RequestModifier = &reqModifier{}
 )
 
 type RewriterFactory struct{}

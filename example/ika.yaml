@@ -15,7 +15,7 @@ namespaces:
       - name: accessLog
     paths:
       /:
-        plugins:
+        middlewares:
           - name: noCache
 
   httpbun.dozy.dev:
@@ -30,7 +30,7 @@ namespaces:
     paths:
       /: {}
       /trigger-rewrite/{anything...}:
-        plugins:
+        req-modifiers:
           - name: req-modifier
             config:
               path: /{anything...}

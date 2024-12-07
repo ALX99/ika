@@ -40,7 +40,7 @@ type Config struct {
 	// runtime configuration
 	pluginFactories []PluginFactory
 
-	RequestModifiers map[string]pplugin.NFactory
+	PluginFacs2 map[string]pplugin.NFactory
 }
 
 func Read(path string) (Config, error) {
@@ -100,20 +100,20 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pp
 		}
 	}
 
-	c.RequestModifiers = make(map[string]pplugin.NFactory)
-	c.RequestModifiers["req-modifier"] = plugins.RewriterFactory{} // hack
+	c.PluginFacs2 = make(map[string]pplugin.NFactory)
+	c.PluginFacs2["req-modifier"] = plugins.RewriterFactory{} // hack
 	for _, factory := range factories2 {
 		plugin, err := factory.New(context.TODO())
 		if err != nil {
 			return err
 		}
-		c.RequestModifiers[plugin.Name()] = factory
+		c.PluginFacs2[plugin.Name()] = factory
 	}
 
 	for _, ns := range c.Namespaces {
 		for _, path := range ns.Paths {
-			for plugin := range path.Plugins.Enabled() {
-				if !slices.Contains(slices.Collect(maps.Keys(c.RequestModifiers)), plugin.Name) {
+			for plugin := range path.ReqModifiers.Enabled() {
+				if !slices.Contains(slices.Collect(maps.Keys(c.PluginFacs2)), plugin.Name) {
 					return fmt.Errorf("plugin %q not found", plugin.Name)
 				}
 			}

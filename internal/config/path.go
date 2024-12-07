@@ -2,10 +2,10 @@ package config
 
 type (
 	Path struct {
-		Methods     []Method    `yaml:"methods"`
-		Middlewares Middlewares `yaml:"middlewares"`
-		Redirect    Redirect    `yaml:"redirect"`
-		Plugins     Plugins     `yaml:"plugins"`
+		Methods      []Method `yaml:"methods"`
+		Middlewares  Plugins  `yaml:"middlewares"`
+		Redirect     Redirect `yaml:"redirect"`
+		ReqModifiers Plugins  `yaml:"req-modifiers"`
 	}
 	Paths map[string]Path
 

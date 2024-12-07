@@ -14,13 +14,24 @@ type (
 )
 
 // Enabled returns an iterator that yields all Enabled plugins.
-func (h Plugins) Enabled() iter.Seq[Plugin] {
+func (p Plugins) Enabled() iter.Seq[Plugin] {
 	return func(yield func(Plugin) bool) {
-		for _, h := range h {
+		for _, h := range p {
 			if h.Enabled.Or(true) {
 				if !yield(h) {
 					return
 				}
+			}
+		}
+	}
+}
+
+// Names returns an iterator that yields all enabled plugin names.
+func (p Plugins) Names() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for _, h := range p {
+			if !yield(h.Name) {
+				return
 			}
 		}
 	}

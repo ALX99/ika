@@ -75,14 +75,10 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
 
-				handler, err := makeMiddlewaresHandler(ctx, p, path, pattern, ns, nsName, cfg.RequestModifiers)
+				handler, err := makeMiddlewaresHandler(ctx, p, path, pattern, ns, nsName, cfg.PluginFacs2)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
-
-				log.Debug("Setting up path",
-					"pattern", route.pattern,
-					"middlewares", slices.Collect(ns.Middlewares.Names()))
 
 				handler, teardown, err = cfg.WrapFirstHandler(ctx, ns.Plugins, handler)
 				if err != nil {
@@ -90,10 +86,15 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				handler, err = makeRequestModifierHandler(ctx, handler, path, pattern, ns, nsName, cfg.RequestModifiers)
+				handler, err = makeRequestModifierHandler(ctx, handler, path, pattern, ns, nsName, cfg.PluginFacs2)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
+				log.Debug("Path registered",
+					"pattern", route.pattern,
+					"middlewares", slices.Collect(path.Middlewares.Names()),
+					"req-modifiers", slices.Collect(path.ReqModifiers.Names()),
+				)
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
 					Namespace:      nsName,
@@ -169,7 +170,7 @@ func makeRequestModifierHandler(ctx context.Context,
 	requestModifiersFaqs map[string]plugin.NFactory,
 ) (http.Handler, error) {
 	requestModifiers := []plugin.RequestModifier{}
-	for pluginCfg := range path.Plugins.Enabled() {
+	for pluginCfg := range path.ReqModifiers.Enabled() {
 		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
@@ -221,7 +222,7 @@ func makeMiddlewaresHandler(ctx context.Context,
 	requestModifiersFaqs map[string]plugin.NFactory,
 ) (http.Handler, error) {
 	middlewares := []plugin.Middleware{}
-	for pluginCfg := range path.Plugins.Enabled() {
+	for pluginCfg := range path.Middlewares.Enabled() {
 		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)

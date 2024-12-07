@@ -20,37 +20,37 @@ namespaces:
     paths:
       /any: {}
       /get:
-        plugins:
+        req-modifiers:
           - &any-rewrite
             name: req-modifier
             config:
               path: /any
       /only-get:
         methods: [GET]
-        plugins:
+        req-modifiers:
           - *any-rewrite
       /httpbun/{any...}:
-        plugins:
+        req-modifiers:
           - name: req-modifier
             config:
               path: /{any...}
       /wildcard-rewrite/{any...}:
-        plugins:
+        req-modifiers:
           - name: req-modifier
             config:
               path: "/any/{any...}"
       /path-rewrite/{a1}/{a2}:
-        plugins:
+        req-modifiers:
           - name: req-modifier
             config:
               path: "/any/{a1}/{a2}"
       /not-terminated/{any}/:
         methods: [GET]
-        plugins:
+        req-modifiers:
           - *any-rewrite
       /terminated/{any}/{$}:
         methods: [GET]
-        plugins:
+        req-modifiers:
           - *any-rewrite
 
   /testns1:

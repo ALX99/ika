@@ -78,6 +78,7 @@ type Plugin interface {
 
 // RequestModifier is an interface that plugins can implement to modify incoming requests.
 type RequestModifier interface {
+	Plugin
 	ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error)
 }
 
@@ -95,6 +96,7 @@ func (f ErrHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) error 
 
 // Middleware is an interface that plugins can implement to modify both requests and responses.
 type Middleware interface {
+	Plugin
 	// Handler should return an [ErrHandler] which will be called for each request.
 	Handler(ctx context.Context, next ErrHandler) (ErrHandler, error)
 }
