@@ -39,6 +39,8 @@ type (
 const (
 	// The plugins which report this capability must implement the [RequestModifier] interface
 	CapModifyRequests Capability = iota
+	// The plugins which report this capability must implement the [Middleware] interface
+	CapMiddleware
 
 	PathLevel InjectionLevel = iota
 )
@@ -74,6 +76,34 @@ type Plugin interface {
 	Teardown(ctx context.Context) error
 }
 
+// RequestModifier is an interface that plugins can implement to modify incoming requests.
 type RequestModifier interface {
 	ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error)
+}
+
+// ErrHandler is similar to an [http.Handler] but it can return an error.
+// When an error is encountered, the request will be aborted and the error written to the response.
+type ErrHandler interface {
+	ServeHTTP(http.ResponseWriter, *http.Request) error
+}
+
+type ErrHandlerFunc func(http.ResponseWriter, *http.Request) error
+
+func (f ErrHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+	return f(w, r)
+}
+
+// Middleware is an interface that plugins can implement to modify both requests and responses.
+type Middleware interface {
+	// Handler should return an [ErrHandler] which will be called for each request.
+	Handler(ctx context.Context, next ErrHandler) (ErrHandler, error)
+}
+
+// WrapHTTPHandler turns an [http.Handler] into an [ErrHandler].
+// TODO detect errors from the wrapped handler and abort the request chain.
+func WrapHTTPHandler(h http.Handler) ErrHandler {
+	return ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		h.ServeHTTP(w, r)
+		return nil
+	})
 }
