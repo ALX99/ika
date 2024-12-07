@@ -53,7 +53,7 @@ func (w *noCache) Capabilities() []plugin.Capability {
 }
 
 func (w *noCache) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.PathLevel}
+	return []plugin.InjectionLevel{plugin.LevelPath}
 }
 
 func (w *noCache) Setup(_ context.Context, _ plugin.InjectionContext, config map[string]any) error {

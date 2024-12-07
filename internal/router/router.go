@@ -170,7 +170,7 @@ func makeRequestModifierHandler(ctx context.Context,
 	requestModifiersFaqs map[string]plugin.NFactory,
 ) (http.Handler, error) {
 	requestModifiers := []plugin.RequestModifier{}
-	for pluginCfg := range path.ReqModifiers.Enabled() {
+	for _, pluginCfg := range append(slices.Collect(path.ReqModifiers.Enabled()), slices.Collect(ns.ReqModifiers.Enabled())...) {
 		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
@@ -181,14 +181,14 @@ func makeRequestModifierHandler(ctx context.Context,
 			continue
 		}
 
-		if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
+		if !slices.Contains(p.InjectionLevels(), plugin.LevelPath) {
 			return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
 		}
 
 		err = p.Setup(ctx, plugin.InjectionContext{
 			Namespace:   nsName,
 			PathPattern: pathPattern,
-			Level:       plugin.PathLevel,
+			Level:       plugin.LevelPath,
 		}, pluginCfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup plugin %q: %w", p.Name(), err)
@@ -233,14 +233,14 @@ func makeMiddlewaresHandler(ctx context.Context,
 			continue
 		}
 
-		if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
+		if !slices.Contains(p.InjectionLevels(), plugin.LevelPath) {
 			return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
 		}
 
 		err = p.Setup(ctx, plugin.InjectionContext{
 			Namespace:   nsName,
 			PathPattern: pathPattern,
-			Level:       plugin.PathLevel,
+			Level:       plugin.LevelPath,
 		}, pluginCfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup plugin %q: %w", p.Name(), err)

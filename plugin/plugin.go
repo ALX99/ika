@@ -42,7 +42,8 @@ const (
 	// The plugins which report this capability must implement the [Middleware] interface
 	CapMiddleware
 
-	PathLevel InjectionLevel = iota
+	LevelPath InjectionLevel = iota
+	LevelNamespace
 )
 
 type NFactory interface {
