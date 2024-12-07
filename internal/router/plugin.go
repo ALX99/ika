@@ -45,6 +45,10 @@ func makePlugins[T any](ctx context.Context,
 			}
 			teardowns = append(teardowns, plugin.Teardown)
 
+			if err := verifyCapabilities(cfg.Name, plugin, pFactories[cfg.Name].Capabilities()); err != nil {
+				return nil, teardown, err
+			}
+
 			if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
 				return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
 			}
@@ -102,4 +106,21 @@ func handlerFromRequestModifiers(next http.Handler, requestModifiers []plugin.Re
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugin.Capability) error {
+	for _, capability := range capabilities {
+		switch capability {
+		case plugin.CapModifyRequests:
+			if _, ok := p.(plugin.RequestModifier); !ok {
+				return fmt.Errorf("plugin %q does not implement RequestModifier", pluginName)
+			}
+		case plugin.CapMiddleware:
+			if _, ok := p.(plugin.Middleware); !ok {
+				return fmt.Errorf("plugin %q does not implement Middleware", pluginName)
+			}
+
+		}
+	}
+	return nil
 }

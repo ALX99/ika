@@ -37,9 +37,9 @@ type (
 )
 
 const (
-	// The plugins which report this capability must implement the [RequestModifier] interface
+	// Plugins which report this capability must implement the [RequestModifier] interface
 	CapModifyRequests Capability = iota
-	// The plugins which report this capability must implement the [Middleware] interface
+	// Plugins which report this capability must implement the [Middleware] interface
 	CapMiddleware
 
 	LevelPath InjectionLevel = iota
@@ -48,6 +48,12 @@ const (
 type NFactory interface {
 	// Name must return the name of the plugin that the factory creates.
 	Name() string
+
+	// Capabilities must return the capabilities of the plugin.
+	//
+	// It is used for validation purposes to ensure the plugin satisfies
+	// the correct interface(s).
+	Capabilities() []Capability
 
 	// New returns an instance of the plugin.
 	//
@@ -70,12 +76,6 @@ type InjectionContext struct {
 }
 
 type Plugin interface {
-	// Capabilities must return the capabilities of the plugin.
-	//
-	// It is used for validation purposes to ensure the plugin satisfies
-	// the correct interface(s).
-	Capabilities() []Capability
-
 	// InjectionLevels must return the levels of injection the plugin supports.
 	InjectionLevels() []InjectionLevel
 
@@ -90,7 +90,7 @@ type Plugin interface {
 	Teardown(ctx context.Context) error
 }
 
-// RequestModifier is an interface that plugins can implement to modify incoming requests.
+// RequestModifier is an interface that plugins can implement to modify requests.
 type RequestModifier interface {
 	Plugin
 	ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error)
@@ -99,6 +99,5 @@ type RequestModifier interface {
 // Middleware is an interface that plugins can implement to modify both requests and responses.
 type Middleware interface {
 	Plugin
-	// Handler should return an [ErrHandler] which will be called for each request.
 	Handler(next ErrHandler) (ErrHandler, error)
 }
