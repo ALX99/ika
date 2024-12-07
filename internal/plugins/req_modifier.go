@@ -39,7 +39,11 @@ type reqModifier struct {
 	// where %s should be replaced with the corresponding segment
 	replacePattern string
 
+	host   string
+	scheme string
+
 	pathRewriteEnabled bool
+	hostRewriteEnabled bool
 }
 
 func (reqModifier) Name() string {
@@ -57,24 +61,41 @@ func (reqModifier) InjectionLevels() []plugin.InjectionLevel {
 func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
 	isNamespaced := strings.HasPrefix(context.Namespace, "/")
-	toPath := config["path"].(string)
-	// host := config["host"].(string)
+
+	var toPath string
+	if _, ok := config["path"]; ok {
+		toPath = config["path"].(string)
+	}
+
+	var host string
+	if _, ok := config["host"]; ok {
+		host = config["host"].(string)
+	}
 
 	rm.pathRewriteEnabled = toPath != ""
 	if rm.pathRewriteEnabled {
 		rm.setupPathRewrite(routePattern, isNamespaced, toPath)
 	}
 
+	rm.hostRewriteEnabled = host != ""
+	if rm.hostRewriteEnabled {
+		if err := rm.setupHostRewrite(host); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (rm reqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
-	if !rm.pathRewriteEnabled {
-		return r, nil
+func (rm *reqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http.Request, error) {
+	if rm.pathRewriteEnabled {
+		if err := rm.rewritePath(r); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := rm.rewritePath(r); err != nil {
-		return nil, err
+	if rm.hostRewriteEnabled {
+		rm.rewriteHost(r)
 	}
 
 	return r, nil
@@ -82,7 +103,7 @@ func (rm reqModifier) ModifyRequest(ctx context.Context, r *http.Request) (*http
 
 func (reqModifier) Teardown(context.Context) error { return nil }
 
-func (rm reqModifier) rewritePath(r *http.Request) error {
+func (rm *reqModifier) rewritePath(r *http.Request) error {
 	reqPath := strings.Split(request.GetPath(r), "/")
 
 	args := make([]any, 0, 10)
@@ -121,6 +142,12 @@ done:
 	return nil
 }
 
+func (rm *reqModifier) rewriteHost(r *http.Request) {
+	r.Host = rm.host
+	r.URL.Host = rm.host
+	r.URL.Scheme = rm.scheme
+}
+
 // setupPathRewrite sets up the path rewrite
 func (rm *reqModifier) setupPathRewrite(routePattern string, isNamespaced bool, toPath string) {
 	rm.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
@@ -150,6 +177,18 @@ func (rm *reqModifier) setupPathRewrite(routePattern string, isNamespaced bool, 
 			}
 		}
 	}
+}
+
+// setupHostRewrite sets up the host rewrite
+func (rm *reqModifier) setupHostRewrite(host string) error {
+	u, err := url.Parse(host)
+	if err != nil {
+		return err
+	}
+
+	rm.host = u.Host
+	rm.scheme = u.Scheme
+	return nil
 }
 
 func isWildcard(segment string) bool {

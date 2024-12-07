@@ -8,8 +8,10 @@ namespaces:
   /example:
     plugins:
       - name: tracer
-    backends:
-      - host: http://httpbun
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: http://httpbun
 
     middlewares:
       - name: accessLog
@@ -23,8 +25,10 @@ namespaces:
       maxIdleConnsPerHost: 250
     plugins:
       - name: tracer
-    backends:
-      - host: https://httpbun.com
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: https://httpbun.com
     middlewares:
       - name: accessLog
     paths:
@@ -38,8 +42,10 @@ namespaces:
   go.dozy.dev:
     plugins:
       - name: tracer
-    backends:
-      - host: https://go.dev
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: https://go.dev
     middlewares:
       - name: accessLog
     paths:

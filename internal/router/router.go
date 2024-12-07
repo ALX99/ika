@@ -68,7 +68,6 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				p, err := proxy.NewProxy(proxy.Config{
 					Transport:  transport,
 					Namespace:  nsName,
-					Backends:   firstNonEmptyArr(path.Redirect.Backends, ns.Backends),
 					BufferPool: bPool,
 				})
 				if err != nil {

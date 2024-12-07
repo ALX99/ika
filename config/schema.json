@@ -2,18 +2,6 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "definitions": {
-    "backend": {
-      "type": "object",
-      "properties": {
-        "host": {
-          "type": "string",
-          "description": "Scheme and host for the backend."
-        }
-      },
-      "required": [
-        "host"
-      ]
-    },
     "server": {
       "type": "object",
       "description": "Configuration for the Ika HTTP Server.",
@@ -179,13 +167,6 @@
         "^\/*[a-zA-Z0-9.]+$": {
           "type": "object",
           "properties": {
-            "backends": {
-              "type": "array",
-              "description": "Specify the backends that will be used by default for all routes.",
-              "items": {
-                "$ref": "#/definitions/backend"
-              }
-            },
             "transport": {
               "$ref": "#/definitions/transport"
             },
@@ -224,19 +205,6 @@
                         "$ref": "#/definitions/plugin"
                       }
                     },
-                    "redirect": {
-                      "type": "object",
-                      "description": "Configuration for redirecting requests.",
-                      "properties": {
-                        "backends": {
-                          "type": "array",
-                          "description": "Override the namespace backends for this path.",
-                          "items": {
-                            "$ref": "#/definitions/backend"
-                          }
-                        }
-                      }
-                    },
                     "methods": {
                       "type": "array",
                       "description": "The HTTP methods that should be allowed for this path. If it is empty, all methods are allowed.",
@@ -245,13 +213,6 @@
                         "description": "The HTTP method"
                       },
                       "default": []
-                    },
-                    "backends": {
-                      "type": "array",
-                      "description": "Override the namespace backends for this path.",
-                      "items": {
-                        "$ref": "#/definitions/backend"
-                      }
                     },
                     "middlewares": {
                       "description": "Override the namespace-level middlewares for this endpoint.",
@@ -272,7 +233,6 @@
             "additionalProperties": false
           },
           "required": [
-            "backends",
             "paths"
           ],
           "additionalProperties": false

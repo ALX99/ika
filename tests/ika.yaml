@@ -6,13 +6,17 @@ servers:
 
 namespaces:
   root:
-    backends:
-      - host: http://httpbun-local
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: http://httpbun-local
     paths:
       /headers: {}
   testns1.com: &testns1
-    backends:
-      - host: http://httpbun-local
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: http://httpbun-local
 
     middlewares:
     - name: accessLog
@@ -57,16 +61,20 @@ namespaces:
     <<: *testns1
 
   /testns2:
-    backends:
-      - host: http://httpbun-local
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: http://httpbun-local
     middlewares:
     - name: accessLog
     paths:
       /any/{any...}: {}
 
   passthrough.com: &passthrough
-    backends:
-      - host: http://httpbun-local
+    req-modifiers:
+      - name: req-modifier
+        config:
+          host: http://httpbun-local
     middlewares:
     - name: accessLog
     paths:
