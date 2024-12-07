@@ -136,7 +136,7 @@ func ChainFromReqModifiers(requestModifiers []plugin.RequestModifier) chain.Chai
 	return chain.New(fn)
 }
 
-func MakeTransportWrapper(hooks []plugin.TransportHook) func(context.Context, http.RoundTripper) (http.RoundTripper, error) {
+func MakeTransportWrapper(hooks []plugin.TransportHooker) func(context.Context, http.RoundTripper) (http.RoundTripper, error) {
 	fn := func(ctx context.Context, tsp http.RoundTripper) (http.RoundTripper, error) {
 		var err error
 		for _, hook := range hooks {
@@ -150,7 +150,7 @@ func MakeTransportWrapper(hooks []plugin.TransportHook) func(context.Context, ht
 	return fn
 }
 
-func ChainFirstHandler(hooks []plugin.FirstHandlerHook) chain.Chain {
+func ChainFirstHandler(hooks []plugin.FirstHandlerHooker) chain.Chain {
 	cons := make([]chain.Constructor, len(hooks))
 	for i := range hooks {
 		cons[i] = hooks[i].HookFirstHandler
@@ -172,7 +172,7 @@ func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugi
 				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
 			}
 		case plugin.CapFirstHandler:
-			if _, ok := p.(plugin.FirstHandlerHook); !ok {
+			if _, ok := p.(plugin.FirstHandlerHooker); !ok {
 				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
 			}
 

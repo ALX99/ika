@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	version                         = "unknown"
-	_       plugin.TransportHook    = &tracer{}
-	_       plugin.MiddlewareHook   = &tracer{}
-	_       plugin.FirstHandlerHook = &tracer{}
+	version                           = "unknown"
+	_       plugin.TransportHooker    = &tracer{}
+	_       plugin.MiddlewareHook     = &tracer{}
+	_       plugin.FirstHandlerHooker = &tracer{}
 )
 
 var _ plugin.Middleware = &noCache{}
@@ -81,7 +81,7 @@ func main() {
 
 type tracer struct{}
 
-var _ plugin.TransportHook = &tracer{}
+var _ plugin.TransportHooker = &tracer{}
 
 func (w *tracer) New(context.Context) (plugin.Plugin, error) {
 	return &tracer{}, nil
