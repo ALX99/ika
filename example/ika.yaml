@@ -8,8 +8,8 @@ namespaces:
   /example:
     plugins:
       - name: tracer
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: http://httpbun
 
@@ -25,8 +25,8 @@ namespaces:
       maxIdleConnsPerHost: 250
     plugins:
       - name: tracer
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: https://httpbun.com
     middlewares:
@@ -34,16 +34,16 @@ namespaces:
     paths:
       /: {}
       /trigger-rewrite/{anything...}:
-        req-modifiers:
-          - name: req-modifier
+        reqModifiers:
+          - name: basic-modifier
             config:
               path: /{anything...}
 
   go.dozy.dev:
     plugins:
       - name: tracer
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: https://go.dev
     middlewares:

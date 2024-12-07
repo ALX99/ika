@@ -6,15 +6,15 @@ servers:
 
 namespaces:
   root:
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: http://httpbun-local
     paths:
       /headers: {}
   testns1.com: &testns1
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: http://httpbun-local
 
@@ -24,45 +24,45 @@ namespaces:
     paths:
       /any: {}
       /get:
-        req-modifiers:
+        reqModifiers:
           - &any-rewrite
-            name: req-modifier
+            name: basic-modifier
             config:
               path: /any
       /only-get:
         methods: [GET]
-        req-modifiers:
+        reqModifiers:
           - *any-rewrite
       /httpbun/{any...}:
-        req-modifiers:
-          - name: req-modifier
+        reqModifiers:
+          - name: basic-modifier
             config:
               path: /{any...}
       /wildcard-rewrite/{any...}:
-        req-modifiers:
-          - name: req-modifier
+        reqModifiers:
+          - name: basic-modifier
             config:
               path: "/any/{any...}"
       /path-rewrite/{a1}/{a2}:
-        req-modifiers:
-          - name: req-modifier
+        reqModifiers:
+          - name: basic-modifier
             config:
               path: "/any/{a1}/{a2}"
       /not-terminated/{any}/:
         methods: [GET]
-        req-modifiers:
+        reqModifiers:
           - *any-rewrite
       /terminated/{any}/{$}:
         methods: [GET]
-        req-modifiers:
+        reqModifiers:
           - *any-rewrite
 
   /testns1:
     <<: *testns1
 
   /testns2:
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: http://httpbun-local
     middlewares:
@@ -71,8 +71,8 @@ namespaces:
       /any/{any...}: {}
 
   passthrough.com: &passthrough
-    req-modifiers:
-      - name: req-modifier
+    reqModifiers:
+      - name: basic-modifier
         config:
           host: http://httpbun-local
     middlewares:

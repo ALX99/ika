@@ -184,7 +184,7 @@
                 "$ref": "#/definitions/plugin"
               }
             },
-            "req-modifiers": {
+            "reqModifiers": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -198,7 +198,7 @@
                   "type": "object",
                   "description": "The endpoint path. Please see PATH here: https://pkg.go.dev/net/http#hdr-Patterns.",
                   "properties": {
-                    "req-modifiers": {
+                    "reqModifiers": {
                       "type": "array",
                       "items": {
                         "type": "object",

@@ -5,7 +5,7 @@ type (
 		Transport    Transport `yaml:"transport"`
 		Paths        Paths     `yaml:"paths"`
 		Middlewares  Plugins   `yaml:"middlewares"` // todo add support
-		ReqModifiers Plugins   `yaml:"req-modifiers"`
+		ReqModifiers Plugins   `yaml:"reqModifiers"`
 		Plugins      Plugins   `yaml:"plugins"`
 	}
 	Namespaces map[string]Namespace

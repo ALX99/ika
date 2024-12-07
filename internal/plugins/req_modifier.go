@@ -47,7 +47,7 @@ type reqModifier struct {
 }
 
 func (reqModifier) Name() string {
-	return "req-modifier"
+	return "basic-modifier"
 }
 
 func (reqModifier) Capabilities() []plugin.Capability {

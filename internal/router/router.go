@@ -99,7 +99,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 				log.Debug("Path registered",
 					"pattern", route.pattern,
 					"middlewares", slices.Collect(path.Middlewares.Names()),
-					"req-modifiers", slices.Collect(path.ReqModifiers.Names()),
+					"reqModifiers", slices.Collect(path.ReqModifiers.Names()),
 				)
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
