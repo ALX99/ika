@@ -283,6 +283,11 @@ func makeMiddlewaresHandler(ctx context.Context,
 
 		middlewares = append(middlewares, mw)
 	}
+
+	if len(middlewares) == 0 {
+		return next, nil
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var nextE plugin.ErrHandler = plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 			next.ServeHTTP(w, r)
