@@ -77,7 +77,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Level:       plugin.LevelPath,
 				}
 
-				handler, teardown, err := makePlugins(ctx, iCtx, p, path.Middlewares, cfg.PluginFacs2, handlerFromMiddlewares)
+				handler, teardown, err := makePlugins(ctx, iCtx, p, collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled()), cfg.PluginFacs2, handlerFromMiddlewares)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx))
 				}
