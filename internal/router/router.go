@@ -203,7 +203,7 @@ func makeRequestModifierHandler(ctx context.Context,
 	for pluginCfg := range path.Plugins.Enabled() {
 		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
 		}
 
 		if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
@@ -216,7 +216,7 @@ func makeRequestModifierHandler(ctx context.Context,
 			Level:       plugin.PathLevel,
 		}, pluginCfg.Config)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to setup plugin %q: %w", p.Name(), err)
 		}
 
 		rm, ok := p.(plugin.RequestModifier)
