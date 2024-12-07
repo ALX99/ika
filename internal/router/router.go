@@ -206,6 +206,11 @@ func makeRequestModifierHandler(ctx context.Context,
 			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
 		}
 
+		// Does not support modifying requests
+		if !slices.Contains(p.Capabilities(), plugin.CapModifyRequests) {
+			continue
+		}
+
 		if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
 			return nil, fmt.Errorf("plugin %q does not support path level injection", p.Name())
 		}
@@ -251,6 +256,11 @@ func makeMiddlewaresHandler(ctx context.Context,
 		p, err := requestModifiersFaqs[pluginCfg.Name].New(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create plugin %q: %w", pluginCfg.Name, err)
+		}
+
+		// Does not support middleware
+		if !slices.Contains(p.Capabilities(), plugin.CapMiddleware) {
+			continue
 		}
 
 		if !slices.Contains(p.InjectionLevels(), plugin.PathLevel) {
