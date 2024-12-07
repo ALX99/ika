@@ -74,9 +74,8 @@ func (w *noCache) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 func main() {
 	defer setupMonitoring()()
 	ika.Run(
-		ika.WithPlugin("tracer", &tracer{}),
-		ika.WithPlugin2(&noCache{}),
-		ika.WithPlugin2(&tracer{}),
+		ika.WithPlugin(&noCache{}),
+		ika.WithPlugin(&tracer{}),
 	)
 }
 

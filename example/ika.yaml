@@ -11,8 +11,6 @@ namespaces:
   /example:
     hooks:
       - name: tracer
-    plugins:
-      - name: tracer
     reqModifiers:
       - name: basic-modifier
         config:
@@ -28,7 +26,7 @@ namespaces:
   httpbun.dozy.dev:
     transport:
       maxIdleConnsPerHost: 250
-    plugins:
+    hooks:
       - name: tracer
     reqModifiers:
       - name: basic-modifier
@@ -45,7 +43,7 @@ namespaces:
               path: /{anything...}
 
   go.dozy.dev:
-    plugins:
+    hooks:
       - name: tracer
     reqModifiers:
       - name: basic-modifier

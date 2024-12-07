@@ -13,12 +13,12 @@ import (
 )
 
 type PluginSetupper struct {
-	factories                map[string]plugin.NFactory
+	factories                map[string]plugin.Factory
 	plugins                  []plugin.Plugin
 	initializedPluginIndexes map[string]int
 }
 
-func NewSetupper(factories map[string]plugin.NFactory) *PluginSetupper {
+func NewSetupper(factories map[string]plugin.Factory) *PluginSetupper {
 	return &PluginSetupper{
 		factories:                factories,
 		initializedPluginIndexes: map[string]int{},
@@ -38,8 +38,13 @@ func (ps *PluginSetupper) getPlugin(ctx context.Context, iCtx plugin.InjectionCo
 		return ps.plugins[i], false, nil
 	}
 
+	factory, ok := ps.factories[cfg.Name]
+	if !ok {
+		return nil, false, fmt.Errorf("plugin %q not found", cfg.Name)
+	}
+
 	// Create a new plugin and set it up
-	plugin, err := ps.factories[cfg.Name].New(ctx)
+	plugin, err := factory.New(ctx)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
 	}

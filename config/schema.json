@@ -177,13 +177,6 @@
                 "$ref": "#/definitions/middleware"
               }
             },
-            "plugins": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "$ref": "#/definitions/plugin"
-              }
-            },
             "hooks": {
               "type": "array",
               "items": {

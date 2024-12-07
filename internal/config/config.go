@@ -1,11 +1,9 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"maps"
-	"net/http"
 	"os"
 	"reflect"
 	"slices"
@@ -17,7 +15,6 @@ import (
 
 type PluginFactory struct {
 	PluginVal reflect.Value
-	Factory   pplugin.Factory
 
 	// name of the plugin
 	name string
@@ -26,9 +23,7 @@ type PluginFactory struct {
 }
 
 type RunOpts struct {
-	Plugins map[string]PluginFactory
-
-	Plugins2 []pplugin.NFactory
+	Plugins2 []pplugin.Factory
 }
 
 type Config struct {
@@ -40,7 +35,7 @@ type Config struct {
 	// runtime configuration
 	pluginFactories []PluginFactory
 
-	PluginFacs2 map[string]pplugin.NFactory
+	PluginFacs2 map[string]pplugin.Factory
 }
 
 func Read(path string) (Config, error) {
@@ -65,42 +60,19 @@ func Read(path string) (Config, error) {
 }
 
 func NewRunOpts() RunOpts {
-	return RunOpts{
-		Plugins: make(map[string]PluginFactory),
-	}
+	return RunOpts{}
 }
 
 func (c *Config) SetRuntimeOpts(opts RunOpts) error {
-	if err := c.loadPlugins(opts.Plugins, opts.Plugins2); err != nil {
+	if err := c.loadPlugins(opts.Plugins2); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pplugin.NFactory) error {
-	for nsName, ns := range c.Namespaces {
-		for cfg := range ns.Plugins.Enabled() {
-			// Try to find the factory
-			factory, ok := factories[cfg.Name]
-			if !ok {
-				return fmt.Errorf("plugin %q not found", cfg.Name)
-			}
-
-			// Update information
-			factory.name = cfg.Name
-			factory.namespaces = slices.Compact(append(factory.namespaces, nsName))
-			factories[cfg.Name] = factory
-		}
-	}
-
-	for _, factory := range factories {
-		if factory.namespaces != nil {
-			c.pluginFactories = append(c.pluginFactories, factory)
-		}
-	}
-
-	c.PluginFacs2 = make(map[string]pplugin.NFactory)
+func (c *Config) loadPlugins(factories2 []pplugin.Factory) error {
+	c.PluginFacs2 = make(map[string]pplugin.Factory)
 	c.PluginFacs2["basic-modifier"] = plugins.ReqModifier{} // hack
 	c.PluginFacs2["accessLog"] = plugins.AccessLogger{}     // hack
 	for _, factory := range factories2 {
@@ -120,82 +92,10 @@ func (c *Config) loadPlugins(factories map[string]PluginFactory, factories2 []pp
 	return nil
 }
 
-func (c Config) WrapMiddleware(ctx context.Context, hooksCfg Plugins, mwName string, handler http.Handler) (http.Handler, func(context.Context) error, error) {
-	hooks, teardown, err := createPlugins[pplugin.MiddlewareHook](ctx, hooksCfg, c.pluginFactories)
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, hook := range hooks {
-		handler, err = hook.HookMiddleware(ctx, mwName, handler)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to apply hook: %w", err)
-		}
-	}
-	return handler, teardown, nil
-}
-
 // ApplyOverride applies the NamespaceOverrides to the Config.
 func (c *Config) ApplyOverride() {
 	for name, ns := range c.Namespaces {
 		ns.Transport = override(ns.Transport, c.NamespaceOverride.Transport)
 		c.Namespaces[name] = ns
 	}
-}
-
-// createPlugins creates plugins for the given namespace.
-func createPlugins[T any](ctx context.Context, pluginsCfg Plugins, factories []PluginFactory) ([]T, func(context.Context) error, error) {
-	var plugins []T
-	var teardowns []func(context.Context) error
-
-	teardown := func(ctx context.Context) error {
-		var err error
-		for _, t := range teardowns {
-			err = errors.Join(err, t(ctx))
-		}
-		return err
-	}
-
-	for pluginCfg := range pluginsCfg.Enabled() {
-		for _, factory := range factories {
-			if factory.name != pluginCfg.Name {
-				continue
-			}
-
-			if _, ok := factory.PluginVal.Interface().(T); !ok {
-				var t T
-				return nil, teardown, fmt.Errorf("plugin %q of type %T does not implement %T", factory.name, factory.PluginVal.Interface(), t)
-			}
-
-			plugin, err := factory.Factory.New(ctx)
-			if err != nil {
-				return nil, nil, errors.Join(
-					fmt.Errorf("failed to create plugin %q: %w", factory.name, err),
-					teardown(ctx),
-				)
-			}
-
-			if setupper, ok := plugin.(pplugin.Setupper); ok {
-				err = setupper.Setup(ctx, pluginCfg.Config)
-				if err != nil {
-					return nil, nil, errors.Join(
-						fmt.Errorf("failed to setup plugin %q: %w", factory.name, err),
-						teardown(ctx),
-					)
-				}
-			}
-
-			typedPlugin, ok := plugin.(T)
-			if !ok {
-				return nil, nil, errors.Join(
-					errors.New("developer error: failed to cast plugin"),
-					teardown(ctx),
-				)
-			}
-			plugins = append(plugins, typedPlugin)
-			if teardowner, ok := plugin.(pplugin.Teardowner); ok {
-				teardowns = append(teardowns, teardowner.Teardown)
-			}
-		}
-	}
-	return plugins, teardown, nil
 }

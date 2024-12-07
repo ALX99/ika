@@ -5,20 +5,7 @@ import (
 	"net/http"
 )
 
-//go:generate minimock -i Factory,TransportHook,Hook -o ../mocks -s _mock.go
-
-type Factory interface {
-	New(context.Context) (any, error)
-}
-
-type Setupper interface {
-	Setup(ctx context.Context, config map[string]any) error
-}
-
-type Teardowner interface {
-	Teardown(ctx context.Context) error
-}
-
+// TODO
 type MiddlewareHook interface {
 	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
 }
@@ -42,7 +29,7 @@ const (
 	LevelNamespace
 )
 
-type NFactory interface {
+type Factory interface {
 	// Name must return the name of the plugin that the factory creates.
 	Name() string
 
