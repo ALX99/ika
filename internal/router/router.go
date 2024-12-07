@@ -218,7 +218,13 @@ func makeRequestModifierHandler(ctx context.Context,
 		if err != nil {
 			return nil, err
 		}
-		requestModifiers = append(requestModifiers, any(p).(plugin.RequestModifier))
+
+		rm, ok := p.(plugin.RequestModifier)
+		if !ok {
+			return nil, fmt.Errorf("plugin %q does not implement RequestModifier", p.Name())
+		}
+
+		requestModifiers = append(requestModifiers, rm)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
