@@ -11,33 +11,32 @@ import (
 	"github.com/alx99/ika/plugin"
 )
 
-func makePlugins[T any](ctx context.Context,
+func makePlugins[T plugin.Plugin](ctx context.Context,
 	iCtx plugin.InjectionContext,
 	next http.Handler,
 	pluginCfg config.Plugins,
 	pFactories map[string]plugin.NFactory,
 	makeHandlerFunc func(next http.Handler, t []T) http.Handler,
 ) (http.Handler, func(context.Context) error, error) {
-	var t T
 	// plugins that have been set up
-	plugins := make(map[string]plugin.Plugin)
+	plugins := []T{}
+	initializedPluginIndexes := make(map[string]int)
 
 	var teardowns []func(context.Context) error
 	teardown := func(ctx context.Context) error {
 		var err error
 		for _, t := range teardowns {
-			if e := t(ctx); e != nil {
-				err = errors.Join(err, e)
-			}
+			err = errors.Join(err, t(ctx))
 		}
 		return err
 	}
 
 	for _, cfg := range pluginCfg {
-		plugin, ok := plugins[cfg.Name]
-
-		// Create a new plugin and set it up
-		if !ok {
+		var plugin plugin.Plugin
+		if i, ok := initializedPluginIndexes[cfg.Name]; ok {
+			plugin = plugins[i]
+		} else {
+			// Create a new plugin and set it up
 			var err error
 			plugin, err = pFactories[cfg.Name].New(ctx)
 			if err != nil {
@@ -53,10 +52,12 @@ func makePlugins[T any](ctx context.Context,
 				return nil, teardown, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
 			}
 
-			if _, ok := plugin.(T); !ok {
-				return nil, teardown, fmt.Errorf("plugin %q does not implement %T", cfg.Name, t)
+			casted, ok := plugin.(T)
+			if !ok {
+				return nil, teardown, fmt.Errorf("plugin %q does not implement %T", cfg.Name, casted)
 			}
-			plugins[cfg.Name] = plugin
+
+			plugins = append(plugins, casted)
 		}
 
 		// NOTE this setup might happen more than once for the same plugin
@@ -70,12 +71,7 @@ func makePlugins[T any](ctx context.Context,
 		return next, teardown, nil
 	}
 
-	castedPlugins := make([]T, 0, len(plugins))
-	for _, plugins := range plugins {
-		castedPlugins = append(castedPlugins, plugins.(T))
-	}
-
-	return makeHandlerFunc(next, castedPlugins), teardown, nil
+	return makeHandlerFunc(next, plugins), teardown, nil
 }
 
 func handlerFromMiddlewares(next http.Handler, middlewares []plugin.Middleware) http.Handler {
@@ -109,15 +105,17 @@ func handlerFromRequestModifiers(next http.Handler, requestModifiers []plugin.Re
 }
 
 func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugin.Capability) error {
+	var t1 plugin.RequestModifier
+	var t2 plugin.Middleware
 	for _, capability := range capabilities {
 		switch capability {
 		case plugin.CapModifyRequests:
 			if _, ok := p.(plugin.RequestModifier); !ok {
-				return fmt.Errorf("plugin %q does not implement RequestModifier", pluginName)
+				return fmt.Errorf("plugin %q does not implement %T", pluginName, t1)
 			}
 		case plugin.CapMiddleware:
 			if _, ok := p.(plugin.Middleware); !ok {
-				return fmt.Errorf("plugin %q does not implement Middleware", pluginName)
+				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
 			}
 
 		}
