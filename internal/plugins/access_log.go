@@ -48,8 +48,9 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		now := time.Now()
 		st := statusRecorder{ResponseWriter: w}
-		next.ServeHTTP(&st, r)
-		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access",
+		err := next.ServeHTTP(&st, r)
+
+		attrs := []slog.Attr{
 			slog.String("method", r.Method),
 			slog.String("path", request.GetPath(r)),
 			slog.String("pathPattern", a.pathPattern),
@@ -58,8 +59,13 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 			slog.Int("status", st.status),
 			slog.Int64("duration", time.Since(now).Milliseconds()),
 			slog.String("namespace", a.namespace),
-		)
-		return nil
+		}
+		if err != nil {
+			attrs = append(attrs, slog.String("error", err.Error()))
+		}
+
+		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access", attrs...)
+		return err
 	})
 }
 
