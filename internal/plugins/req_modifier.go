@@ -61,7 +61,7 @@ func (reqModifier) InjectionLevels() []plugin.InjectionLevel {
 
 func (rm *reqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
-	isNamespaced := strings.HasPrefix(context.Namespace, "/")
+	isNamespaced := strings.HasPrefix(context.Namespace, "/") && context.Namespace != "root"
 
 	var toPath string
 	if _, ok := config["path"]; ok {
