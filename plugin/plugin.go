@@ -107,3 +107,14 @@ func WrapHTTPHandler(h http.Handler) ErrHandler {
 		return nil
 	})
 }
+
+// WrapErrHandler wraps an [ErrHandler] into an [http.Handler].
+// TODO if there is an error, call some error handling function
+func WrapErrHandler(h ErrHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := h.ServeHTTP(w, r)
+		if err != nil {
+			panic(err) // todo
+		}
+	})
+}
