@@ -107,10 +107,10 @@ func (w *tracer) Teardown(context.Context) error {
 	return nil
 }
 
-func (w *tracer) HookTransport(_ context.Context, tsp http.RoundTripper) (http.RoundTripper, error) {
+func (w *tracer) HookTransport(tsp http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(tsp,
 		otelhttp.WithMetricAttributesFn(metaDataAttrs),
-	), nil
+	)
 }
 
 func (w *tracer) HookFirstHandler(next plugin.ErrHandler) plugin.ErrHandler {
