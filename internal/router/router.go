@@ -65,10 +65,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		}
 		r.teardown = append(r.teardown, teardown)
 
-		transport, err = wrapTransport(ctx, transport)
-		if err != nil {
-			return nil, errors.Join(err, r.Shutdown(ctx, err))
-		}
+		transport = wrapTransport(transport)
 
 		p, err := proxy.NewProxy(proxy.Config{
 			Transport:  transport,

@@ -89,7 +89,7 @@ type Middleware interface {
 // TransportHooker is an interface that plugins can implement to modify the transport that ika uses.
 type TransportHooker interface {
 	Plugin
-	HookTransport(ctx context.Context, transport http.RoundTripper) (http.RoundTripper, error)
+	HookTransport(transport http.RoundTripper) http.RoundTripper
 }
 
 // FirstHandlerHooker is an interface that plugins can implement to modify the first handler that get executed for each path.

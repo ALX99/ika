@@ -11,6 +11,6 @@ type Option func(*config.RunOpts)
 // WithPlugin registers a plugin.
 func WithPlugin(plugin plugin.Factory) Option {
 	return func(cfg *config.RunOpts) {
-		cfg.Plugins2 = append(cfg.Plugins2, plugin)
+		cfg.Plugins = append(cfg.Plugins, plugin)
 	}
 }

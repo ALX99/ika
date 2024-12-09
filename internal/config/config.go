@@ -23,7 +23,7 @@ type PluginFactory struct {
 }
 
 type RunOpts struct {
-	Plugins2 []pplugin.Factory
+	Plugins []pplugin.Factory
 }
 
 type Config struct {
@@ -64,7 +64,7 @@ func NewRunOpts() RunOpts {
 }
 
 func (c *Config) SetRuntimeOpts(opts RunOpts) error {
-	if err := c.loadPlugins(opts.Plugins2); err != nil {
+	if err := c.loadPlugins(opts.Plugins); err != nil {
 		return err
 	}
 
