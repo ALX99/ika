@@ -87,14 +87,15 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 					Level:       plugin.LevelPath,
 				}
 
-				mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled()), iplugin.ChainFromMiddlewares)
+				middlewares := collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled())
+				mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, middlewares, iplugin.ChainFromMiddlewares)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx, err))
 				}
 				r.teardown = append(r.teardown, teardown)
 
-				reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled()),
-					iplugin.ChainFromReqModifiers)
+				reqModifiers := collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled())
+				reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, reqModifiers, iplugin.ChainFromReqModifiers)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx, err))
 				}
@@ -111,8 +112,8 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 
 				log.Debug("Path registered",
 					"pattern", route.pattern,
-					"middlewares", slices.Collect(path.Middlewares.Names()),
-					"reqModifiers", slices.Collect(path.ReqModifiers.Names()),
+					"middlewares", slices.Collect(config.Plugins(middlewares).Names()),
+					"reqModifiers", slices.Collect(config.Plugins(reqModifiers).Names()),
 				)
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
