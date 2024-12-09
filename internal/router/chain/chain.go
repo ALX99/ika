@@ -12,7 +12,12 @@ import (
 // A constructor for a piece of middleware.
 // Some middleware use this constructor out of the box,
 // so in most cases you can just pass somepackage.New
-type Constructor func(plugin.ErrHandler) plugin.ErrHandler
+type Constructor struct {
+	// The middleware name
+	Name string
+	// The middleware function
+	MiddlewareFunc func(plugin.ErrHandler) plugin.ErrHandler
+}
 
 // Chain acts as a list of http.Handler constructors.
 // Chain is effectively immutable:
@@ -56,7 +61,7 @@ func New(constructors ...Constructor) Chain {
 // Then() treats nil as http.DefaultServeMux.
 func (c Chain) Then(h plugin.ErrHandler) http.Handler {
 	for i := range c.constructors {
-		h = c.constructors[len(c.constructors)-1-i](h)
+		h = c.constructors[len(c.constructors)-1-i].MiddlewareFunc(h)
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -18,6 +18,11 @@ type PluginSetupper struct {
 	initializedPluginIndexes map[string]int
 }
 
+type initializedPlugin[T plugin.Plugin] struct {
+	name   string
+	plugin T
+}
+
 func NewSetupper(factories map[string]plugin.Factory) *PluginSetupper {
 	return &PluginSetupper{
 		factories:                factories,
@@ -74,11 +79,11 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	iCtx plugin.InjectionContext,
 	setupper *PluginSetupper,
 	pluginCfg config.Plugins,
-	fn func(t []T) V,
+	fn func(t []initializedPlugin[T]) V,
 ) (V, func(context.Context) error, error) {
 	var v V
 	// plugins that have been set up
-	plugins := []T{}
+	plugins := []initializedPlugin[T]{}
 
 	var teardowns []func(context.Context) error
 	teardown := func(ctx context.Context) error {
@@ -96,7 +101,10 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 		}
 
 		if setup {
-			plugins = append(plugins, plugin.(T))
+			plugins = append(plugins, initializedPlugin[T]{
+				name:   cfg.Name,
+				plugin: plugin.(T),
+			})
 			teardowns = append(teardowns, plugin.Teardown)
 		}
 
@@ -111,45 +119,55 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	return fn(plugins), teardown, nil
 }
 
-func ChainFromMiddlewares(middlewares []plugin.Middleware) chain.Chain {
+func ChainFromMiddlewares(middlewares []initializedPlugin[plugin.Middleware]) chain.Chain {
 	cons := make([]chain.Constructor, len(middlewares))
 	for i := range middlewares {
-		cons[i] = middlewares[i].Handler
+		cons[i] = chain.Constructor{
+			Name:           middlewares[i].name,
+			MiddlewareFunc: middlewares[i].plugin.Handler,
+		}
 	}
 	return chain.New(cons...)
 }
 
-func ChainFromReqModifiers(requestModifiers []plugin.RequestModifier) chain.Chain {
-	fn := func(eh plugin.ErrHandler) plugin.ErrHandler {
-		return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			var err error
-			for _, requestModifier := range requestModifiers {
-				r, err = requestModifier.ModifyRequest(r)
-				if err != nil {
-					return err
-				}
-			}
-			return eh.ServeHTTP(w, r)
-		})
+func ChainFromReqModifiers(requestModifiers []initializedPlugin[plugin.RequestModifier]) chain.Chain {
+	cons := make([]chain.Constructor, len(requestModifiers))
+
+	for i, rm := range requestModifiers {
+		cons[i] = chain.Constructor{
+			Name: rm.name,
+			MiddlewareFunc: func(eh plugin.ErrHandler) plugin.ErrHandler {
+				return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+					r, err := rm.plugin.ModifyRequest(r)
+					if err != nil {
+						return err
+					}
+					return eh.ServeHTTP(w, r)
+				})
+			},
+		}
 	}
 
-	return chain.New(fn)
+	return chain.New(cons...)
 }
 
-func MakeTransportWrapper(hooks []plugin.TransportHooker) func(http.RoundTripper) http.RoundTripper {
+func MakeTransportWrapper(hooks []initializedPlugin[plugin.TransportHooker]) func(http.RoundTripper) http.RoundTripper {
 	fn := func(tsp http.RoundTripper) http.RoundTripper {
 		for _, hook := range hooks {
-			tsp = hook.HookTransport(tsp)
+			tsp = hook.plugin.HookTransport(tsp)
 		}
 		return tsp
 	}
 	return fn
 }
 
-func ChainFirstHandler(hooks []plugin.FirstHandlerHooker) chain.Chain {
+func ChainFirstHandler(hooks []initializedPlugin[plugin.FirstHandlerHooker]) chain.Chain {
 	cons := make([]chain.Constructor, len(hooks))
 	for i := range hooks {
-		cons[i] = hooks[i].HookFirstHandler
+		cons[i] = chain.Constructor{
+			Name:           hooks[i].name,
+			MiddlewareFunc: hooks[i].plugin.HookFirstHandler,
+		}
 	}
 	return chain.New(cons...)
 }
