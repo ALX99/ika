@@ -40,7 +40,14 @@ run: local-config
 test:
 	go test ./...
 
-.PHONY: e2e
-e2e:
+.PHONY: deps-up
+deps-up:
 	docker compose up -d httpbun-local
-	k6 run ./tests/tests.js
+
+.PHONY: e2e
+e2e: deps-up
+	k6 run -e HTTPBUN_HOST=http://localhost:8080 ./tests/tests.js
+
+.PHONY: e2e-ci
+e2e-compose: upd
+	k6 run -e HTTPBUN_HOST=http://httpbun-local ./tests/tests.js

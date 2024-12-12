@@ -61,7 +61,7 @@ export default function tests() {
 
     http.batch(reqs).forEach((resp, i) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/wildcard-rewrite`, 'http://localhost:8080/any'));
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/wildcard-rewrite`, `${__ENV.HTTPBUN_HOST}/any`));
     });
   });
 
@@ -75,7 +75,7 @@ export default function tests() {
 
     http.batch(reqs).forEach((resp, i) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/path-rewrite`, 'http://localhost:8080/any'));
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/path-rewrite`, `${__ENV.HTTPBUN_HOST}/any`));
     });
   });
 
@@ -87,7 +87,7 @@ export default function tests() {
 
     http.batch(resps).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://localhost:8080/any/hi%2Fworld/next');
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/any/hi%2Fworld/next`);
     });
   });
 
@@ -95,7 +95,7 @@ export default function tests() {
     const resp = http.get(`${baseURL}/wildcard-rewrite/hi%2Fworld/next`, { headers: hostHeader, });
 
     expect(resp.status, resp.status).to.equal(200);
-    expect(resp.json()["url"], resp.json()["url"]).to.equal('http://localhost:8080/any/hi%2Fworld/next');
+    expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/any/hi%2Fworld/next`);
   });
 
   describe("Redirects are not automatically followed", () => {
@@ -152,7 +152,7 @@ export default function tests() {
 
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://localhost:8080/any');
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/any`);
     });
   });
 
@@ -164,7 +164,7 @@ export default function tests() {
 
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://localhost:8080/any');
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/any`);
     });
 
     reqs = [
@@ -203,7 +203,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://localhost:8080/get');
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/get`);
     });
 
     reqs = [
@@ -212,7 +212,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal('http://localhost:8080/any/hihi/%2F');
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/any/hihi/%2F`);
     });
 
     http.setResponseCallback(http.expectedStatuses(404));
@@ -278,6 +278,6 @@ export default function tests() {
     // Test case 11: Query parameters with encoded values
     resp = http.get(`${baseURL}/testns1/get?hi=hello%20world&bye=goodbye%2Fworld`);
     expect(resp.json()["args"]["hi"], resp.json()["args"]["hi"]).to.equal("hello world");
-    expect(resp.json()["url"], resp.json()["url"]).to.equal("http://localhost:8080/any?hi=hello%20world&bye=goodbye%2Fworld");
+    expect(resp.json()["url"], resp.json()["url"]).to.equal(`${__ENV.HTTPBUN_HOST}/any?hi=hello%20world&bye=goodbye%2Fworld`);
   });
 }

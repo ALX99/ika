@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: grafana/setup-k6-action@v1
       - name: Run E2E tests
-        run: touch ./example/.env && make e2e
+        run: touch ./example/.env && make e2e-compose
   test-example:
     runs-on: ubuntu-latest
     steps:
