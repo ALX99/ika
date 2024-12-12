@@ -13,8 +13,10 @@ import (
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/logger"
+	"github.com/alx99/ika/internal/plugins"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
+	"github.com/alx99/ika/plugin"
 )
 
 var (
@@ -32,7 +34,14 @@ func Run(opts ...Option) {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 	defer cancel()
 
-	cfg := config.NewRunOpts()
+	cfg := config.Options{
+		Plugins: make(map[string]plugin.Factory),
+	}
+
+	// TODO hack
+	opts = append(opts, WithPlugin(plugins.ReqModifier{}))
+	opts = append(opts, WithPlugin(plugins.AccessLogger{}))
+
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -54,20 +63,15 @@ func Run(opts ...Option) {
 	}
 }
 
-func run(ctx context.Context, opts config.RunOpts) (func() error, error) {
+func run(ctx context.Context, opts config.Options) (func() error, error) {
 	cfg, err := config.Read(*configPath)
 	if err != nil {
 		return func() error { return nil }, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	flush := logger.Initialize(cfg.Ika.Logger)
+	flush := logger.Initialize(ctx, cfg.Ika.Logger)
 
-	err = cfg.SetRuntimeOpts(opts)
-	if err != nil {
-		return flush, fmt.Errorf("failed to set runtime options: %w", err)
-	}
-
-	router, err := router.MakeRouter(ctx, cfg)
+	router, err := router.MakeRouter(ctx, cfg, opts)
 	if err != nil {
 		return flush, fmt.Errorf("failed to create router: %w", err)
 	}

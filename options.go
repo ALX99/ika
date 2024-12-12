@@ -6,11 +6,11 @@ import (
 )
 
 // Option represents an option for Run.
-type Option func(*config.RunOpts)
+type Option func(*config.Options)
 
 // WithPlugin registers a plugin.
 func WithPlugin(plugin plugin.Factory) Option {
-	return func(cfg *config.RunOpts) {
-		cfg.Plugins = append(cfg.Plugins, plugin)
+	return func(cfg *config.Options) {
+		cfg.Plugins[plugin.Name()] = plugin
 	}
 }

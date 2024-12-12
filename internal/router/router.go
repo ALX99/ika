@@ -43,7 +43,7 @@ func (r *Router) Shutdown(ctx context.Context, err error) error {
 	return err
 }
 
-func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
+func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*Router, error) {
 	slog.Info("Building router", "namespaceCount", len(cfg.Namespaces))
 	r := &Router{
 		mux: http.NewServeMux(),
@@ -53,7 +53,7 @@ func MakeRouter(ctx context.Context, cfg config.Config) (*Router, error) {
 		log := slog.With(slog.String("namespace", nsName))
 		var transport http.RoundTripper = makeTransport(ns.Transport)
 
-		setupper := iplugin.NewSetupper(cfg.PluginFacs2)
+		setupper := iplugin.NewSetupper(opts.Plugins)
 		iCtx := plugin.InjectionContext{
 			Namespace: nsName,
 			Level:     plugin.LevelNamespace,
