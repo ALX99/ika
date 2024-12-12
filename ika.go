@@ -60,7 +60,7 @@ func run(ctx context.Context, opts config.RunOpts) (func() error, error) {
 		return func() error { return nil }, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	flush := logger.Initialize(cfg.Ika.Logger)
+	flush := logger.Initialize(ctx, cfg.Ika.Logger)
 
 	err = cfg.SetRuntimeOpts(opts)
 	if err != nil {

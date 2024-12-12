@@ -1,8 +1,8 @@
 package logger
 
 import (
-	"bufio"
 	"cmp"
+	"context"
 	"log/slog"
 	"os"
 	"strings"
@@ -24,15 +24,16 @@ func (c *Config) Normalize() {
 	c.FlushInterval = cmp.Or(c.FlushInterval, time.Second)
 }
 
-func Initialize(cfg Config) func() error {
+func Initialize(ctx context.Context, cfg Config) func() error {
 	cfg.Normalize()
-	w := newBufferedWriter(bufio.NewWriterSize(os.Stdout, 32*1024))
+	w := newBufferedWriter(os.Stdout)
 	var log *slog.Logger
 	var level slog.Level
+	var warnings []string
 
 	switch cfg.Level {
 	default:
-		// todo log warning
+		warnings = append(warnings, "Invalid log level, defaulting to info")
 		fallthrough
 	case "info":
 		level = slog.LevelInfo
@@ -50,7 +51,7 @@ func Initialize(cfg Config) func() error {
 
 	switch cfg.Format {
 	default:
-		// todo log warning
+		warnings = append(warnings, "Invalid log format, defaulting to json")
 		fallthrough
 	case "json":
 		log = slog.New(slog.NewJSONHandler(w, opts))
@@ -66,10 +67,23 @@ func Initialize(cfg Config) func() error {
 	slog.SetDefault(log)
 	slog.Info("Logger initialized", "config", cfg)
 
+	for _, warning := range warnings {
+		slog.LogAttrs(ctx, slog.LevelWarn, warning)
+	}
+
 	go func() {
 		t := time.NewTicker(cfg.FlushInterval)
-		for range t.C {
-			w.Flush()
+		for {
+			select {
+			case <-ctx.Done():
+				w.SetBuffered(false)
+				log.LogAttrs(ctx, slog.LevelDebug, "Log buffering disabled")
+				t.Stop()
+				w.Flush()
+				return
+			case <-t.C:
+				w.Flush()
+			}
 		}
 	}()
 	return w.Flush
