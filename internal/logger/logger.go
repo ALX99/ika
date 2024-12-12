@@ -26,7 +26,7 @@ func (c *Config) Normalize() {
 
 func Initialize(cfg Config) func() error {
 	cfg.Normalize()
-	w := bufio.NewWriterSize(os.Stdout, 32*1024)
+	w := newBufferedWriter(bufio.NewWriterSize(os.Stdout, 32*1024))
 	var log *slog.Logger
 	var level slog.Level
 
