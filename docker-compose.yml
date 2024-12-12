@@ -2,8 +2,8 @@ services:
   gateway:
     build: .
     ports:
-      - "8888:8888"
-      - "6060:6060"
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:6060:6060"
     command: ["/ika", "-config", "/config.yaml"]
     volumes:
       - ./tests/ika.yaml:/config.yaml
@@ -23,7 +23,7 @@ services:
       args:
         VERSION: ${VERSION}
     ports:
-      - "1111:8888"
+      - "127.0.0.1:1111:8888"
     env_file: example/.env
     command: ["/ika", "-config", "/ika.yaml"]
     volumes:
@@ -32,3 +32,5 @@ services:
   httpbun-local:
     image: sharat87/httpbun
     expose: ["80"]
+    ports:
+      - "127.0.0.1:8080:80"
