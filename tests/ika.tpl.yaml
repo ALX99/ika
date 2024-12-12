@@ -12,14 +12,14 @@ namespaces:
     reqModifiers:
       - name: basic-modifier
         config:
-          host: http://httpbun-local
+          host: "$HTTPBUN_HOST"
     paths:
       /headers: {}
   testns1.com: &testns1
     reqModifiers:
       - name: basic-modifier
         config:
-          host: http://httpbun-local
+          host: "$HTTPBUN_HOST"
 
     middlewares:
     - name: accessLog
@@ -71,14 +71,14 @@ namespaces:
         reqModifiers:
           - name: basic-modifier
             config:
-              host: http://httpbun-local
+              host: "$HTTPBUN_HOST"
               path: /any/{something}
 
   /testns2:
     reqModifiers:
       - name: basic-modifier
         config:
-          host: http://httpbun-local
+          host: "$HTTPBUN_HOST"
     middlewares:
     - name: accessLog
     paths:
@@ -88,7 +88,7 @@ namespaces:
     reqModifiers:
       - name: basic-modifier
         config:
-          host: http://httpbun-local
+          host: "$HTTPBUN_HOST"
     middlewares:
     - name: accessLog
     paths:

@@ -4,3 +4,4 @@ dist/
 **/.env
 coverage.out
 go.work*
+tests/ika.yaml
