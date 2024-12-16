@@ -43,7 +43,10 @@ func Run(opts ...Option) {
 	opts = append(opts, WithPlugin(plugins.AccessLogger{}))
 
 	for _, opt := range opts {
-		opt(&cfg)
+		if err := opt(&cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to apply option: %s\n", err)
+			os.Exit(1)
+		}
 	}
 
 	flush, err := run(ctx, cfg)
@@ -54,7 +57,7 @@ func Run(opts ...Option) {
 		slog.Info("Bye <3")
 	}
 
-	if err := flush(); err != nil {
+	if err = flush(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to flush: %s\n", err)
 	}
 
