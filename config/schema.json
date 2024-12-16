@@ -153,14 +153,6 @@
       },
       "minItems": 1
     },
-    "namespaceOverrides": {
-      "description": "Override settings for all namespaces",
-      "properties": {
-        "transport": {
-          "$ref": "#/definitions/transport"
-        }
-      }
-    },
     "namespaces": {
       "type": "object",
       "patternProperties": {

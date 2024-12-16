@@ -23,12 +23,12 @@ func NewServer(handler http.Handler, config []config.Server) *Server {
 		servers = append(servers, http.Server{
 			Handler:                      handler,
 			Addr:                         c.Addr,
-			DisableGeneralOptionsHandler: c.DisableGeneralOptionsHandler.V,
-			ReadTimeout:                  c.ReadTimeout.V,
-			ReadHeaderTimeout:            c.ReadHeaderTimeout.V,
-			WriteTimeout:                 c.WriteTimeout.V,
-			IdleTimeout:                  c.IdleTimeout.V,
-			MaxHeaderBytes:               c.MaxHeaderBytes.V,
+			DisableGeneralOptionsHandler: c.DisableGeneralOptionsHandler,
+			ReadTimeout:                  c.ReadTimeout,
+			ReadHeaderTimeout:            c.ReadHeaderTimeout,
+			WriteTimeout:                 c.WriteTimeout,
+			IdleTimeout:                  c.IdleTimeout,
+			MaxHeaderBytes:               c.MaxHeaderBytes,
 		})
 	}
 

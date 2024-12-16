@@ -20,7 +20,7 @@ up: docker-config
 	docker compose up --build
 
 .PHONY: up-reload
-up-reload: docker-config
+up-reload:
 	find . -name '*.go' -o -name '*.yaml' | entr -rc -- make up
 
 .PHONY: upd
@@ -35,6 +35,10 @@ down:
 run: local-config
 	CGO_ENABLED=1 go build -race -o ./bin/ika ./cmd/ika
 	./bin/ika -config ./tests/ika.yaml
+
+.PHONY: run-reload
+run-reload:
+	find . -name '*.go' -o -name '*.yaml' | entr -rc -- make run
 
 .PHONY: test
 test:

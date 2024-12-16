@@ -1,30 +1,16 @@
 package logger
 
 import (
-	"cmp"
 	"context"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/alx99/ika/internal/config"
 	"github.com/golang-cz/devslog"
 )
 
-type Config struct {
-	Level         string        `json:"level" yaml:"level"`
-	Format        string        `json:"format" yaml:"format"`
-	FlushInterval time.Duration `json:"flushInterval" yaml:"flushInterval"`
-	AddSource     bool          `json:"addSource" yaml:"addSource"`
-}
-
-func (c *Config) Normalize() {
-	c.Level = strings.ToLower(cmp.Or(c.Level, "info"))
-	c.Format = strings.ToLower(cmp.Or(c.Format, "json"))
-	c.FlushInterval = cmp.Or(c.FlushInterval, time.Second)
-}
-
-func Initialize(ctx context.Context, cfg Config) func() error {
+func Initialize(ctx context.Context, cfg config.Logger) func() error {
 	cfg.Normalize()
 	w := newBufferedWriter(os.Stdout)
 	var log *slog.Logger

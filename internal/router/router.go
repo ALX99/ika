@@ -173,16 +173,16 @@ func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path
 
 func makeTransport(cfg config.Transport) *http.Transport {
 	return &http.Transport{
-		DisableKeepAlives:      cfg.DisableKeepAlives.V,
-		DisableCompression:     cfg.DisableCompression.V,
-		MaxIdleConns:           cfg.MaxIdleConns.V,
-		MaxIdleConnsPerHost:    cfg.MaxIdleConnsPerHost.V,
-		MaxConnsPerHost:        cfg.MaxConnsPerHost.V,
-		IdleConnTimeout:        cfg.IdleConnTimeout.V,
-		ResponseHeaderTimeout:  cfg.ResponseHeaderTimeout.V,
-		ExpectContinueTimeout:  cfg.ExpectContinueTimeout.V,
-		MaxResponseHeaderBytes: cfg.MaxResponseHeaderBytes.V,
-		WriteBufferSize:        cfg.WriteBufferSize.V,
-		ReadBufferSize:         cfg.ReadBufferSize.V,
+		DisableKeepAlives:      cfg.DisableKeepAlives,
+		DisableCompression:     cfg.DisableCompression,
+		MaxIdleConns:           cfg.MaxIdleConns,
+		MaxIdleConnsPerHost:    cfg.MaxIdleConnsPerHost,
+		MaxConnsPerHost:        cfg.MaxConnsPerHost,
+		IdleConnTimeout:        cfg.IdleConnTimeout,
+		ResponseHeaderTimeout:  cfg.ResponseHeaderTimeout,
+		ExpectContinueTimeout:  cfg.ExpectContinueTimeout,
+		MaxResponseHeaderBytes: cfg.MaxResponseHeaderBytes,
+		WriteBufferSize:        cfg.WriteBufferSize,
+		ReadBufferSize:         cfg.ReadBufferSize,
 	}
 }

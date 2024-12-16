@@ -8,10 +8,9 @@ import (
 )
 
 type Config struct {
-	Servers           []Server   `yaml:"servers"`
-	Namespaces        Namespaces `yaml:"namespaces"`
-	NamespaceOverride Namespace  `yaml:"namespaceOverrides"`
-	Ika               Ika        `yaml:"ika"`
+	Servers    []Server   `yaml:"servers"`
+	Namespaces Namespaces `yaml:"namespaces"`
+	Ika        Ika        `yaml:"ika"`
 }
 
 func Read(path string) (Config, error) {
@@ -31,14 +30,5 @@ func Read(path string) (Config, error) {
 		return cfg, errors.New("at least one server must be specified")
 	}
 
-	cfg.ApplyOverride()
 	return cfg, nil
-}
-
-// ApplyOverride applies the NamespaceOverrides to the Config.
-func (c *Config) ApplyOverride() {
-	for name, ns := range c.Namespaces {
-		ns.Transport = override(ns.Transport, c.NamespaceOverride.Transport)
-		c.Namespaces[name] = ns
-	}
 }

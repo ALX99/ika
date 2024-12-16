@@ -10,13 +10,6 @@ server:
   idleTimeout: 60s  # Max time to wait for the next request on a keep-alive connection
   maxHeaderBytes: 8192  # Max size of request headers (8 KB)
 
-namespaceOverrides:
-  # Override transport settings for all namespaces
-  transport:
-    disableKeepAlives: false
-    maxIdleConns: 100
-    idleConnTimeout: 60s
-
 namespaces:
   api:
     backends:

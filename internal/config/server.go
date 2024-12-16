@@ -3,11 +3,11 @@ package config
 import "time"
 
 type Server struct {
-	Addr                         string                  `yaml:"addr"`
-	DisableGeneralOptionsHandler Nullable[bool]          `yaml:"disableGeneralOptionsHandler"`
-	ReadTimeout                  Nullable[time.Duration] `yaml:"readTimeout"`
-	ReadHeaderTimeout            Nullable[time.Duration] `yaml:"readHeaderTimeout"`
-	WriteTimeout                 Nullable[time.Duration] `yaml:"writeTimeout"`
-	IdleTimeout                  Nullable[time.Duration] `yaml:"idleTimeout"`
-	MaxHeaderBytes               Nullable[int]           `yaml:"maxHeaderBytes"`
+	Addr                         string        `yaml:"addr"`
+	DisableGeneralOptionsHandler bool          `yaml:"disableGeneralOptionsHandler"`
+	ReadTimeout                  time.Duration `yaml:"readTimeout"`
+	ReadHeaderTimeout            time.Duration `yaml:"readHeaderTimeout"`
+	WriteTimeout                 time.Duration `yaml:"writeTimeout"`
+	IdleTimeout                  time.Duration `yaml:"idleTimeout"`
+	MaxHeaderBytes               int           `yaml:"maxHeaderBytes"`
 }
