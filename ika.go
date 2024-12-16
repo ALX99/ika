@@ -91,7 +91,7 @@ func run(ctx context.Context, opts config.Options) (func() error, error) {
 
 	ctx, cancel := context.WithTimeoutCause(
 		context.Background(),
-		cfg.Ika.GracefulShutdownTimeout,
+		cfg.Ika.GracefulShutdownTimeout.Dur(),
 		fmt.Errorf("could not shut down gracefully in %v", cfg.Ika.GracefulShutdownTimeout),
 	)
 	defer cancel()

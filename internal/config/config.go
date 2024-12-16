@@ -1,8 +1,10 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -31,4 +33,52 @@ func Read(path string) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+type Duration time.Duration
+
+func (d Duration) Dur() time.Duration {
+	return time.Duration(d)
+}
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case float64:
+		*d = Duration(time.Duration(value))
+		return nil
+	case string:
+		tmp, err := time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		*d = Duration(tmp)
+		return nil
+	default:
+		return errors.New("invalid duration")
+	}
+}
+
+func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
+	var v interface{}
+	if err := value.Decode(&v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case int:
+		*d = Duration(time.Duration(value))
+		return nil
+	case string:
+		tmp, err := time.ParseDuration(value)
+		if err != nil {
+			return err
+		}
+		*d = Duration(tmp)
+		return nil
+	default:
+		return errors.New("invalid duration")
+	}
 }

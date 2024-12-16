@@ -58,7 +58,7 @@ func Initialize(ctx context.Context, cfg config.Logger) func() error {
 	}
 
 	go func() {
-		t := time.NewTicker(cfg.FlushInterval)
+		t := time.NewTicker(cfg.FlushInterval.Dur())
 		for {
 			select {
 			case <-ctx.Done():

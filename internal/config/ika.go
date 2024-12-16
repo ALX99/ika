@@ -1,10 +1,6 @@
 package config
 
-import (
-	"time"
-)
-
 type Ika struct {
-	Logger                  Logger        `yaml:"logger"`
-	GracefulShutdownTimeout time.Duration `yaml:"gracefulShutdownTimeout"`
+	Logger                  Logger   `yaml:"logger" json:"logger"`
+	GracefulShutdownTimeout Duration `yaml:"gracefulShutdownTimeout" json:"gracefulShutdownTimeout"`
 }

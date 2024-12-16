@@ -24,10 +24,10 @@ func NewServer(handler http.Handler, config []config.Server) *Server {
 			Handler:                      handler,
 			Addr:                         c.Addr,
 			DisableGeneralOptionsHandler: c.DisableGeneralOptionsHandler,
-			ReadTimeout:                  c.ReadTimeout,
-			ReadHeaderTimeout:            c.ReadHeaderTimeout,
-			WriteTimeout:                 c.WriteTimeout,
-			IdleTimeout:                  c.IdleTimeout,
+			ReadTimeout:                  c.ReadTimeout.Dur(),
+			ReadHeaderTimeout:            c.ReadHeaderTimeout.Dur(),
+			WriteTimeout:                 c.WriteTimeout.Dur(),
+			IdleTimeout:                  c.IdleTimeout.Dur(),
 			MaxHeaderBytes:               c.MaxHeaderBytes,
 		})
 	}
