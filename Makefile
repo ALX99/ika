@@ -5,18 +5,8 @@ image:
 	docker build -t ika:$(VERSION) .
 	docker tag ika:$(VERSION) ika:latest
 
-.PHONY: docker-config
-docker-config:
-	export HTTPBUN_HOST="http://httpbun-local" && \
-		envsubst < ./tests/ika.tpl.yaml > ./tests/ika.yaml
-
-.PHONY: local-config
-local-config:
-	export HTTPBUN_HOST="http://localhost:8080" && \
-		envsubst < ./tests/ika.tpl.yaml > ./tests/ika.yaml
-
 .PHONY: up
-up: docker-config
+up:
 	docker compose up --build
 
 .PHONY: up-reload
@@ -24,7 +14,7 @@ up-reload:
 	find . -name '*.go' -o -name '*.yaml' | entr -rc -- make up
 
 .PHONY: upd
-upd: docker-config
+upd:
 	docker compose up -d --build
 
 .PHONY: down
@@ -32,7 +22,7 @@ down:
 	docker compose down
 
 .PHONY: run
-run: local-config
+run:
 	CGO_ENABLED=1 go build -race -o ./bin/ika ./cmd/ika
 	./bin/ika -config ./tests/ika.yaml
 
@@ -55,3 +45,14 @@ e2e: deps-up
 .PHONY: e2e-ci
 e2e-compose: upd
 	k6 run -e HTTPBUN_HOST=http://httpbun-local ./tests/tests.js
+
+.PHONY: vet
+vet:
+	cue vet -c ./config/ ./tests/ika.cue
+
+.PHONY: fmt
+fmt:
+	cue fmt ./...
+
+cfg-%: vet fmt
+	cue export -t env=$* tests/ika.cue --out yaml > tests/ika.yaml

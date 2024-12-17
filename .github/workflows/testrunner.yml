@@ -22,8 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: grafana/setup-k6-action@v1
+      - uses: cue-lang/setup-cue@v1.0.1
       - name: Run E2E tests
-        run: touch ./example/.env && make e2e-compose
+        run: touch ./example/.env && make cfg-docker e2e-compose
   test-example:
     runs-on: ubuntu-latest
     steps:
