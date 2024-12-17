@@ -142,7 +142,6 @@ done:
 }
 
 func (rm *ReqModifier) rewriteHost(r *http.Request) {
-	r.Host = rm.host
 	r.URL.Host = rm.host
 	r.URL.Scheme = rm.scheme
 }
