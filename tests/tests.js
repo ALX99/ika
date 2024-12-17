@@ -16,6 +16,7 @@ export const options = {
 const baseURL = 'http://localhost:8888';
 const testNS1URL = 'http://testns1.com';
 const hostHeader = { 'Host': 'testns1.com' };
+const httpbunHost = `${__ENV.HTTPBUN_HOST}`;
 
 export default function tests() {
   describe("It is possible to send a request with any method", () => {
@@ -52,9 +53,15 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp, i) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/httpbun`, `${testNS1URL}`));
-      expect(resp.json()["headers"]["Host"], resp.json()["headers"]["Host"]).to.equal(`testns1.com`);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/httpbun`, `${httpbunHost}`));
     });
+  });
+
+
+  describe("Retain host header test", () => {
+    const resp = http.get(`${baseURL}/retain-host`, { headers: hostHeader });
+    expect(resp.status, resp.status).to.equal(200);
+    expect(resp.json()["headers"]["Host"], resp.json()["headers"]["Host"]).to.equal(`testns1.com`);
   });
 
   describe("It is possible to rewrite the backend path", () => {
@@ -67,7 +74,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp, i) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/path-rewrite`, `${testNS1URL}/any`));
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(reqs[i].url.replace(`${baseURL}/path-rewrite`, `${httpbunHost}/any`));
     });
   });
 
@@ -113,7 +120,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${baseURL}/any`);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${httpbunHost}/any`);
     });
   });
 
@@ -123,7 +130,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${testNS1URL}/any`);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${httpbunHost}/any`);
     });
 
     reqs = [
@@ -160,7 +167,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(`http://passthrough.com/get`);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${httpbunHost}/get`);
     });
 
     reqs = [
@@ -168,7 +175,7 @@ export default function tests() {
     ];
     http.batch(reqs).forEach((resp) => {
       expect(resp.status, resp.status).to.equal(200);
-      expect(resp.json()["url"], resp.json()["url"]).to.equal(`http://passthrough.com/any/hihi/%2F`);
+      expect(resp.json()["url"], resp.json()["url"]).to.equal(`${httpbunHost}/any/hihi/%2F`);
     });
 
     http.setResponseCallback(http.expectedStatuses(404));

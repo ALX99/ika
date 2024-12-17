@@ -37,6 +37,7 @@ type ReqModifier struct {
 
 	pathRewriteEnabled bool
 	hostRewriteEnabled bool
+	retainHostHeader   bool
 
 	log *slog.Logger
 }
@@ -69,6 +70,10 @@ func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 	var host string
 	if _, ok := config["host"]; ok {
 		host = config["host"].(string)
+	}
+
+	if _, ok := config["retainHostHeader"]; ok {
+		rm.retainHostHeader = config["retainHostHeader"].(bool)
 	}
 
 	if toPath != "" {
@@ -142,6 +147,10 @@ done:
 }
 
 func (rm *ReqModifier) rewriteHost(r *http.Request) {
+	if !rm.retainHostHeader {
+		// This overrides the Host header
+		r.Host = rm.host
+	}
 	r.URL.Host = rm.host
 	r.URL.Scheme = rm.scheme
 }

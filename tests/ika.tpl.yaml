@@ -36,6 +36,20 @@ namespaces:
         methods: [GET]
         reqModifiers:
           - *any-rewrite
+      /retain-host:
+        methods:
+          - GET
+          - HEAD
+        reqModifiers:
+          - name: basic-modifier
+            config:
+              path: /any
+              host: http://testns1.com
+          - name: basic-modifier
+            config:
+              path: /any
+              host: "$HTTPBUN_HOST"
+              retainHostHeader: true
       /httpbun/{any...}:
         reqModifiers:
           - name: basic-modifier
