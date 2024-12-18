@@ -42,7 +42,7 @@ type ReqModifier struct {
 	log *slog.Logger
 }
 
-func (ReqModifier) New(context.Context) (plugin.Plugin, error) {
+func (ReqModifier) New(_ context.Context, _ plugin.InjectionContext) (plugin.Plugin, error) {
 	return &ReqModifier{}, nil
 }
 

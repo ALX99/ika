@@ -44,7 +44,7 @@ type Factory interface {
 	// It is allowed to return the same instance for multiple calls.
 	// However, do note that this might lead to difficult to debug issues.
 	// For this reason, it is recommended to return a new instance for each call.
-	New(ctx context.Context) (Plugin, error)
+	New(ctx context.Context, iCtx InjectionContext) (Plugin, error)
 }
 
 // InjectionContext contains information about the context the plugin was injected into.

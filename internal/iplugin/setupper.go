@@ -49,7 +49,7 @@ func (ps *PluginSetupper) getPlugin(ctx context.Context, iCtx plugin.InjectionCo
 	}
 
 	// Create a new plugin and set it up
-	plugin, err := factory.New(ctx)
+	plugin, err := factory.New(ctx, iCtx)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
 	}
