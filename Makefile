@@ -42,7 +42,7 @@ deps-up:
 e2e: deps-up
 	k6 run -e HTTPBUN_HOST=http://localhost:8080 ./tests/tests.js
 
-.PHONY: e2e-ci
+.PHONY: e2e-compose
 e2e-compose: upd
 	k6 run -e HTTPBUN_HOST=http://httpbun-local ./tests/tests.js
 
