@@ -1,4 +1,3 @@
-// Package plugins contains built-in plugins for the ika API Gateway.
 package plugins
 
 import (
@@ -42,7 +41,7 @@ type ReqModifier struct {
 	log *slog.Logger
 }
 
-func (ReqModifier) New(context.Context) (plugin.Plugin, error) {
+func (ReqModifier) New(ctx context.Context, _ plugin.InjectionContext) (plugin.Plugin, error) {
 	return &ReqModifier{}, nil
 }
 

@@ -21,7 +21,7 @@ type AccessLogger struct {
 	namespace   string
 }
 
-func (AccessLogger) New(context.Context) (plugin.Plugin, error) {
+func (AccessLogger) New(ctx context.Context, iCtx plugin.InjectionContext) (plugin.Plugin, error) {
 	return &AccessLogger{}, nil
 }
 

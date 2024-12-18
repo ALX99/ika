@@ -40,7 +40,7 @@ var _ plugin.Middleware = &noCache{}
 
 type noCache struct{}
 
-func (w *noCache) New(context.Context) (plugin.Plugin, error) {
+func (w *noCache) New(context.Context, ika.InjectionContext) (plugin.Plugin, error) {
 	return &noCache{}, nil
 }
 
@@ -83,7 +83,7 @@ type tracer struct{}
 
 var _ plugin.TransportHooker = &tracer{}
 
-func (w *tracer) New(context.Context) (plugin.Plugin, error) {
+func (w *tracer) New(context.Context, ika.InjectionContext) (plugin.Plugin, error) {
 	return &tracer{}, nil
 }
 
