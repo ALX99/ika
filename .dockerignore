@@ -3,6 +3,7 @@
 !/internal
 !/middleware
 !/plugin
+!/plugins
 !/example
 !go.mod
 !go.sum

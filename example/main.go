@@ -11,6 +11,7 @@ import (
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/middleware"
 	"github.com/alx99/ika/plugin"
+	"github.com/alx99/ika/plugins"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -72,6 +73,8 @@ func main() {
 	ika.Run(
 		ika.WithPlugin(&noCache{}),
 		ika.WithPlugin(&tracer{}),
+		ika.WithPlugin(plugins.AccessLogger{}),
+		ika.WithPlugin(plugins.ReqModifier{}),
 	)
 }
 
