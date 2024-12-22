@@ -4,7 +4,7 @@ package main
 
 import (
 	"github.com/alx99/ika"
-	"github.com/alx99/ika/internal/plugins"
+	"github.com/alx99/ika/plugins"
 )
 
 func init() {
