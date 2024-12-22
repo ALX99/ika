@@ -1,0 +1,43 @@
+
+[Test_makeRoutes/root_namespace_with_no_methods - 1]
+[]router.routePattern{
+    {pattern:"/test", isNamespaced:false},
+}
+---
+
+[Test_makeRoutes/namespaced_route_with_no_methods - 1]
+[]router.routePattern{
+    {pattern:"/namespace/test", isNamespaced:true},
+}
+---
+
+[Test_makeRoutes/host_route_with_no_methods - 1]
+[]router.routePattern{
+    {pattern:"example.com/test", isNamespaced:false},
+}
+---
+
+[Test_makeRoutes/root_namespace_with_methods - 1]
+[]router.routePattern{
+    {pattern:"GET /test", isNamespaced:false},
+    {pattern:"POST /test", isNamespaced:false},
+}
+---
+
+[Test_makeRoutes/namespaced_route_with_methods - 1]
+[]router.routePattern{
+    {pattern:"GET /namespace/test", isNamespaced:true},
+    {pattern:"POST /namespace/test", isNamespaced:true},
+}
+---
+
+[Test_makeRoutes/host_route_with_methods - 1]
+[]router.routePattern{
+    {pattern:"GET example.com/test", isNamespaced:false},
+    {pattern:"POST example.com/test", isNamespaced:false},
+}
+---
+
+[Test_makeRoutes/host_with_empty_route - 1]
+[]router.routePattern(nil)
+---

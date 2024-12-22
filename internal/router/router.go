@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
@@ -13,6 +12,7 @@ import (
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/proxy"
 	"github.com/alx99/ika/internal/router/chain"
+	"github.com/alx99/ika/internal/teardown"
 	pubMW "github.com/alx99/ika/middleware"
 	"github.com/alx99/ika/plugin"
 	"github.com/valyala/bytebufferpool"
@@ -20,8 +20,8 @@ import (
 
 type Router struct {
 	// mux is the underlying http.ServeMux
-	mux      *http.ServeMux
-	teardown []func(context.Context) error
+	mux  *http.ServeMux
+	tder teardown.Teardowner
 }
 
 type routePattern struct {
@@ -37,20 +37,19 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // Shutdown shuts down the router
 func (r *Router) Shutdown(ctx context.Context, err error) error {
-	for _, t := range r.teardown {
-		err = errors.Join(err, t(ctx))
-	}
-	return err
+	return errors.Join(err, r.tder.Teardown(ctx))
 }
 
 func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*Router, error) {
-	slog.Info("Building router", "namespaceCount", len(cfg.Namespaces))
+	log := slog.With(slog.String("module", "router"))
+	log.Info("Building router", "namespaceCount", len(cfg.Namespaces))
+
 	r := &Router{
 		mux: http.NewServeMux(),
 	}
 
 	for nsName, ns := range cfg.Namespaces {
-		log := slog.With(slog.String("namespace", nsName))
+		log = log.With(slog.String("namespace", nsName))
 		var transport http.RoundTripper = makeTransport(ns.Transport)
 
 		setupper := iplugin.NewSetupper(opts.Plugins)
@@ -63,7 +62,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		if err != nil {
 			return nil, errors.Join(err, r.Shutdown(ctx, err))
 		}
-		r.teardown = append(r.teardown, teardown)
+		r.tder.Add(teardown)
 
 		transport = wrapTransport(transport)
 
@@ -80,41 +79,20 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		// create multiple subrouters for each namespace in the future
 		// Then plugins will be able to run on both namespace and path level
 		for pattern, path := range ns.Paths {
-			for _, route := range makeRoutes(pattern, nsName, ns, path) {
+			for _, route := range makeRoutes(pattern, nsName, path) {
 				iCtx := plugin.InjectionContext{
 					Namespace:   nsName,
 					PathPattern: pattern,
 					Level:       plugin.LevelPath,
 				}
 
-				middlewares := collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled())
-				mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, middlewares, iplugin.ChainFromMiddlewares)
+				ch, teardown, err := r.makePluginChain(ctx, iCtx, setupper, nsName, ns, path)
 				if err != nil {
 					return nil, errors.Join(err, r.Shutdown(ctx, err))
 				}
-				r.teardown = append(r.teardown, teardown)
+				r.tder.Add(teardown)
 
-				reqModifiers := collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled())
-				reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, reqModifiers, iplugin.ChainFromReqModifiers)
-				if err != nil {
-					return nil, errors.Join(err, r.Shutdown(ctx, err))
-				}
-				r.teardown = append(r.teardown, teardown)
-
-				firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()),
-					iplugin.ChainFirstHandler)
-				if err != nil {
-					return nil, errors.Join(err, r.Shutdown(ctx, err))
-				}
-				r.teardown = append(r.teardown, teardown)
-
-				ch := chain.New().Extend(firstHandlerChain).Extend(reqModChain).Extend(mwChain)
-
-				log.Debug("Path registered",
-					"pattern", route.pattern,
-					"middlewares", slices.Collect(config.Plugins(middlewares).Names()),
-					"reqModifiers", slices.Collect(config.Plugins(reqModifiers).Names()),
-				)
+				log.Debug("Path registered", "pattern", route.pattern)
 
 				r.mux.Handle(route.pattern, pubMW.BindMetadata(pubMW.Metadata{
 					Namespace:      nsName,
@@ -128,7 +106,36 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 	return r, nil
 }
 
-func makeRoutes(rp, nsName string, _ config.Namespace, route config.Path) []routePattern {
+func (r *Router) makePluginChain(ctx context.Context, iCtx plugin.InjectionContext, setupper *iplugin.PluginSetupper, nsName string, ns config.Namespace, path config.Path) (chain.Chain, teardown.TeardownFunc, error) {
+	var tder teardown.Teardowner
+
+	middlewares := collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled())
+	mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, middlewares, iplugin.ChainFromMiddlewares)
+	if err != nil {
+		return chain.Chain{}, tder.Add(teardown).Teardown, err
+	}
+	tder.Add(teardown)
+
+	reqModifiers := collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled())
+	reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, reqModifiers, iplugin.ChainFromReqModifiers)
+	if err != nil {
+		return chain.Chain{}, tder.Add(teardown).Teardown, err
+	}
+	tder.Add(teardown)
+
+	firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()),
+		iplugin.ChainFirstHandler)
+	if err != nil {
+		return chain.Chain{}, tder.Add(teardown).Teardown, err
+	}
+	tder.Add(teardown)
+
+	ch := chain.New().Extend(firstHandlerChain).Extend(reqModChain).Extend(mwChain)
+
+	return ch, teardown, nil
+}
+
+func makeRoutes(rp, nsName string, route config.Path) []routePattern {
 	var patterns []routePattern
 	sb := strings.Builder{}
 	isRoot := nsName == "root"

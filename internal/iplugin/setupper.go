@@ -2,13 +2,13 @@ package iplugin
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"slices"
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/router/chain"
+	"github.com/alx99/ika/internal/teardown"
 	"github.com/alx99/ika/plugin"
 )
 
@@ -76,48 +76,39 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	setupper *PluginSetupper,
 	pluginCfg config.Plugins,
 	fn func(t []initializedPlugin[T]) V,
-) (V, func(context.Context) error, error) {
+) (V, teardown.TeardownFunc, error) {
 	var t T
 	var v V
 	// plugins that have been set up
 	plugins := []initializedPlugin[T]{}
-
-	var teardowns []func(context.Context) error
-	teardown := func(ctx context.Context) error {
-		var err error
-		for _, t := range teardowns {
-			err = errors.Join(err, t(ctx))
-		}
-		return err
-	}
+	var tder teardown.Teardowner
 
 	for _, cfg := range pluginCfg {
 		plugin, setup, err := setupper.getPlugin(ctx, iCtx, cfg)
 		if err != nil {
-			return v, teardown, err
+			return v, tder.Teardown, err
 		}
 
 		if setup {
+			tder.Add(plugin.Teardown)
 			castedPlugin, ok := plugin.(T)
 			if !ok {
-				return v, teardown, fmt.Errorf("plugin %q does not implement interface %T", cfg.Name, t)
+				return v, tder.Teardown, fmt.Errorf("plugin %q does not implement interface %T", cfg.Name, t)
 			}
 			plugins = append(plugins, initializedPlugin[T]{
 				name:   cfg.Name,
 				plugin: castedPlugin,
 			})
-			teardowns = append(teardowns, plugin.Teardown)
 		}
 
 		// NOTE this setup might happen more than once for the same plugin
 		err = plugin.Setup(ctx, iCtx, cfg.Config)
 		if err != nil {
-			return v, teardown, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
+			return v, tder.Teardown, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
 		}
-
 	}
 
-	return fn(plugins), teardown, nil
+	return fn(plugins), tder.Teardown, nil
 }
 
 func ChainFromMiddlewares(middlewares []initializedPlugin[plugin.Middleware]) chain.Chain {
