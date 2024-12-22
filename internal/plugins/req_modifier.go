@@ -50,10 +50,6 @@ func (ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
-func (ReqModifier) Capabilities() []plugin.Capability {
-	return []plugin.Capability{plugin.CapModifyRequests}
-}
-
 func (ReqModifier) InjectionLevels() []plugin.InjectionLevel {
 	return []plugin.InjectionLevel{plugin.LevelPath}
 }

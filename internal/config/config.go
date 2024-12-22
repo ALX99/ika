@@ -42,7 +42,7 @@ func (d Duration) Dur() time.Duration {
 }
 
 func (d *Duration) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
-	var v interface{}
+	var v any
 	if err := value.Decode(&v); err != nil {
 		return err
 	}

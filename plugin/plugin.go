@@ -11,20 +11,10 @@ type MiddlewareHook interface {
 }
 
 type (
-	Capability     uint16
 	InjectionLevel uint8
 )
 
 const (
-	// Plugins which report this capability must implement the [RequestModifier] interface
-	CapModifyRequests Capability = iota
-	// Plugins which report this capability must implement the [Middleware] interface
-	CapMiddleware
-	// Plugins which report this capability must implement the [TransportHook] interface
-	CapModifyTransport
-	// Plugins which report this capability must implement the [FirstHandlerHook] interface
-	CapFirstHandler
-
 	LevelPath InjectionLevel = iota
 	LevelNamespace
 )
@@ -32,12 +22,6 @@ const (
 type Factory interface {
 	// Name must return the name of the plugin that the factory creates.
 	Name() string
-
-	// Capabilities must return the capabilities of the plugin.
-	//
-	// It is used for validation purposes to ensure the plugin satisfies
-	// the correct interface(s).
-	Capabilities() []Capability
 
 	// New returns an instance of the plugin.
 	//

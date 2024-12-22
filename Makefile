@@ -23,7 +23,7 @@ down:
 
 .PHONY: run
 run:
-	CGO_ENABLED=1 go build -race -o ./bin/ika ./cmd/ika
+	CGO_ENABLED=1 go build -tags full -race -o ./bin/ika ./cmd/ika
 	./bin/ika -config ./tests/ika.yaml
 
 .PHONY: run-reload
@@ -53,6 +53,8 @@ vet:
 .PHONY: fmt
 fmt:
 	cue fmt ./...
+
+cfg: cfg-local
 
 cfg-%: vet fmt
 	cue export -t env=$* tests/ika.cue --out yaml > tests/ika.yaml

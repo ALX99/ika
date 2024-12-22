@@ -54,10 +54,6 @@ func (ps *PluginSetupper) getPlugin(ctx context.Context, iCtx plugin.InjectionCo
 		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
 	}
 
-	if err := verifyCapabilities(cfg.Name, plugin, ps.factories[cfg.Name].Capabilities()); err != nil {
-		return nil, false, err
-	}
-
 	if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
 		return nil, false, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
 	}
@@ -81,6 +77,7 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	pluginCfg config.Plugins,
 	fn func(t []initializedPlugin[T]) V,
 ) (V, func(context.Context) error, error) {
+	var t T
 	var v V
 	// plugins that have been set up
 	plugins := []initializedPlugin[T]{}
@@ -101,9 +98,13 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 		}
 
 		if setup {
+			castedPlugin, ok := plugin.(T)
+			if !ok {
+				return v, teardown, fmt.Errorf("plugin %q does not implement interface %T", cfg.Name, t)
+			}
 			plugins = append(plugins, initializedPlugin[T]{
 				name:   cfg.Name,
-				plugin: plugin.(T),
+				plugin: castedPlugin,
 			})
 			teardowns = append(teardowns, plugin.Teardown)
 		}
@@ -170,27 +171,4 @@ func ChainFirstHandler(hooks []initializedPlugin[plugin.FirstHandlerHooker]) cha
 		}
 	}
 	return chain.New(cons...)
-}
-
-func verifyCapabilities(pluginName string, p plugin.Plugin, capabilities []plugin.Capability) error {
-	var t1 plugin.RequestModifier
-	var t2 plugin.Middleware
-	for _, capability := range capabilities {
-		switch capability {
-		case plugin.CapModifyRequests:
-			if _, ok := p.(plugin.RequestModifier); !ok {
-				return fmt.Errorf("plugin %q does not implement %T", pluginName, t1)
-			}
-		case plugin.CapMiddleware:
-			if _, ok := p.(plugin.Middleware); !ok {
-				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
-			}
-		case plugin.CapFirstHandler:
-			if _, ok := p.(plugin.FirstHandlerHooker); !ok {
-				return fmt.Errorf("plugin %q does not implement %T", pluginName, t2)
-			}
-
-		}
-	}
-	return nil
 }

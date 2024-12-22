@@ -23,13 +23,23 @@ func WrapHTTPHandler(h http.Handler) ErrHandler {
 	})
 }
 
-// WrapErrHandler wraps an [ErrHandler] into an [http.Handler].
-// TODO if there is an error, call some error handling function
-func WrapErrHandler(h ErrHandler) http.Handler {
+// WrapErrHandler converts an [ErrHandler] into an [http.Handler] using [ErrHandlerFunc.ToHTTPHandler].
+func WrapErrHandler(h ErrHandler, errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
+	return ErrHandlerFunc(h.ServeHTTP).ToHTTPHandler(errorHandler)
+}
+
+// ToHTTPHandler converts an [ErrHandler] into an [http.Handler].
+// If the function returns an error, it will be written to the response using the provided error handler.
+// If the error handler is nil, the error will be written as a 500 Internal Server Error.
+func (ehf ErrHandlerFunc) ToHTTPHandler(errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := h.ServeHTTP(w, r)
+		err := ehf.ServeHTTP(w, r)
 		if err != nil {
-			panic(err) // todo
+			if errorHandler != nil {
+				errorHandler(w, r, err)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
 	})
 }

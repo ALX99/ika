@@ -13,7 +13,6 @@ import (
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/logger"
-	"github.com/alx99/ika/internal/plugins"
 	"github.com/alx99/ika/internal/router"
 	"github.com/alx99/ika/internal/server"
 	"github.com/alx99/ika/plugin"
@@ -37,10 +36,6 @@ func Run(opts ...Option) {
 	cfg := config.Options{
 		Plugins: make(map[string]plugin.Factory),
 	}
-
-	// TODO hack
-	opts = append(opts, WithPlugin(plugins.ReqModifier{}))
-	opts = append(opts, WithPlugin(plugins.AccessLogger{}))
 
 	for _, opt := range opts {
 		if err := opt(&cfg); err != nil {

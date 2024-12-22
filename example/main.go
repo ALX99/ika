@@ -48,10 +48,6 @@ func (w *noCache) Name() string {
 	return "noCache"
 }
 
-func (w *noCache) Capabilities() []plugin.Capability {
-	return []plugin.Capability{plugin.CapMiddleware}
-}
-
 func (w *noCache) InjectionLevels() []plugin.InjectionLevel {
 	return []plugin.InjectionLevel{plugin.LevelPath}
 }
@@ -66,7 +62,7 @@ func (w *noCache) Teardown(context.Context) error {
 
 func (w *noCache) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-		chimw.NoCache(plugin.WrapErrHandler(next)).ServeHTTP(w, r)
+		chimw.NoCache(plugin.WrapErrHandler(next, nil)).ServeHTTP(w, r)
 		return nil
 	})
 }
@@ -97,10 +93,6 @@ func (w *tracer) InjectionLevels() []plugin.InjectionLevel {
 
 func (w *tracer) Name() string {
 	return "tracer"
-}
-
-func (w *tracer) Capabilities() []plugin.Capability {
-	return []plugin.Capability{plugin.CapModifyTransport, plugin.CapFirstHandler}
 }
 
 func (w *tracer) Teardown(context.Context) error {

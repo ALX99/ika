@@ -29,10 +29,6 @@ func (AccessLogger) Name() string {
 	return "accessLog"
 }
 
-func (AccessLogger) Capabilities() []plugin.Capability {
-	return []plugin.Capability{plugin.CapMiddleware}
-}
-
 func (AccessLogger) InjectionLevels() []plugin.InjectionLevel {
 	return []plugin.InjectionLevel{plugin.LevelPath}
 }

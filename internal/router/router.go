@@ -120,7 +120,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 					Namespace:      nsName,
 					Route:          pattern,
 					GeneratedRoute: route.pattern,
-				}, ch.Then(plugin.WrapHTTPHandler(p))))
+				}, plugin.WrapErrHandler(ch.Then(p), defaultErrHandler)))
 			}
 		}
 	}
@@ -128,7 +128,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 	return r, nil
 }
 
-func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path) []routePattern {
+func makeRoutes(rp, nsName string, _ config.Namespace, route config.Path) []routePattern {
 	var patterns []routePattern
 	sb := strings.Builder{}
 	isRoot := nsName == "root"
@@ -166,6 +166,7 @@ func makeRoutes(rp string, nsName string, ns config.Namespace, route config.Path
 
 		writeRoute()
 		patterns = append(patterns, routePattern{pattern: sb.String(), isNamespaced: isNamespaced})
+		sb.Reset()
 	}
 
 	return patterns
@@ -185,4 +186,9 @@ func makeTransport(cfg config.Transport) *http.Transport {
 		WriteBufferSize:        cfg.WriteBufferSize,
 		ReadBufferSize:         cfg.ReadBufferSize,
 	}
+}
+
+func defaultErrHandler(w http.ResponseWriter, r *http.Request, err error) {
+	slog.Error("Error handling request", "err", err)
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }

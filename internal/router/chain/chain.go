@@ -59,15 +59,13 @@ func New(constructors ...Constructor) Chain {
 // For proper middleware, this should cause no problems.
 //
 // Then() treats nil as http.DefaultServeMux.
-func (c Chain) Then(h plugin.ErrHandler) http.Handler {
+func (c Chain) Then(h plugin.ErrHandler) plugin.ErrHandler {
 	for i := range c.constructors {
 		h = c.constructors[len(c.constructors)-1-i].MiddlewareFunc(h)
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := h.ServeHTTP(w, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		return h.ServeHTTP(w, r)
 	})
 }
 
@@ -80,7 +78,7 @@ func (c Chain) Then(h plugin.ErrHandler) http.Handler {
 //	c.ThenFunc(fn)
 //
 // ThenFunc provides all the guarantees of Then.
-func (c Chain) ThenFunc(fn plugin.ErrHandlerFunc) http.Handler {
+func (c Chain) ThenFunc(fn plugin.ErrHandlerFunc) plugin.ErrHandler {
 	return c.Then(fn)
 }
 
