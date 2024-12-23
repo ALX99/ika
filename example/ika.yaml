@@ -8,7 +8,9 @@ servers:
   - addr: :8888
 
 namespaces:
-  /example:
+  example:
+    nsPaths:
+      - /example/
     hooks:
       - name: tracer
     reqModifiers:
@@ -24,6 +26,8 @@ namespaces:
           - name: noCache
 
   httpbun.dozy.dev:
+    nsPaths:
+      - httpbun.dozy.dev/
     transport:
       maxIdleConnsPerHost: 250
     hooks:
@@ -38,6 +42,8 @@ namespaces:
       /: {}
 
   go.dozy.dev:
+    nsPaths:
+      - go.dozy.dev/
     hooks:
       - name: tracer
     reqModifiers:

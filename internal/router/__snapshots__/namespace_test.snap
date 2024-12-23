@@ -1,0 +1,52 @@
+
+[Test_mergePaths/test_normal_path_join - 1]
+/test/path
+---
+
+[Test_mergePaths/normal_path_join - 1]
+/test/path
+---
+
+[Test_mergePaths/common_base_path - 1]
+/test/test/hi
+---
+
+[Test_mergePaths/with_variables - 1]
+/test/{something}/test/hi/ok
+---
+
+[Test_mergePaths/with_methods - 1]
+/
+---
+
+[Test_mergePaths/root_path_join - 1]
+/
+---
+
+[Test_mergePaths/with_host - 1]
+example.com:99/
+---
+
+[Test_mergePaths/with_host_and_method - 1]
+GET example.com/
+---
+
+[Test_mergePaths/with_method_and_host - 1]
+/example/
+---
+
+[Test_mergePaths/with_mismatch_methods - 1]
+
+---
+
+[Test_mergePaths/with_mismatch_hosts - 1]
+
+---
+
+[Test_mergePaths/with_matching_hosts - 1]
+example.com/example/
+---
+
+[Test_mergePaths/multiple_slashes - 1]
+//
+---

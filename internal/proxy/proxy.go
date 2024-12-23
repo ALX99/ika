@@ -37,9 +37,12 @@ func NewProxy(cfg Config) (*Proxy, error) {
 			// Restore the query even if it can't be parsed (see [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
 
-			// todo unacceptable hack to trim the namespace from the path
-			rp.Out.URL.Path = strings.TrimPrefix(rp.In.URL.Path, cfg.Namespace)
-			rp.Out.URL.RawPath = strings.TrimPrefix(request.GetPath(rp.In), cfg.Namespace)
+			trim := request.GetPathToTrim(rp.In)
+			if trim != "" {
+				// Trim the prefix of the namespace path from the request path
+				rp.Out.URL.Path = strings.TrimPrefix(rp.In.URL.Path, trim)
+				rp.Out.URL.RawPath = strings.TrimPrefix(request.GetPath(rp.In), trim)
+			}
 		},
 	}
 

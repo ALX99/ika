@@ -151,7 +151,8 @@ package config
 }
 
 #Namespace: {
-	paths:         #Paths
+	paths: #Paths
+	nsPaths: [...string]
 	transport?:    #Transport
 	middlewares?:  #Plugins
 	reqModifiers?: #Plugins

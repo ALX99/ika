@@ -42,9 +42,10 @@ ika: {
 servers: [{addr: ":8888"}]
 
 namespaces: root: paths: {"/headers": {}}
+namespaces: root: nsPaths: ["/"]
 
-namespaces: "/testns1": namespaces["testns1.com"]
-namespaces: "testns1.com": paths: {
+namespaces: "testns1": nsPaths: ["/testns1/", "testns1.com/"]
+namespaces: "testns1": paths: {
 	"/any": {}
 	"/get": {
 		reqModifiers: [
@@ -117,7 +118,8 @@ namespaces: "testns1.com": paths: {
 	}
 }
 
-namespaces: "/perf": {
+namespaces: "perf": nsPaths: ["/perf/"]
+namespaces: "perf": {
 	transport: {
 		maxIdleConnsPerHost: 250
 	}
@@ -134,8 +136,8 @@ namespaces: "/perf": {
 	}
 }
 
-namespaces: "/passthrough": namespaces["passthrough.com"]
-namespaces: "passthrough.com": {
+namespaces: "passthrough": nsPaths: ["/passthrough", "/passthrough/", "passthrough.com/"]
+namespaces: "passthrough": {
 	paths: {
 		"": {}
 		"/": {}
