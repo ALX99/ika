@@ -56,7 +56,6 @@ func (ReqModifier) InjectionLevels() []plugin.InjectionLevel {
 
 func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
-	isNamespaced := strings.HasPrefix(context.Namespace, "/") && context.Namespace != "root"
 
 	var toPath string
 	if _, ok := config["path"]; ok {
@@ -74,7 +73,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 
 	if toPath != "" {
 		rm.pathRewriteEnabled = true
-		rm.setupPathRewrite(routePattern, isNamespaced, toPath)
+		rm.setupPathRewrite(routePattern, toPath)
 	}
 
 	if host != "" {
@@ -151,14 +150,10 @@ func (rm *ReqModifier) rewriteHost(r *http.Request) {
 }
 
 // setupPathRewrite sets up the path rewrite
-func (rm *ReqModifier) setupPathRewrite(routePattern string, isNamespaced bool, toPath string) {
+func (rm *ReqModifier) setupPathRewrite(routePattern string, toPath string) {
 	rm.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
 	s := strings.Split(routePattern, "/")
 
-	if isNamespaced {
-		// The first path segment of a namespaced route is the namespace itself
-		rm.replacePattern = strings.Split(routePattern, "/")[0]
-	}
 	rm.replacePattern += segmentRe.ReplaceAllString(toPath, "%s")
 
 	matches := segmentRe.FindAllStringSubmatch(toPath, -1)
@@ -169,13 +164,7 @@ func (rm *ReqModifier) setupPathRewrite(routePattern string, isNamespaced bool, 
 
 		for i, v := range s {
 			if v == match[0] {
-				if isNamespaced {
-					// If a route is namespaced, the first segment is the namespace
-					// which is impossible to to match with a rewritePath
-					rm.segments[i+1] = match[0]
-				} else {
-					rm.segments[i] = match[0]
-				}
+				rm.segments[i] = match[0]
 			}
 		}
 	}
