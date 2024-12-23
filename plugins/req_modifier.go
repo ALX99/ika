@@ -51,7 +51,7 @@ func (ReqModifier) Name() string {
 }
 
 func (ReqModifier) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath}
+	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
 }
 
 func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {

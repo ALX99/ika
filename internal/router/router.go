@@ -77,11 +77,23 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 			return nil, errors.Join(err, r.Shutdown(ctx, err))
 		}
 
-		nsRouter.addNamespace(nsName, ns.NSPaths)
+		nsRouter.addNamespace(namespace{
+			name:       nsName,
+			nsPaths:    ns.NSPaths,
+			mux:        http.NewServeMux(),
+			addedPaths: make(map[string]struct{}),
+		})
 
-		// TODO don't explode namespace level request modifiers / middlewares into paths
-		// create multiple subrouters for each namespace in the future
-		// Then plugins will be able to run on both namespace and path level
+		nsChain, teardown, err := r.makePluginChain(ctx, iCtx, setupper,
+			collectIters(ns.Middlewares.Enabled()),
+			collectIters(ns.ReqModifiers.Enabled()),
+			collectIters(ns.Hooks.Enabled()),
+		)
+		if err != nil {
+			return nil, errors.Join(err, r.Shutdown(ctx, err))
+		}
+		r.tder.Add(teardown)
+
 		for pattern, path := range ns.Paths {
 			iCtx := plugin.InjectionContext{
 				Namespace:   nsName,
@@ -89,7 +101,11 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 				Level:       plugin.LevelPath,
 			}
 
-			ch, teardown, err := r.makePluginChain(ctx, iCtx, setupper, nsName, ns, path)
+			pathChain, teardown, err := r.makePluginChain(ctx, iCtx, setupper,
+				collectIters(path.Middlewares.Enabled()),
+				collectIters(path.ReqModifiers.Enabled()),
+				nil,
+			)
 			if err != nil {
 				return nil, errors.Join(err, r.Shutdown(ctx, err))
 			}
@@ -109,9 +125,10 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 					Namespace:      nsName,
 					Route:          pattern,
 					GeneratedRoute: pattern, // todo this is not the full
-				}, plugin.WrapErrHandler(ch.Then(p), defaultErrHandler)))
+				}, plugin.WrapErrHandler(nsChain.Extend(pathChain).Then(p), defaultErrHandler)))
 			}
 		}
+
 	}
 
 	r.nsRouter = nsRouter
@@ -119,25 +136,22 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 	return r, nil
 }
 
-func (r *Router) makePluginChain(ctx context.Context, iCtx plugin.InjectionContext, setupper *iplugin.PluginSetupper, nsName string, ns config.Namespace, path config.Path) (chain.Chain, teardown.TeardownFunc, error) {
+func (r *Router) makePluginChain(ctx context.Context, iCtx plugin.InjectionContext, setupper *iplugin.PluginSetupper, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
 	var tder teardown.Teardowner
 
-	middlewares := collectIters(ns.Middlewares.Enabled(), path.Middlewares.Enabled())
 	mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, middlewares, iplugin.ChainFromMiddlewares)
 	if err != nil {
 		return chain.Chain{}, tder.Add(teardown).Teardown, err
 	}
 	tder.Add(teardown)
 
-	reqModifiers := collectIters(ns.ReqModifiers.Enabled(), path.ReqModifiers.Enabled())
 	reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, reqModifiers, iplugin.ChainFromReqModifiers)
 	if err != nil {
 		return chain.Chain{}, tder.Add(teardown).Teardown, err
 	}
 	tder.Add(teardown)
 
-	firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()),
-		iplugin.ChainFirstHandler)
+	firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, hooks, iplugin.ChainFirstHandler)
 	if err != nil {
 		return chain.Chain{}, tder.Add(teardown).Teardown, err
 	}

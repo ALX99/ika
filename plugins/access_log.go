@@ -30,7 +30,7 @@ func (AccessLogger) Name() string {
 }
 
 func (AccessLogger) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath}
+	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
 }
 
 func (a *AccessLogger) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {

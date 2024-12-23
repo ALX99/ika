@@ -51,16 +51,10 @@ func (rt *namespacedRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ns.mux.ServeHTTP(w, r)
 }
 
-func (rt *namespacedRouter) addNamespace(name string, nsPaths []string) {
-	rt.namespaces[name] = namespace{
-		name:       name,
-		nsPaths:    nsPaths,
-		mux:        http.NewServeMux(),
-		addedPaths: make(map[string]struct{}),
-	}
-
-	for _, path := range nsPaths {
-		rt.router.addNSPath(path, name)
+func (rt *namespacedRouter) addNamespace(ns namespace) {
+	rt.namespaces[ns.name] = ns
+	for _, path := range ns.nsPaths {
+		rt.router.addNSPath(path, ns.name)
 	}
 }
 
