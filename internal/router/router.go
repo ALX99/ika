@@ -35,8 +35,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // Shutdown shuts down the router
-func (r *Router) Shutdown(ctx context.Context, err error) error {
-	return errors.Join(err, r.tder.Teardown(ctx))
+func (r *Router) Shutdown(ctx context.Context) error {
+	return r.tder.Teardown(ctx)
 }
 
 func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*Router, error) {
@@ -62,7 +62,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 
 		wrapTransport, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
 		if err != nil {
-			return nil, errors.Join(err, r.Shutdown(ctx, err))
+			return nil, errors.Join(err, r.tder.Teardown(ctx))
 		}
 		r.tder.Add(teardown)
 
@@ -74,7 +74,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 			BufferPool: &pool.BufferPool{Pool: bytebufferpool.Pool{}},
 		})
 		if err != nil {
-			return nil, errors.Join(err, r.Shutdown(ctx, err))
+			return nil, errors.Join(err, r.tder.Teardown(ctx))
 		}
 
 		nsRouter.addNamespace(namespace{
@@ -90,7 +90,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 			collectIters(ns.Hooks.Enabled()),
 		)
 		if err != nil {
-			return nil, errors.Join(err, r.Shutdown(ctx, err))
+			return nil, errors.Join(err, r.tder.Teardown(ctx))
 		}
 		r.tder.Add(teardown)
 
@@ -107,7 +107,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 				nil,
 			)
 			if err != nil {
-				return nil, errors.Join(err, r.Shutdown(ctx, err))
+				return nil, errors.Join(err, r.tder.Teardown(ctx))
 			}
 			r.tder.Add(teardown)
 
@@ -141,19 +141,19 @@ func (r *Router) makePluginChain(ctx context.Context, iCtx plugin.InjectionConte
 
 	mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, middlewares, iplugin.ChainFromMiddlewares)
 	if err != nil {
-		return chain.Chain{}, tder.Add(teardown).Teardown, err
+		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 	}
 	tder.Add(teardown)
 
 	reqModChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, reqModifiers, iplugin.ChainFromReqModifiers)
 	if err != nil {
-		return chain.Chain{}, tder.Add(teardown).Teardown, err
+		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 	}
 	tder.Add(teardown)
 
 	firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, hooks, iplugin.ChainFirstHandler)
 	if err != nil {
-		return chain.Chain{}, tder.Add(teardown).Teardown, err
+		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 	}
 	tder.Add(teardown)
 

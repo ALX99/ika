@@ -92,5 +92,5 @@ func run(ctx context.Context, opts config.Options) (func() error, error) {
 	defer cancel()
 
 	// Shutdown
-	return flush, errors.Join(s.Shutdown(ctx), router.Shutdown(ctx, nil))
+	return flush, errors.Join(s.Shutdown(ctx), router.Shutdown(ctx))
 }

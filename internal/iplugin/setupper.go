@@ -2,6 +2,7 @@ package iplugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -86,14 +87,14 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	for _, cfg := range pluginCfg {
 		plugin, setup, err := setupper.getPlugin(ctx, iCtx, cfg)
 		if err != nil {
-			return v, tder.Teardown, err
+			return v, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 		}
 
 		if setup {
 			tder.Add(plugin.Teardown)
 			castedPlugin, ok := plugin.(T)
 			if !ok {
-				return v, tder.Teardown, fmt.Errorf("plugin %q does not implement interface %T", cfg.Name, t)
+				return v, tder.Teardown, errors.Join(fmt.Errorf("plugin %q does not implement interface %T", cfg.Name, t), tder.Teardown(ctx))
 			}
 			plugins = append(plugins, initializedPlugin[T]{
 				name:   cfg.Name,
@@ -104,7 +105,7 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 		// NOTE this setup might happen more than once for the same plugin
 		err = plugin.Setup(ctx, iCtx, cfg.Config)
 		if err != nil {
-			return v, tder.Teardown, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
+			return v, tder.Teardown, errors.Join(fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err), tder.Teardown(ctx))
 		}
 	}
 
