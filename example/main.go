@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/alx99/ika"
-	"github.com/alx99/ika/middleware"
 	"github.com/alx99/ika/plugin"
 	"github.com/alx99/ika/plugins"
 	"github.com/grafana/pyroscope-go"
@@ -74,7 +73,9 @@ func main() {
 	)
 }
 
-type tracer struct{}
+type tracer struct {
+	ns string
+}
 
 var _ plugin.TransportHooker = &tracer{}
 
@@ -82,7 +83,8 @@ func (w *tracer) New(context.Context, plugin.InjectionContext) (plugin.Plugin, e
 	return &tracer{}, nil
 }
 
-func (w *tracer) Setup(_ context.Context, _ plugin.InjectionContext, config map[string]any) error {
+func (w *tracer) Setup(_ context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
+	w.ns = iCtx.Namespace
 	return nil
 }
 
@@ -96,13 +98,13 @@ func (w *tracer) Teardown(context.Context) error {
 
 func (w *tracer) HookTransport(tsp http.RoundTripper) http.RoundTripper {
 	return otelhttp.NewTransport(tsp,
-		otelhttp.WithMetricAttributesFn(metaDataAttrs),
+		otelhttp.WithMetricAttributesFn(metaDataAttrs(w.ns)),
 	)
 }
 
-func (w *tracer) Handler(next plugin.ErrHandler) plugin.ErrHandler {
+func (t *tracer) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attr := metaDataAttrs(r)
+		attr := metaDataAttrs(t.ns)(r)
 		trace.SpanFromContext(r.Context()).
 			SetAttributes(attr...)
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
@@ -112,7 +114,7 @@ func (w *tracer) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 
 	otelHandler := otelhttp.NewHandler(newHandler, "Request",
 		otelhttp.WithPublicEndpoint(),
-		otelhttp.WithMetricAttributesFn(metaDataAttrs),
+		otelhttp.WithMetricAttributesFn(metaDataAttrs(t.ns)),
 	)
 
 	return plugin.WrapHTTPHandler(otelHandler)
@@ -154,12 +156,12 @@ func setupMonitoring() func() {
 	}
 }
 
-func metaDataAttrs(r *http.Request) []attribute.KeyValue {
-	m := middleware.GetMetadata(r.Context())
-	return []attribute.KeyValue{
-		attribute.String("namespace.name", m.Namespace),
-		attribute.String("ika.route", m.Route),
-		attribute.String("ika.generated_route", m.GeneratedRoute),
+func metaDataAttrs(ns string) func(r *http.Request) []attribute.KeyValue {
+	return func(r *http.Request) []attribute.KeyValue {
+		return []attribute.KeyValue{
+			attribute.String("namespace.name", ns),
+			attribute.String("request.pattern", r.Pattern),
+		}
 	}
 }
 

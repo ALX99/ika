@@ -12,7 +12,6 @@ import (
 	"github.com/alx99/ika/internal/proxy"
 	"github.com/alx99/ika/internal/router/chain"
 	"github.com/alx99/ika/internal/teardown"
-	pubMW "github.com/alx99/ika/middleware"
 	"github.com/alx99/ika/plugin"
 	"github.com/valyala/bytebufferpool"
 )
@@ -117,11 +116,8 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 			}
 
 			for _, pattern := range patterns {
-				nsRouter.addNamespacePath(nsName, pattern, pubMW.BindMetadata(pubMW.Metadata{
-					Namespace:      nsName,
-					Route:          pattern,
-					GeneratedRoute: pattern, // todo this is not the full
-				}, plugin.WrapErrHandler(nsChain.Extend(pathChain).Then(p), defaultErrHandler)))
+				nsRouter.addNamespacePath(nsName, pattern,
+					plugin.WrapErrHandler(nsChain.Extend(pathChain).Then(p), defaultErrHandler))
 			}
 		}
 
