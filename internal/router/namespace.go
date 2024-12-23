@@ -33,7 +33,6 @@ type router struct {
 type nsKey struct{}
 
 func (nr *namespacedRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// This will set the r.Pattern field to the pattern of the request
 	nsName, redirect := nr.router.findNS(w, r)
 	if redirect {
 		nr.log.Info("redirected request", "from", r.URL.Path, "to", nsName)

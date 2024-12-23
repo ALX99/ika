@@ -49,10 +49,6 @@ func (w *noCache) Name() string {
 	return "noCache"
 }
 
-func (w *noCache) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath}
-}
-
 func (w *noCache) Setup(_ context.Context, _ plugin.InjectionContext, config map[string]any) error {
 	return nil
 }
@@ -90,10 +86,6 @@ func (w *tracer) Setup(_ context.Context, _ plugin.InjectionContext, config map[
 	return nil
 }
 
-func (w *tracer) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
-}
-
 func (w *tracer) Name() string {
 	return "tracer"
 }
@@ -108,7 +100,7 @@ func (w *tracer) HookTransport(tsp http.RoundTripper) http.RoundTripper {
 	)
 }
 
-func (w *tracer) HookFirstHandler(next plugin.ErrHandler) plugin.ErrHandler {
+func (w *tracer) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attr := metaDataAttrs(r)
 		trace.SpanFromContext(r.Context()).

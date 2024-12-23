@@ -29,10 +29,6 @@ func (AccessLogger) Name() string {
 	return "accessLog"
 }
 
-func (AccessLogger) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
-}
-
 func (a *AccessLogger) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	a.pathPattern = context.PathPattern
 	a.namespace = context.Namespace

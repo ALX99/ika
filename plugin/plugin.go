@@ -44,13 +44,11 @@ type InjectionContext struct {
 }
 
 type Plugin interface {
-	// InjectionLevels must return the levels of injection the plugin supports.
-	InjectionLevels() []InjectionLevel
-
 	// Setup should do the necessary setup for the plugin given the configuration.
 	//
-	// In case the same plugin is injected on multiple multiple levels [Plugin.Setup] will be called multiple times.
-	// It is up to individual plugins to handle this case.
+	// In case the same plugin is injected on multiple times on the same level (namespace/path level)
+	// [Plugin.Setup] will be called multiple times.
+	// It is up to individual plugins to handle this scenario.
 	Setup(ctx context.Context, iCtx InjectionContext, config map[string]any) error
 
 	// Teardown should do the necessary teardown for the plugin.
@@ -79,5 +77,5 @@ type TransportHooker interface {
 // FirstHandlerHooker is an interface that plugins can implement to modify the first handler that get executed for each path.
 type FirstHandlerHooker interface {
 	Plugin
-	HookFirstHandler(next ErrHandler) ErrHandler
+	Middleware
 }

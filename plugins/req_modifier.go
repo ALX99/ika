@@ -50,10 +50,6 @@ func (ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
-func (ReqModifier) InjectionLevels() []plugin.InjectionLevel {
-	return []plugin.InjectionLevel{plugin.LevelPath, plugin.LevelNamespace}
-}
-
 func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
 	routePattern := context.PathPattern
 
@@ -72,6 +68,9 @@ func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 	}
 
 	if toPath != "" {
+		if routePattern == "" {
+			return fmt.Errorf("path pattern is required")
+		}
 		rm.pathRewriteEnabled = true
 		rm.setupPathRewrite(routePattern, toPath)
 	}

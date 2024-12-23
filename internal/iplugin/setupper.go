@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/router/chain"
@@ -53,10 +52,6 @@ func (ps *PluginSetupper) getPlugin(ctx context.Context, iCtx plugin.InjectionCo
 	plugin, err := factory.New(ctx, iCtx)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
-	}
-
-	if !slices.Contains(plugin.InjectionLevels(), iCtx.Level) {
-		return nil, false, fmt.Errorf("plugin %q can not be injected at the specified level", cfg.Name)
 	}
 
 	ps.plugins = append(ps.plugins, plugin)
@@ -159,7 +154,7 @@ func ChainFirstHandler(hooks []initializedPlugin[plugin.FirstHandlerHooker]) cha
 	for i := range hooks {
 		cons[i] = chain.Constructor{
 			Name:           hooks[i].name,
-			MiddlewareFunc: hooks[i].plugin.HookFirstHandler,
+			MiddlewareFunc: hooks[i].plugin.Handler,
 		}
 	}
 	return chain.New(cons...)

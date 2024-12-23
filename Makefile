@@ -63,3 +63,26 @@ cfg: cfg-local
 
 cfg-%: vet fmt
 	cue export -t env=$* tests/ika.cue --out yaml > tests/ika.yaml
+
+.PHONY: release-patch
+release-patch:
+	latest_tag=$$(git describe --tags `git rev-list --tags --max-count=1`); \
+	if [ -z "$$latest_tag" ]; then \
+		new_tag="v0.0.1"; \
+	else \
+		IFS='.' read -r major minor patch <<< "$${latest_tag#v}"; \
+		new_patch=$$(($$patch + 1)); \
+		new_tag="v$$major.$$minor.$$new_patch"; \
+	fi; \
+	git tag $$new_tag; \
+	echo "Tagged with $$new_tag"
+
+.PHONY: release
+release:
+	latest_tag=$$(git describe --tags `git rev-list --tags --max-count=1`); \
+	if [ -z "$$latest_tag" ]; then \
+		echo "No tags found"; \
+	else \
+		git push origin $$latest_tag; \
+		echo "Pushed tag $$latest_tag"; \
+	fi
