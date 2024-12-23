@@ -76,7 +76,7 @@ func Test_mergePaths(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := mergePaths(tt.nsPath, tt.path)
+			got, _ := mergePaths(tt.nsPath, tt.path)
 			snaps.MatchSnapshot(t, got)
 		})
 	}

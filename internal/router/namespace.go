@@ -72,7 +72,10 @@ func (r *namespacedRouter) addNamespacePath(name string, path string, handler ht
 	}
 
 	for _, nsPath := range ns.nsPaths {
-		merged := mergePaths(nsPath, path)
+		merged, err := mergePaths(nsPath, path)
+		if err != nil {
+			return err
+		}
 		if _, ok := ns.addedPaths[merged]; ok {
 			/*
 				This is a special scenario where a namespace has the following configuration:
@@ -104,20 +107,18 @@ func (r *namespacedRouter) addNamespacePath(name string, path string, handler ht
 	return nil
 }
 
-func mergePaths(nsPath, path string) string {
+func mergePaths(nsPath, path string) (string, error) {
 	method, host, path := splitPath(path)
 	nsMethod, nsHost, nsPath := splitPath(nsPath)
 
 	if nsMethod != "" && method != "" && nsMethod != method {
 		// impossible route, can never be matched
-		// todo return error
-		return ""
+		return "", fmt.Errorf("method mismatch (ns != path): %q != %q", nsMethod, method)
 	}
 
 	if nsHost != "" && host != "" && nsHost != host {
 		// impossible route, can never be matched
-		// todo return error
-		return ""
+		return "", fmt.Errorf("host mismatch (ns != path): %q != %q", nsHost, host)
 	}
 
 	if strings.HasPrefix(path, "/") {
@@ -125,7 +126,7 @@ func mergePaths(nsPath, path string) string {
 		nsPath = strings.TrimRight(nsPath, "/")
 	}
 
-	return strings.TrimLeft(method+" "+nsHost+nsPath+path, " ")
+	return strings.TrimLeft(method+" "+nsHost+nsPath+path, " "), nil
 }
 
 func splitPath(route string) (method, host, path string) {
