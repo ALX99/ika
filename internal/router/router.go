@@ -84,6 +84,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 			addedPaths: make(map[string]struct{}),
 		})
 
+		setupper = iplugin.NewSetupper(opts.Plugins)
 		nsChain, teardown, err := r.makePluginChain(ctx, iCtx, setupper,
 			collectIters(ns.Middlewares.Enabled()),
 			collectIters(ns.ReqModifiers.Enabled()),
@@ -101,6 +102,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 				Level:       plugin.LevelPath,
 			}
 
+			setupper = iplugin.NewSetupper(opts.Plugins)
 			pathChain, teardown, err := r.makePluginChain(ctx, iCtx, setupper,
 				collectIters(path.Middlewares.Enabled()),
 				collectIters(path.ReqModifiers.Enabled()),
