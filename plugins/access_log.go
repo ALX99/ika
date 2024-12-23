@@ -11,10 +11,7 @@ import (
 	"github.com/alx99/ika/plugin"
 )
 
-var (
-	_ plugin.Plugin     = &AccessLogger{}
-	_ plugin.Middleware = &AccessLogger{}
-)
+var _ plugin.Middleware = &AccessLogger{}
 
 type AccessLogger struct {
 	pathPattern string
@@ -29,9 +26,9 @@ func (AccessLogger) Name() string {
 	return "accessLog"
 }
 
-func (a *AccessLogger) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
-	a.pathPattern = context.PathPattern
-	a.namespace = context.Namespace
+func (a *AccessLogger) Setup(ctx context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
+	a.pathPattern = iCtx.PathPattern
+	a.namespace = iCtx.Namespace
 	return nil
 }
 
@@ -67,15 +64,19 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 
 type statusRecorder struct {
 	http.ResponseWriter
-	status atomic.Int64
+	status      atomic.Int64
+	writeCalled atomic.Bool
 }
 
 func (w *statusRecorder) WriteHeader(statusCode int) {
-	w.status.Store(int64(statusCode))
+	if !w.writeCalled.Load() {
+		w.status.Store(int64(statusCode))
+	}
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
 func (w *statusRecorder) Write(b []byte) (int, error) {
+	w.writeCalled.Store(true)
 	w.status.CompareAndSwap(0, http.StatusOK)
 	return w.ResponseWriter.Write(b)
 }
