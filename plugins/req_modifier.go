@@ -144,8 +144,7 @@ done:
 
 func (rm *ReqModifier) rewriteHost(r *http.Request) {
 	if !rm.retainHostHeader {
-		// This overrides the Host header
-		r.Host = rm.host
+		r.Host = rm.host // this overrides the Host header
 	}
 	r.URL.Host = rm.host
 	r.URL.Scheme = rm.scheme

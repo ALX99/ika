@@ -23,13 +23,6 @@ type Router struct {
 	tder     teardown.Teardowner
 }
 
-type routePattern struct {
-	// pattern is the route pattern
-	pattern string
-	// isNamespaced is true if the route pattern is namespaced
-	isNamespaced bool
-}
-
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.nsRouter.ServeHTTP(w, req)
 }
@@ -48,6 +41,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 	nsRouter := namespacedRouter{
 		namespaces: make(map[string]namespace),
 		router:     router{mux: http.NewServeMux()},
+		log:        log,
 	}
 
 	for nsName, ns := range cfg.Namespaces {

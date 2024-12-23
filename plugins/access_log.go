@@ -50,12 +50,15 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 		attrs := []slog.Attr{
 			slog.String("method", r.Method),
 			slog.String("path", request.GetPath(r)),
-			slog.String("pathPattern", a.pathPattern),
 			slog.String("remote", r.RemoteAddr),
 			slog.String("userAgent", r.UserAgent()),
 			slog.Int64("status", st.status.Load()),
 			slog.Int64("duration", time.Since(now).Milliseconds()),
 			slog.String("namespace", a.namespace),
+			slog.String("requestPattern", r.Pattern),
+		}
+		if a.pathPattern != "" {
+			attrs = append(attrs, slog.String("pathPattern", a.pathPattern))
 		}
 		if err != nil {
 			attrs = append(attrs, slog.String("error", err.Error()))

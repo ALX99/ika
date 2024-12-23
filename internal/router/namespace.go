@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/alx99/ika/internal/request"
 )
+
+var pathVarRegex = regexp.MustCompile(`\{[^}]*\}`)
 
 type namespace struct {
 	name       string
@@ -20,6 +23,7 @@ type namespace struct {
 type namespacedRouter struct {
 	namespaces map[string]namespace
 	router     router
+	log        *slog.Logger
 }
 
 type router struct {
@@ -28,22 +32,22 @@ type router struct {
 
 type nsKey struct{}
 
-func (rt *namespacedRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (nr *namespacedRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// This will set the r.Pattern field to the pattern of the request
-	nsName, redirect := rt.router.findNS(w, r)
+	nsName, redirect := nr.router.findNS(w, r)
 	if redirect {
-		slog.Info("redirected request", "from", r.URL.Path, "to", nsName)
+		nr.log.Info("redirected request", "from", r.URL.Path, "to", nsName)
 		return
 	}
 
 	// If the pattern is not found in the namespaces map it must be a 404
-	ns, ok := rt.namespaces[nsName]
+	ns, ok := nr.namespaces[nsName]
 	if !ok {
-		slog.Debug("could not find any namespace belonging to the request", "path", request.GetPath(r))
+		nr.log.Debug("could not find any namespace belonging to the request", "path", request.GetPath(r))
 		http.NotFound(w, r)
 		return
 	}
-	slog.Debug("Associated request with namespace",
+	nr.log.Debug("Associated request with namespace",
 		"path", request.GetPath(r),
 		"namespace", nsName,
 	)
@@ -58,9 +62,8 @@ func (rt *namespacedRouter) addNamespace(ns namespace) {
 	}
 }
 
-func (r *namespacedRouter) addNamespacePath(name string, path string, handler http.Handler) error {
-	// todo disallow patterns
-	ns, ok := r.namespaces[name]
+func (nr *namespacedRouter) addNamespacePath(name string, path string, handler http.Handler) error {
+	ns, ok := nr.namespaces[name]
 	if !ok {
 		return fmt.Errorf("namespace %q not found", name)
 	}
@@ -86,7 +89,7 @@ func (r *namespacedRouter) addNamespacePath(name string, path string, handler ht
 		}
 		ns.addedPaths[merged] = struct{}{}
 
-		slog.Debug("Path registered",
+		nr.log.Debug("Path registered",
 			"path", merged,
 			"namespace", name,
 		)
@@ -102,6 +105,10 @@ func (r *namespacedRouter) addNamespacePath(name string, path string, handler ht
 }
 
 func mergePaths(nsPath, path string) (string, error) {
+	if pathVarRegex.MatchString(nsPath) {
+		return "", fmt.Errorf("namespace path %q contains path variables", nsPath)
+	}
+
 	method, host, path := splitPath(path)
 	nsMethod, nsHost, nsPath := splitPath(nsPath)
 
@@ -120,11 +127,13 @@ func mergePaths(nsPath, path string) (string, error) {
 		nsPath = strings.TrimRight(nsPath, "/")
 	}
 
-	return strings.TrimLeft(method+" "+nsHost+nsPath+path, " "), nil
+	return strings.TrimLeft(method+" "+host+nsPath+path, " "), nil
 }
 
 func splitPath(route string) (method, host, path string) {
-	// todo handle tab
+	// convert tabs to spaces
+	route = strings.NewReplacer("\t", " ").Replace(route)
+
 	method, rest, ok := strings.Cut(route, " ")
 	if !ok {
 		rest = method

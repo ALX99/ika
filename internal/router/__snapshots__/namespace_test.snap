@@ -1,6 +1,7 @@
 
-[Test_mergePaths/test_normal_path_join - 1]
-/test/path
+[Test_mergePaths/root_path_join - 1]
+/
+nil
 ---
 
 [Test_mergePaths/normal_path_join - 1]
@@ -14,8 +15,8 @@ nil
 ---
 
 [Test_mergePaths/with_variables - 1]
-/test/{something}/test/hi/ok
-nil
+
+&errors.errorString{s:"namespace path \"/test/{something}\" contains path variables"}
 ---
 
 [Test_mergePaths/with_methods - 1]
@@ -23,23 +24,18 @@ nil
 nil
 ---
 
-[Test_mergePaths/root_path_join - 1]
+[Test_mergePaths/with_host - 1]
 /
 nil
 ---
 
-[Test_mergePaths/with_host - 1]
-example.com:99/
-nil
----
-
 [Test_mergePaths/with_host_and_method - 1]
-GET example.com/
+GET /
 nil
 ---
 
 [Test_mergePaths/with_method_and_host - 1]
-/example/
+example.com/example/
 nil
 ---
 
@@ -60,5 +56,20 @@ nil
 
 [Test_mergePaths/multiple_slashes - 1]
 //
+nil
+---
+
+[Test_mergePaths/tabbed_path - 1]
+TRACE /
+nil
+---
+
+[Test_mergePaths/spaces_and_tabs_before_path - 1]
+/
+nil
+---
+
+[Test_mergePaths/path_more_specific - 1]
+GET example.com/hi
 nil
 ---

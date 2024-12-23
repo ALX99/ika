@@ -73,6 +73,21 @@ func Test_mergePaths(t *testing.T) {
 			nsPath: "GET //",
 			path:   "//",
 		},
+		{
+			name:   "tabbed path",
+			nsPath: "TRACE /",
+			path:   "TRACE\t/",
+		},
+		{
+			name:   "spaces and tabs before path",
+			nsPath: "GET /",
+			path:   " \t /",
+		},
+		{
+			name:   "path more specific",
+			nsPath: "/",
+			path:   "GET example.com/hi",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

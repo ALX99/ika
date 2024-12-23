@@ -34,6 +34,11 @@ run-reload:
 test:
 	go test ./...
 
+.PHONY: update-test
+update-test:
+	find . -name '*.snap' | xargs rm -f
+	UPDATE_SNAPS=true make test
+
 .PHONY: deps-up
 deps-up:
 	docker compose up -d httpbun-local

@@ -57,8 +57,6 @@ func New(constructors ...Constructor) Chain {
 // and thus several instances of the same middleware will be created
 // when a chain is reused in this way.
 // For proper middleware, this should cause no problems.
-//
-// Then() treats nil as http.DefaultServeMux.
 func (c Chain) Then(h plugin.ErrHandler) plugin.ErrHandler {
 	for i := range c.constructors {
 		h = c.constructors[len(c.constructors)-1-i].MiddlewareFunc(h)
