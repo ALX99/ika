@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/logger"
@@ -21,6 +22,7 @@ import (
 var (
 	printVersion = flag.Bool("version", false, "Print the version and exit.")
 	configPath   = flag.String("config", "ika.yaml", "Path to the configuration file.")
+	start        = time.Now()
 )
 
 // Run starts Ika
@@ -80,7 +82,10 @@ func run(ctx context.Context, opts config.Options) (func() error, error) {
 		return flush, fmt.Errorf("failed to start: %w", err)
 	}
 
-	slog.Info("ika has started", slog.String("goVersion", runtime.Version()))
+	slog.Info("ika has started",
+		slog.String("goVersion", runtime.Version()),
+		slog.String("startupTime", time.Since(start).Round(time.Millisecond).String()))
+
 	<-ctx.Done()
 	slog.Info("Caught shutdown signal, shutting down gracefully...")
 
