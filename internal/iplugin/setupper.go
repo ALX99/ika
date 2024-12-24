@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/alx99/ika/internal/config"
@@ -97,6 +98,7 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 			})
 		}
 
+		iCtx.Logger = iCtx.Logger.With(slog.String("plugin", cfg.Name))
 		// NOTE this setup might happen more than once for the same plugin
 		err = plugin.Setup(ctx, iCtx, cfg.Config)
 		if err != nil {

@@ -50,8 +50,8 @@ func (ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
-func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContext, config map[string]any) error {
-	routePattern := context.PathPattern
+func (rm *ReqModifier) Setup(ctx context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
+	routePattern := iCtx.PathPattern
 
 	var toPath string
 	if _, ok := config["path"]; ok {
@@ -82,7 +82,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, context plugin.InjectionContex
 		}
 	}
 
-	rm.log = slog.With(slog.String("namespace", context.Namespace))
+	rm.log = iCtx.Logger
 	return nil
 }
 

@@ -51,6 +51,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		iCtx := plugin.InjectionContext{
 			Namespace: nsName,
 			Level:     plugin.LevelNamespace,
+			Logger:    slog.Default().With(slog.String("namespace", nsName)),
 		}
 
 		wrapTransport, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
@@ -93,6 +94,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 				Namespace:   nsName,
 				PathPattern: pattern,
 				Level:       plugin.LevelPath,
+				Logger:      slog.Default().With(slog.String("namespace", nsName)),
 			}
 
 			setupper = iplugin.NewSetupper(opts.Plugins)

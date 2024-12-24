@@ -16,7 +16,7 @@ var _ plugin.Middleware = &AccessLogger{}
 
 type AccessLogger struct {
 	pathPattern string
-	namespace   string
+	log         *slog.Logger
 }
 
 func (AccessLogger) New(_ context.Context, _ plugin.InjectionContext) (plugin.Plugin, error) {
@@ -29,7 +29,7 @@ func (AccessLogger) Name() string {
 
 func (a *AccessLogger) Setup(ctx context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
 	a.pathPattern = iCtx.PathPattern
-	a.namespace = iCtx.Namespace
+	a.log = iCtx.Logger
 	return nil
 }
 
@@ -56,14 +56,13 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 				slog.Int64("status", st.status.Load()),
 				slog.Int64("duration", end.Sub(now).Milliseconds()),
 			),
-			slog.String("namespace", a.namespace),
 			slog.String("pathPattern", a.pathPattern),
 		}
 		if err != nil {
 			attrs = append(attrs, slog.String("error", err.Error()))
 		}
 
-		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access", attrs...)
+		a.log.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access", attrs...)
 		return err
 	})
 }

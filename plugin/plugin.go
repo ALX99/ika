@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 )
 
@@ -36,11 +37,16 @@ type InjectionContext struct {
 	// The namespace the plugin is injected into
 	// If it was not injected on a namespace or path level, it will be empty.
 	Namespace string
+
 	// The path pattern the plugin as injected into.
 	// If it was not injected on a path level, it will be empty.
 	PathPattern string
+
 	// The level of where the plugin was injected.
 	Level InjectionLevel
+
+	// Logger is the logger that the plugin should use.
+	Logger *slog.Logger
 }
 
 type Plugin interface {
