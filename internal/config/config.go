@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"os"
 	"time"
 
@@ -36,6 +37,10 @@ func Read(path string) (Config, error) {
 }
 
 type Duration time.Duration
+
+func (d Duration) LogValue() slog.Value {
+	return slog.StringValue(time.Duration(d).String())
+}
 
 func (d Duration) Dur() time.Duration {
 	return time.Duration(d)
