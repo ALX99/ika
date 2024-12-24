@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -36,22 +37,27 @@ func (AccessLogger) Teardown(context.Context) error { return nil }
 
 func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-		now := time.Now()
 		st := statusRecorder{ResponseWriter: w}
+		now := time.Now()
 		err := next.ServeHTTP(&st, r)
+		end := time.Now()
 
 		attrs := []slog.Attr{
-			slog.String("method", r.Method),
-			slog.String("path", request.GetPath(r)),
-			slog.String("remote", r.RemoteAddr),
-			slog.String("userAgent", r.UserAgent()),
-			slog.Int64("status", st.status.Load()),
-			slog.Int64("duration", time.Since(now).Milliseconds()),
+			slog.Group("request",
+				slog.String("method", r.Method),
+				slog.String("path", request.GetPath(r)),
+				slog.String("host", r.Host),
+				slog.String("remoteAddr", r.RemoteAddr),
+				slog.String("pattern", r.Pattern),
+				slog.Any("cookies", cookies(r.Cookies()).LogValue()),
+				slog.Any("headers", headers(r.Header).LogValue()),
+			),
+			slog.Group("response",
+				slog.Int64("status", st.status.Load()),
+				slog.Int64("duration", end.Sub(now).Milliseconds()),
+			),
 			slog.String("namespace", a.namespace),
-			slog.String("requestPattern", r.Pattern),
-		}
-		if a.pathPattern != "" {
-			attrs = append(attrs, slog.String("pathPattern", a.pathPattern))
+			slog.String("pathPattern", a.pathPattern),
 		}
 		if err != nil {
 			attrs = append(attrs, slog.String("error", err.Error()))
@@ -60,6 +66,36 @@ func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
 		slog.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access", attrs...)
 		return err
 	})
+}
+
+type cookies []*http.Cookie
+
+var _ slog.LogValuer = cookies{}
+
+func (c cookies) LogValue() slog.Value {
+	if len(c) == 0 {
+		return slog.Value{}
+	}
+	attrs := make([]slog.Attr, 0, len(c))
+	for _, cookie := range c {
+		attrs = append(attrs, slog.String(cookie.Name, cookie.Value))
+	}
+	return slog.GroupValue(attrs...)
+}
+
+type headers http.Header
+
+var _ slog.LogValuer = headers{}
+
+func (h headers) LogValue() slog.Value {
+	if len(h) == 0 {
+		return slog.Value{}
+	}
+	attrs := make([]slog.Attr, 0, len(h))
+	for k, v := range h {
+		attrs = append(attrs, slog.String(k, strings.Join(v, ", ")))
+	}
+	return slog.GroupValue(attrs...)
 }
 
 type statusRecorder struct {
