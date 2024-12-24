@@ -58,7 +58,7 @@ func (w *noCache) Teardown(context.Context) error {
 
 func (w *noCache) Handler(next plugin.Handler) plugin.Handler {
 	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-		chimw.NoCache(plugin.WrapErrHandler(next, nil)).ServeHTTP(w, r)
+		chimw.NoCache(plugin.ToHTTPHandler(next, nil)).ServeHTTP(w, r)
 		return nil
 	})
 }
@@ -117,7 +117,7 @@ func (t *tracer) Handler(next plugin.Handler) plugin.Handler {
 		otelhttp.WithMetricAttributesFn(metaDataAttrs(t.ns)),
 	)
 
-	return plugin.WrapHTTPHandler(otelHandler)
+	return plugin.FromHTTPHandler(otelHandler)
 }
 
 func (w *tracer) HookMiddleware(_ context.Context, name string, next http.Handler) (http.Handler, error) {

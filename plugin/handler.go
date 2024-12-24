@@ -14,17 +14,16 @@ func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return f(w, r)
 }
 
-// WrapHTTPHandler turns an [http.Handler] into an [Handler].
-// TODO detect errors from the wrapped handler and abort the request chain.
-func WrapHTTPHandler(h http.Handler) Handler {
+// FromHTTPHandler turns an [http.Handler] into an [Handler].
+func FromHTTPHandler(h http.Handler) Handler {
 	return HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		h.ServeHTTP(w, r)
 		return nil
 	})
 }
 
-// WrapErrHandler converts an [Handler] into an [http.Handler] using [HandlerFunc.ToHTTPHandler].
-func WrapErrHandler(h Handler, errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
+// ToHTTPHandler converts an [Handler] into an [http.Handler] using [HandlerFunc.ToHTTPHandler].
+func ToHTTPHandler(h Handler, errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
 	return HandlerFunc(h.ServeHTTP).ToHTTPHandler(errorHandler)
 }
 

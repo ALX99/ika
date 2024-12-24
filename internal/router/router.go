@@ -119,7 +119,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 
 			for _, pattern := range patterns {
 				nsRouter.addNamespacePath(nsName, pattern,
-					plugin.WrapErrHandler(nsChain.Extend(pathChain).Then(p), defaultErrHandler))
+					plugin.ToHTTPHandler(nsChain.Extend(pathChain).Then(p), defaultErrHandler))
 			}
 		}
 
