@@ -56,8 +56,8 @@ func (w *noCache) Teardown(context.Context) error {
 	return nil
 }
 
-func (w *noCache) Handler(next plugin.ErrHandler) plugin.ErrHandler {
-	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+func (w *noCache) Handler(next plugin.Handler) plugin.Handler {
+	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		chimw.NoCache(plugin.WrapErrHandler(next, nil)).ServeHTTP(w, r)
 		return nil
 	})
@@ -102,7 +102,7 @@ func (w *tracer) HookTransport(tsp http.RoundTripper) http.RoundTripper {
 	)
 }
 
-func (t *tracer) Handler(next plugin.ErrHandler) plugin.ErrHandler {
+func (t *tracer) Handler(next plugin.Handler) plugin.Handler {
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attr := metaDataAttrs(t.ns)(r)
 		trace.SpanFromContext(r.Context()).

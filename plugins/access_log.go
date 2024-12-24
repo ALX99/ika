@@ -35,8 +35,8 @@ func (a *AccessLogger) Setup(ctx context.Context, iCtx plugin.InjectionContext, 
 
 func (AccessLogger) Teardown(context.Context) error { return nil }
 
-func (a *AccessLogger) Handler(next plugin.ErrHandler) plugin.ErrHandler {
-	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+func (a *AccessLogger) Handler(next plugin.Handler) plugin.Handler {
+	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		st := statusRecorder{ResponseWriter: w}
 		now := time.Now()
 		err := next.ServeHTTP(&st, r)

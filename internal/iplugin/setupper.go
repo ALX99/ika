@@ -126,13 +126,13 @@ func ChainFromReqModifiers(requestModifiers []initializedPlugin[plugin.RequestMo
 	for i, rm := range requestModifiers {
 		cons[i] = chain.Constructor{
 			Name: rm.name,
-			MiddlewareFunc: func(eh plugin.ErrHandler) plugin.ErrHandler {
-				return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+			MiddlewareFunc: func(next plugin.Handler) plugin.Handler {
+				return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 					r, err := rm.plugin.ModifyRequest(r)
 					if err != nil {
 						return err
 					}
-					return eh.ServeHTTP(w, r)
+					return next.ServeHTTP(w, r)
 				})
 			},
 		}

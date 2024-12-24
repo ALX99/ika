@@ -28,9 +28,9 @@ func (Dumper) Setup(context.Context, plugin.InjectionContext, map[string]any) er
 
 func (Dumper) Teardown(context.Context) error { return nil }
 
-func (a *Dumper) Handler(next plugin.ErrHandler) plugin.ErrHandler {
+func (a *Dumper) Handler(next plugin.Handler) plugin.Handler {
 	log := slog.Default().With(slog.String("plugin", a.Name()))
-	return plugin.ErrHandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		dumpedReq, err := httputil.DumpRequest(r, true)
 		if err != nil {
 			return err

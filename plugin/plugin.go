@@ -71,7 +71,7 @@ type RequestModifier interface {
 // Middleware is an interface that plugins can implement to modify both requests and responses.
 type Middleware interface {
 	Plugin
-	Handler(next ErrHandler) ErrHandler
+	Handler(next Handler) Handler
 }
 
 // TransportHooker is an interface that plugins can implement to modify the transport that ika uses.
