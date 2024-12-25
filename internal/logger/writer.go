@@ -17,7 +17,7 @@ type bufferedWriter struct {
 func newBufferedWriter(w io.Writer) *bufferedWriter {
 	bw := bufferedWriter{
 		w:               w,
-		bw:              bufio.NewWriterSize(w, 32*1024),
+		bw:              bufio.NewWriterSize(w, 1<<20), // 1 MB
 		writeToBuffered: atomic.Bool{},
 	}
 	bw.writeToBuffered.Store(true)
