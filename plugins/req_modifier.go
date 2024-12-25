@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/alx99/ika/internal/request"
 	"github.com/alx99/ika/plugin"
@@ -34,12 +35,14 @@ type ReqModifier struct {
 
 	host   string
 	scheme string
+	toPath string
 
 	pathRewriteEnabled bool
 	hostRewriteEnabled bool
 	retainHostHeader   bool
 
-	log *slog.Logger
+	log  *slog.Logger
+	once sync.Once
 }
 
 func (ReqModifier) New(_ context.Context, _ plugin.InjectionContext) (plugin.Plugin, error) {
@@ -72,7 +75,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, iCtx plugin.InjectionContext, 
 			return fmt.Errorf("path pattern is required")
 		}
 		rm.pathRewriteEnabled = true
-		rm.setupPathRewrite(routePattern, toPath)
+		rm.toPath = toPath
 	}
 
 	if host != "" {
@@ -88,6 +91,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, iCtx plugin.InjectionContext, 
 
 func (rm *ReqModifier) ModifyRequest(r *http.Request) (*http.Request, error) {
 	if rm.pathRewriteEnabled {
+		rm.once.Do(func() { rm.setupPathRewrite(r.Pattern) })
 		if err := rm.rewritePath(r); err != nil {
 			return nil, err
 		}
@@ -149,13 +153,13 @@ func (rm *ReqModifier) rewriteHost(r *http.Request) {
 }
 
 // setupPathRewrite sets up the path rewrite
-func (rm *ReqModifier) setupPathRewrite(routePattern string, toPath string) {
+func (rm *ReqModifier) setupPathRewrite(routePattern string) {
 	rm.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
 	s := strings.Split(routePattern, "/")
 
-	rm.replacePattern += segmentRe.ReplaceAllString(toPath, "%s")
+	rm.replacePattern += segmentRe.ReplaceAllString(rm.toPath, "%s")
 
-	matches := segmentRe.FindAllStringSubmatch(toPath, -1)
+	matches := segmentRe.FindAllStringSubmatch(rm.toPath, -1)
 	for _, match := range matches {
 		if match[1] == "$" {
 			continue // special token, not a segment

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/request"
+	"github.com/alx99/ika/plugin"
 )
 
 type Config struct {
@@ -36,17 +37,18 @@ func NewProxy(cfg Config) (*Proxy, error) {
 		Rewrite: func(rp *httputil.ProxyRequest) {
 			// Restore the query even if it can't be parsed (see [httputil.ReverseProxy])
 			rp.Out.URL.RawQuery = rp.In.URL.RawQuery
-
-			trim := request.GetPathToTrim(rp.In)
-			if trim != "" {
-				// Trim the prefix of the namespace path from the request path
-				rp.Out.URL.Path = strings.TrimPrefix(rp.In.URL.Path, trim)
-				rp.Out.URL.RawPath = strings.TrimPrefix(request.GetPath(rp.In), trim)
-			}
 		},
 	}
 
 	return &Proxy{rp: rp}, nil
+}
+
+func (p *Proxy) WithPathTrim(trim string) plugin.HandlerFunc {
+	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, trim)
+		r.URL.RawPath = strings.TrimPrefix(request.GetPath(r), trim)
+		return p.ServeHTTP(w, r)
+	})
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) error {

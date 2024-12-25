@@ -10,7 +10,7 @@ servers:
 namespaces:
   example:
     nsPaths:
-      - /example/
+      - /example
     hooks:
       - name: tracer
     reqModifiers:
@@ -27,7 +27,7 @@ namespaces:
 
   httpbun.dozy.dev:
     nsPaths:
-      - httpbun.dozy.dev/
+      - httpbun.dozy.dev
     transport:
       maxIdleConnsPerHost: 250
     hooks:
@@ -43,7 +43,7 @@ namespaces:
 
   go.dozy.dev:
     nsPaths:
-      - go.dozy.dev/
+      - go.dozy.dev
     hooks:
       - name: tracer
     reqModifiers:

@@ -32,6 +32,7 @@ package config
 	// disableGeneralOptionsHandler, if true, passes "OPTIONS *" requests to the Handler,
 	// otherwise responds with 200 OK and Content-Length: 0.
 	disableGeneralOptionsHandler?: bool
+
 	// readTimeout is the maximum duration for reading the entire
 	// request, including the body. A zero or negative value means
 	// there will be no timeout.
