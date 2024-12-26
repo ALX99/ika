@@ -118,8 +118,7 @@ func (rm *ReqModifier) rewritePath(r *http.Request) error {
 		for i, v := range reqPath {
 			if i == segmentIndex {
 				args = append(args, v)
-			}
-			if isWildcard(repl) {
+			} else if isWildcard(repl) {
 				args = append(args, strings.Join(reqPath[segmentIndex:], "/"))
 				goto done // bail, wildcard must always be the last segment
 			}

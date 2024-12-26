@@ -20,7 +20,7 @@ import (
 
 type Router struct {
 	tder teardown.Teardowner
-	mux  *routegroup.Group
+	mux  *http.ServeMux
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -36,9 +36,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 	log := slog.With(slog.String("module", "router"))
 	log.Info("Building router", "namespaceCount", len(cfg.Namespaces))
 
-	r := &Router{
-		mux: routegroup.New(http.NewServeMux()),
-	}
+	r := &Router{mux: http.NewServeMux()}
 
 	for nsName, ns := range cfg.Namespaces {
 		log = log.With(slog.String("namespace", nsName))
@@ -80,7 +78,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		r.tder.Add(teardown)
 
 		for _, nsPath := range ns.NSPaths {
-			nsMux := routegroup.Mount(http.NewServeMux(), nsPath)
+			mux := routegroup.New(r.mux).Mount(nsPath)
 
 			for pattern, path := range ns.Paths {
 				iCtx := plugin.InjectionContext{
@@ -126,19 +124,9 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 						continue
 					}
 
-					nsMux.Handle(pattern, nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath)))
+					mux.Handle(pattern, nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath)))
 				}
 			}
-
-			// nsPath is already a valid path
-			if strings.Contains(nsPath, "/") {
-				r.mux.Handle(nsPath, plugin.FromHTTPHandler(
-					nsMux))
-			}
-
-			// Allow to specify only [HOST] in nsPaths
-			r.mux.Handle(nsPath+"/", plugin.FromHTTPHandler(
-				nsMux))
 		}
 
 	}

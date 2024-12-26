@@ -31,14 +31,25 @@ func New(mux *http.ServeMux) *Group {
 func Mount(mux *http.ServeMux, pattern string) *Group {
 	g := Group{mux: mux}
 	g.method, g.host, g.path = decomposePattern(pattern)
+	if g.path == "" {
+		g.host = pattern // special case, treat the pattern as a host
+	}
 	return &g
 }
 
 // Mount creates a new group with a specified base path on top of the existing bundle.
-// TODO use a pattern
-func (g *Group) Mount(path string) *Group {
+func (g *Group) Mount(pattern string) *Group {
+	method, host, path := decomposePattern(pattern)
+	if path == "" {
+		host = pattern // special case, treat the pattern as a host
+	}
+	g.assertMountable(method, host)
+
 	newGrp := g.clone()
+	newGrp.method = cmp.Or(method, g.method)
+	newGrp.host = cmp.Or(host, g.host)
 	newGrp.path += path
+
 	return newGrp
 }
 
@@ -100,18 +111,18 @@ func (g *Group) clone() *Group {
 
 func (g *Group) makePattern(pattern string) string {
 	method, host, path := decomposePattern(pattern)
+	g.assertMountable(method, host)
+	method, host = cmp.Or(method, g.method), cmp.Or(host, g.host)
+	return strings.TrimLeft(method+" "+host+g.path+path, " \t")
+}
 
+func (g *Group) assertMountable(method, host string) {
 	if method != "" && g.method != "" && method != g.method {
 		panic(fmt.Sprintf("routergroup: impossible route: method %s does not match the group's base method %s", method, g.method))
 	}
 	if host != "" && g.host != "" && host != g.host {
 		panic(fmt.Sprintf("routergroup: impossible route: host %s does not match the group's base host %s", host, g.host))
 	}
-
-	// Prefer to use the method/host from the pattern
-	method, host = cmp.Or(method, g.method), cmp.Or(host, g.host)
-
-	return strings.TrimLeft(method+" "+host+g.path+path, " \t")
 }
 
 // wrapMiddleware applies the registered middlewares to a handler.
