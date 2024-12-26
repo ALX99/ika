@@ -57,6 +57,12 @@ func Initialize(ctx context.Context, cfg config.Logger) func() error {
 		slog.LogAttrs(ctx, slog.LevelWarn, warning)
 	}
 
+	if cfg.FlushInterval.Dur().Milliseconds() <= 10 {
+		w.SetBuffered(false)
+		log.LogAttrs(ctx, slog.LevelDebug, "Log buffering disabled. Flush interval too low")
+		return func() error { return nil }
+	}
+
 	go func() {
 		t := time.NewTicker(cfg.FlushInterval.Dur())
 		for {
