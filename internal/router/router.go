@@ -42,14 +42,14 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		log = log.With(slog.String("namespace", nsName))
 		var transport http.RoundTripper = makeTransport(ns.Transport)
 
-		setupper := iplugin.NewSetupper(opts.Plugins)
+		cache := iplugin.NewPluginCache(opts.Plugins)
 		iCtx := plugin.InjectionContext{
 			Namespace: nsName,
 			Level:     plugin.LevelNamespace,
 			Logger:    slog.Default().With(slog.String("namespace", nsName)),
 		}
 
-		wrapTransport, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
+		wrapTransport, teardown, err := iplugin.UsePlugins(ctx, iCtx, cache, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
 		if err != nil {
 			return nil, errors.Join(err, r.tder.Teardown(ctx))
 		}
@@ -66,8 +66,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 			return nil, errors.Join(err, r.tder.Teardown(ctx))
 		}
 
-		setupper = iplugin.NewSetupper(opts.Plugins)
-		nsChain, teardown, err := r.makePluginChain(ctx, iCtx, setupper,
+		nsChain, teardown, err := r.makePluginChain(ctx, iCtx, cache,
 			collectIters(ns.Middlewares.Enabled()),
 			collectIters(ns.ReqModifiers.Enabled()),
 			collectIters(ns.Hooks.Enabled()),
@@ -88,8 +87,8 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 					Logger:      slog.Default().With(slog.String("namespace", nsName)),
 				}
 
-				setupper = iplugin.NewSetupper(opts.Plugins)
-				pathChain, teardown, err := r.makePluginChain(ctx, iCtx, setupper,
+				cache = iplugin.NewPluginCache(opts.Plugins)
+				pathChain, teardown, err := r.makePluginChain(ctx, iCtx, cache,
 					collectIters(path.Middlewares.Enabled()),
 					collectIters(path.ReqModifiers.Enabled()),
 					nil,
@@ -134,7 +133,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 	return r, nil
 }
 
-func (r *Router) makePluginChain(ctx context.Context, iCtx plugin.InjectionContext, setupper *iplugin.PluginSetupper, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
+func (r *Router) makePluginChain(ctx context.Context, iCtx plugin.InjectionContext, setupper *iplugin.PluginCache, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
 	var tder teardown.Teardowner
 
 	mwChain, teardown, err := iplugin.UsePlugins(ctx, iCtx, setupper, middlewares, iplugin.ChainFromMiddlewares)

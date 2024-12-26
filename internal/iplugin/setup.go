@@ -13,10 +13,9 @@ import (
 	"github.com/alx99/ika/plugin"
 )
 
-type PluginSetupper struct {
-	factories                map[string]plugin.Factory
-	plugins                  []plugin.Plugin
-	initializedPluginIndexes map[string]int
+type PluginCache struct {
+	factories map[string]plugin.Factory
+	plugins   map[string]plugin.Plugin
 }
 
 type initializedPlugin[T plugin.Plugin] struct {
@@ -24,64 +23,38 @@ type initializedPlugin[T plugin.Plugin] struct {
 	plugin T
 }
 
-func NewSetupper(factories map[string]plugin.Factory) *PluginSetupper {
-	return &PluginSetupper{
-		factories:                factories,
-		initializedPluginIndexes: map[string]int{},
+func NewPluginCache(factories map[string]plugin.Factory) *PluginCache {
+	return &PluginCache{
+		factories: factories,
+		plugins:   map[string]plugin.Plugin{},
 	}
 }
 
-func (ps *PluginSetupper) getPlugin(ctx context.Context, iCtx plugin.InjectionContext, cfg config.Plugin) (plugin.Plugin, bool, error) {
-	key := cfg.Name
-	switch iCtx.Level {
-	case plugin.LevelPath:
-		key += "_" + iCtx.PathPattern
-	case plugin.LevelNamespace:
-		key += "_" + iCtx.Namespace
+func (ps *PluginCache) getPlugin(ctx context.Context, iCtx plugin.InjectionContext, cfg config.Plugin) (plugin.Plugin, bool, error) {
+	plugin, ok := ps.plugins[cfg.Name]
+	if ok {
+		return plugin, false, nil
 	}
 
-	if i, ok := ps.initializedPluginIndexes[key]; ok {
-		return ps.plugins[i], false, nil
-	}
-
-	factory, ok := ps.factories[cfg.Name]
-	if !ok {
-		return nil, false, fmt.Errorf("plugin %q not found", cfg.Name)
-	}
-
-	// Create a new plugin and set it up
-	plugin, err := factory.New(ctx, iCtx)
-	if err != nil {
-		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
-	}
-
-	ps.plugins = append(ps.plugins, plugin)
-	ps.initializedPluginIndexes[cfg.Name] = len(ps.plugins) - 1
-
-	return plugin, true, nil
+	plugin, err := ps.factories[cfg.Name].New(ctx, iCtx)
+	return plugin, true, err
 }
 
 // UsePlugins sets up plugins and calls the provided function with the set up plugins.
 // Plugins are set up in the order they are provided in the config.
-//
-// If a plugin injected on the same level has already been created, it will be reused.
-// This means that:
-// - The same plugin injected multiple times on the same path will be reused.
-// - The same plugin injected multiple times on the same namespace will be reused.
 func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	iCtx plugin.InjectionContext,
-	setupper *PluginSetupper,
+	cache *PluginCache,
 	pluginCfg config.Plugins,
 	fn func(t []initializedPlugin[T]) V,
 ) (V, teardown.TeardownFunc, error) {
 	var t T
 	var v V
-	// plugins that have been set up
-	plugins := []initializedPlugin[T]{}
+	var plugins []initializedPlugin[T] // plugins that have been set up
 	var tder teardown.Teardowner
 
 	for _, cfg := range pluginCfg {
-		plugin, setup, err := setupper.getPlugin(ctx, iCtx, cfg)
+		plugin, setup, err := cache.getPlugin(ctx, iCtx, cfg)
 		if err != nil {
 			return v, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 		}
@@ -120,10 +93,10 @@ func ChainFromMiddlewares(middlewares []initializedPlugin[plugin.Middleware]) ch
 	return chain.New(cons...)
 }
 
-func ChainFromReqModifiers(requestModifiers []initializedPlugin[plugin.RequestModifier]) chain.Chain {
-	cons := make([]chain.Constructor, len(requestModifiers))
+func ChainFromReqModifiers(reqModifiers []initializedPlugin[plugin.RequestModifier]) chain.Chain {
+	cons := make([]chain.Constructor, len(reqModifiers))
 
-	for i, rm := range requestModifiers {
+	for i, rm := range reqModifiers {
 		cons[i] = chain.Constructor{
 			Name: rm.name,
 			MiddlewareFunc: func(next plugin.Handler) plugin.Handler {
