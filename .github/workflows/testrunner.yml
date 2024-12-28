@@ -31,9 +31,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Image ika
-        run: make image
+        run: make image BUILD_TAGS=full
       - name: Run ika with the example project
-        run: touch ./example/.env && make upd
+        run: touch ./example/.env && make upd BUILD_TAGS=full
       - name: Check that the Cache-Control headers are set
         run: |
           curl localhost:1111/example/get -sD headers.txt

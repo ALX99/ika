@@ -1,13 +1,19 @@
 VERSION := 0.0.1
+BIN_DIR := ./bin
+CMD_DIR := ./cmd/ika
+CONFIG_DIR := ./tests
+CONFIG_FILE := $(CONFIG_DIR)/ika.yaml
+TEST_FILE := $(CONFIG_DIR)/tests.js
+BUILD_TAGS ?=
 
 .PHONY: image
 image:
-	docker build -t ika:$(VERSION) .
+	docker build --build-arg BUILD_TAGS="$(BUILD_TAGS)" -t ika:$(VERSION) .
 	docker tag ika:$(VERSION) ika:latest
 
 .PHONY: up
 up:
-	docker compose up --build
+	BUILD_TAGS=$(BUILD_TAGS) docker compose up --build
 
 .PHONY: up-reload
 up-reload:
@@ -15,7 +21,7 @@ up-reload:
 
 .PHONY: upd
 upd:
-	docker compose up -d --build
+	BUILD_TAGS=$(BUILD_TAGS) docker compose up -d --build
 
 .PHONY: down
 down:
@@ -23,8 +29,8 @@ down:
 
 .PHONY: run
 run:
-	CGO_ENABLED=1 go build -tags full -race -o ./bin/ika ./cmd/ika
-	./bin/ika -config ./tests/ika.yaml
+	CGO_ENABLED=1 go build -tags "$(BUILD_TAGS)" -race -o $(BIN_DIR)/ika $(CMD_DIR)
+	$(BIN_DIR)/ika -config $(CONFIG_FILE)
 
 .PHONY: run-reload
 run-reload:
@@ -45,15 +51,15 @@ deps-up:
 
 .PHONY: e2e
 e2e: deps-up
-	k6 run -e HTTPBUN_HOST=http://localhost:8080 ./tests/tests.js
+	k6 run -e HTTPBUN_HOST=http://localhost:8080 $(TEST_FILE)
 
 .PHONY: e2e-compose
 e2e-compose: upd
-	k6 run -e HTTPBUN_HOST=http://httpbun-local ./tests/tests.js
+	k6 run -e HTTPBUN_HOST=http://httpbun-local $(TEST_FILE)
 
 .PHONY: vet
 vet:
-	cue vet -c ./config/ ./tests/ika.cue
+	cue vet -c ./config/ $(CONFIG_DIR)/ika.cue
 
 .PHONY: fmt
 fmt:
@@ -62,7 +68,7 @@ fmt:
 cfg: cfg-local
 
 cfg-%: vet fmt
-	cue export -t env=$* tests/ika.cue --out yaml > tests/ika.yaml
+	cue export -t env=$* $(CONFIG_DIR)/ika.cue --out yaml > $(CONFIG_FILE)
 
 .PHONY: release-patch
 release-patch:

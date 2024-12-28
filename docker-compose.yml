@@ -1,6 +1,9 @@
 services:
   gateway:
-    build: .
+    build:
+      context: .
+      args:
+        - BUILD_TAGS=${BUILD_TAGS}
     ports:
       - "127.0.0.1:8888:8888"
       - "127.0.0.1:6060:6060"
