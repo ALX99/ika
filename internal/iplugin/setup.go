@@ -36,8 +36,17 @@ func (ps *PluginCache) getPlugin(ctx context.Context, iCtx plugin.InjectionConte
 		return plugin, false, nil
 	}
 
-	plugin, err := ps.factories[cfg.Name].New(ctx, iCtx)
-	return plugin, true, err
+	factory, ok := ps.factories[cfg.Name]
+	if !ok {
+		return nil, false, fmt.Errorf("plugin %q not found", cfg.Name)
+	}
+
+	plugin, err := factory.New(ctx, iCtx)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
+	}
+
+	return plugin, true, nil
 }
 
 // UsePlugins sets up plugins and calls the provided function with the set up plugins.
