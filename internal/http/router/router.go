@@ -15,7 +15,6 @@ import (
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/teardown"
 	"github.com/alx99/ika/plugin"
-	"github.com/valyala/bytebufferpool"
 )
 
 type Router struct {
@@ -60,7 +59,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		p, err := proxy.NewProxy(proxy.Config{
 			Transport:  transport,
 			Namespace:  nsName,
-			BufferPool: &pool.BufferPool{Pool: bytebufferpool.Pool{}},
+			BufferPool: pool.NewBufferPool(),
 		})
 		if err != nil {
 			return nil, errors.Join(err, r.tder.Teardown(ctx))
