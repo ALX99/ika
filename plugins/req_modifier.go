@@ -18,25 +18,26 @@ import (
 // regular expression to match segments in the rewrite path
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
-var (
-	_ plugin.Plugin          = &ReqModifier{}
-	_ plugin.RequestModifier = &ReqModifier{}
-)
+var _ plugin.RequestModifier = &ReqModifier{}
 
 // ReqModifier is a ReqModifier that 100% accurately rewrite the request path.
 // This includes totally preserving the original path even if some parts have been encoded.
 type ReqModifier struct {
-	// segments is a map of segment index to their corresponding replacement
-	segments []string
+	// A map of segment index (in the route pattern)
+	// to the segment name
+	//
+	// For example, if the route pattern is /example/{id}/path/{wildcard...}
+	// segments will be {1: "{id}", 3: "{wildcard...}"}
+	segments map[int]string
 
-	// replacePattern is in the format of /example/%s/path
+	// replaceFormat is in the format of /example/%s/path
 	// where %s should be replaced with the corresponding segment
-	replacePattern string
+	replaceFormat string
 
-	host   string
-	scheme string
-	toPath string
-
+	// settings
+	host               string
+	scheme             string
+	toPath             string
 	pathRewriteEnabled bool
 	hostRewriteEnabled bool
 	retainHostHeader   bool
@@ -104,44 +105,40 @@ func (rm *ReqModifier) ModifyRequest(r *http.Request) (*http.Request, error) {
 	return r, nil
 }
 
-func (ReqModifier) Teardown(context.Context) error { return nil }
-
 func (rm *ReqModifier) rewritePath(r *http.Request) error {
-	reqPath := strings.Split(request.GetPath(r), "/")
+	var err error
+	path := request.GetPath(r)
+	args := make([]any, 0, 64)
+	// first element is always empty due to leading slash
+	splitPath := strings.Split(path, "/")[1:]
+	reqPathLen := len(splitPath)
 
-	args := make([]any, 0, 10)
+	for i, segment := range splitPath[:reqPathLen] {
+		repl, ok := rm.segments[i]
+		if !ok {
+			continue
+		}
 
-	for segmentIndex, repl := range rm.segments {
-		if repl == "" {
-			continue // skip if no replacement
+		if isWildcard(repl) {
+			args = append(args, strings.Join(splitPath[i:], "/"))
+			break // bail, wildcard must always be the last segment
 		}
-		for i, v := range reqPath {
-			if i == segmentIndex {
-				args = append(args, v)
-			} else if isWildcard(repl) {
-				args = append(args, strings.Join(reqPath[segmentIndex:], "/"))
-				goto done // bail, wildcard must always be the last segment
-			}
-		}
+		args = append(args, segment)
 	}
 
-done:
-	prevPath := request.GetPath(r)
-	path := fmt.Sprintf(rm.replacePattern, args...)
-	var err error
+	newPath := fmt.Sprintf(rm.replaceFormat, args...)
 
-	r.URL.RawPath = path
-	r.URL.Path, err = url.PathUnescape(path)
+	r.URL.RawPath = newPath
+	r.URL.Path, err = url.PathUnescape(newPath)
 	if err != nil {
 		return err
 	}
-	// remove query params from the path
-	r.URL.Path = strings.SplitN(r.URL.Path, "?", 2)[0]
 
 	rm.log.LogAttrs(r.Context(), slog.LevelDebug, "Path rewritten",
-		slog.String("from", prevPath), slog.String("to", r.URL.RawPath))
+		slog.String("from", path), slog.String("to", r.URL.RawPath))
 	return nil
 }
+func (ReqModifier) Teardown(context.Context) error { return nil }
 
 func (rm *ReqModifier) rewriteHost(r *http.Request) {
 	if !rm.retainHostHeader {
@@ -153,10 +150,12 @@ func (rm *ReqModifier) rewriteHost(r *http.Request) {
 
 // setupPathRewrite sets up the path rewrite
 func (rm *ReqModifier) setupPathRewrite(routePattern string) {
-	rm.segments = make([]string, len(strings.Split(routePattern, "/"))+1)
-	s := strings.Split(routePattern, "/")
+	_, _, path := decomposePattern(routePattern)
+	// first element is always empty due to leading slash
+	routeSplit := strings.Split(path, "/")[1:]
 
-	rm.replacePattern += segmentRe.ReplaceAllString(rm.toPath, "%s")
+	rm.segments = make(map[int]string)
+	rm.replaceFormat = segmentRe.ReplaceAllString(rm.toPath, "%s")
 
 	matches := segmentRe.FindAllStringSubmatch(rm.toPath, -1)
 	for _, match := range matches {
@@ -164,7 +163,7 @@ func (rm *ReqModifier) setupPathRewrite(routePattern string) {
 			continue // special token, not a segment
 		}
 
-		for i, v := range s {
+		for i, v := range routeSplit {
 			if v == match[0] {
 				rm.segments[i] = match[0]
 			}
@@ -186,4 +185,14 @@ func (rm *ReqModifier) setupHostRewrite(host string) error {
 
 func isWildcard(segment string) bool {
 	return strings.HasSuffix(segment, "...}")
+}
+
+var patternRe = regexp.MustCompile(`^(?:(\S*)\s+)*\s*([^/]*)(/.*)$`)
+
+func decomposePattern(pattern string) (method, host, path string) {
+	matches := patternRe.FindStringSubmatch(pattern)
+	if len(matches) < 4 {
+		matches = append(matches, make([]string, 4-len(matches))...)
+	}
+	return matches[1], matches[2], matches[3]
 }
