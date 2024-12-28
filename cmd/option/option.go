@@ -1,4 +1,4 @@
-package ika
+package option
 
 import (
 	"fmt"

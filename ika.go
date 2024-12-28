@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/alx99/ika/cmd/option"
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/ika"
 )
@@ -14,7 +15,7 @@ var (
 	configPath   = flag.String("config", "ika.yaml", "Path to the configuration file.")
 )
 
-func Run(opts ...Option) {
+func Run(opts ...option.Option) {
 	flag.Parse()
 	if *printVersion {
 		fmt.Println("0.0.1")
