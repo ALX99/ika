@@ -7,13 +7,11 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-
-	"github.com/alx99/ika/plugin"
 )
 
 type Caramel struct {
 	mux         *http.ServeMux
-	middlewares []func(plugin.Handler) plugin.Handler
+	middlewares []func(http.Handler) http.Handler
 
 	method       string
 	path         string
@@ -44,7 +42,7 @@ func (c *Caramel) Mount(pattern string) *Caramel {
 }
 
 // Use adds middleware(t) that will automatically be applied when [Caramel.HandleFunc] or [Caramel.Handle] is called.
-func (c *Caramel) Use(middlewares ...func(plugin.Handler) plugin.Handler) *Caramel {
+func (c *Caramel) Use(middlewares ...func(http.Handler) http.Handler) *Caramel {
 	if c.handleCalled {
 		panic("caramel: tried to add middleware after HandleFunc. This is most likely a mistake.")
 	}
@@ -53,19 +51,20 @@ func (c *Caramel) Use(middlewares ...func(plugin.Handler) plugin.Handler) *Caram
 }
 
 // With creates a new Caramel instance with the same configuration as the original, but with additional middlewares.
-func (c *Caramel) With(middlewares ...func(plugin.Handler) plugin.Handler) *Caramel {
+func (c *Caramel) With(middlewares ...func(http.Handler) http.Handler) *Caramel {
 	return c.clone().Use(middlewares...)
 }
 
 // Handle is the equivilant of [http.ServeMux.Handle]
-func (c *Caramel) Handle(pattern string, handler plugin.Handler) *Caramel {
-	c.HandleFunc(pattern, handler.ServeHTTP)
+func (c *Caramel) Handle(pattern string, handler http.Handler) *Caramel {
+	c.mux.HandleFunc(c.makePattern(pattern), c.wrapMiddleware(handler))
+	c.handleCalled = true
 	return c
 }
 
 // HandleFunc is the equivilant of [http.ServeMux.HandleFunc]
-func (c *Caramel) HandleFunc(pattern string, handler plugin.HandlerFunc) *Caramel {
-	c.mux.Handle(c.makePattern(pattern), c.wrapMiddleware(handler).ToHTTPHandler(nil))
+func (c *Caramel) HandleFunc(pattern string, handler http.HandlerFunc) *Caramel {
+	c.mux.Handle(c.makePattern(pattern), c.wrapMiddleware(handler))
 	c.handleCalled = true
 	return c
 }
@@ -94,11 +93,11 @@ func (c *Caramel) assertMountable(method, host string) {
 }
 
 // wrapMiddleware applies the registered middlewares to a handler.
-func (c *Caramel) wrapMiddleware(handler plugin.Handler) plugin.HandlerFunc {
+func (c *Caramel) wrapMiddleware(handler http.Handler) http.HandlerFunc {
 	for i := range c.middlewares {
 		handler = c.middlewares[len(c.middlewares)-1-i](handler)
 	}
-	return plugin.HandlerFunc(handler.ServeHTTP)
+	return http.HandlerFunc(handler.ServeHTTP)
 }
 
 var patternRe = regexp.MustCompile(`^(?:(\S*)\s+)*\s*([^/]*)(/.*)$`)

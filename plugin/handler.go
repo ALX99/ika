@@ -24,7 +24,16 @@ func FromHTTPHandler(h http.Handler) Handler {
 
 // ToHTTPHandler converts an [Handler] into an [http.Handler] using [HandlerFunc.ToHTTPHandler].
 func ToHTTPHandler(h Handler, errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
-	return HandlerFunc(h.ServeHTTP).ToHTTPHandler(errorHandler)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := h.ServeHTTP(w, r)
+		if err != nil {
+			if errorHandler != nil {
+				errorHandler(w, r, err)
+				return
+			}
+			defualtErrorHandler(w, r, err)
+		}
+	})
 }
 
 // ToHTTPHandler converts an [Handler] into an [http.Handler].
@@ -36,9 +45,13 @@ func (f HandlerFunc) ToHTTPHandler(errorHandler func(http.ResponseWriter, *http.
 		if err != nil {
 			if errorHandler != nil {
 				errorHandler(w, r, err)
-			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
+			defualtErrorHandler(w, r, err)
 		}
 	})
+}
+
+func defualtErrorHandler(w http.ResponseWriter, _ *http.Request, err error) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }

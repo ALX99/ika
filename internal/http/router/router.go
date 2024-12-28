@@ -122,7 +122,8 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 						continue
 					}
 
-					mux.Handle(pattern, nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath)))
+					nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath))
+					mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, nil))
 				}
 			}
 		}
