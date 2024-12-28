@@ -93,8 +93,6 @@ type TransportHooker interface {
 //
 // It is semantically equivalent to a middleware, but is executed before all other middleware
 // and thus is useful for things such as tracing or logging.
-//
-// If multiple FirstHandlerHookers are injected, an error will be returned.
 type FirstHandlerHooker interface {
 	Plugin
 	Middleware

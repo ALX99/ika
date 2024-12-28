@@ -20,6 +20,9 @@ import (
 type Router struct {
 	tder teardown.Teardowner
 	mux  *http.ServeMux
+	cfg  config.Config
+	opts config.Options
+	log  *slog.Logger
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -31,106 +34,119 @@ func (r *Router) Shutdown(ctx context.Context) error {
 	return r.tder.Teardown(ctx)
 }
 
-func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*Router, error) {
-	log := slog.With(slog.String("module", "router"))
-	log.Info("Building router", "namespaceCount", len(cfg.Namespaces))
+func New(cfg config.Config, opts config.Options, log *slog.Logger) (*Router, error) {
+	return &Router{
+		mux:  http.NewServeMux(),
+		cfg:  cfg,
+		opts: opts,
+		log:  log.With(slog.String("module", "router")),
+	}, nil
+}
 
-	r := &Router{mux: http.NewServeMux()}
+func (r *Router) Build(ctx context.Context) error {
+	r.log.Info("Building router", "namespaceCount", len(r.cfg.Namespaces))
 
-	for nsName, ns := range cfg.Namespaces {
-		log = log.With(slog.String("namespace", nsName))
-		var transport http.RoundTripper = makeTransport(ns.Transport)
-
-		cache := iplugin.NewPluginCache(opts.Plugins)
-		ictx := plugin.InjectionContext{
-			Namespace: nsName,
-			Level:     plugin.LevelNamespace,
-			Logger:    slog.Default().With(slog.String("namespace", nsName)),
+	for nsName, ns := range r.cfg.Namespaces {
+		if err := r.buildNamespace(ctx, nsName, ns); err != nil {
+			return err
 		}
-
-		wrapTransport, teardown, err := iplugin.UsePlugins(ctx, ictx, cache, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
-		if err != nil {
-			return nil, errors.Join(err, r.tder.Teardown(ctx))
-		}
-		r.tder.Add(teardown)
-
-		transport = wrapTransport(transport)
-
-		p, err := proxy.NewProxy(proxy.Config{
-			Transport:  transport,
-			Namespace:  nsName,
-			BufferPool: pool.NewBufferPool(),
-		})
-		if err != nil {
-			return nil, errors.Join(err, r.tder.Teardown(ctx))
-		}
-
-		nsChain, teardown, err := r.makePluginChain(ctx, ictx, cache,
-			collectIters(ns.Middlewares.Enabled()),
-			collectIters(ns.ReqModifiers.Enabled()),
-			collectIters(ns.Hooks.Enabled()),
-		)
-		if err != nil {
-			return nil, errors.Join(err, r.tder.Teardown(ctx))
-		}
-		r.tder.Add(teardown)
-
-		for _, nsPath := range ns.NSPaths {
-			mux := caramel.Wrap(r.mux).Mount(nsPath)
-
-			for pattern, path := range ns.Paths {
-				ictx := plugin.InjectionContext{
-					Namespace:   nsName,
-					PathPattern: pattern,
-					Level:       plugin.LevelPath,
-					Logger:      slog.Default().With(slog.String("namespace", nsName)),
-				}
-
-				cache = iplugin.NewPluginCache(opts.Plugins)
-				pathChain, teardown, err := r.makePluginChain(ctx, ictx, cache,
-					collectIters(path.Middlewares.Enabled()),
-					collectIters(path.ReqModifiers.Enabled()),
-					nil,
-				)
-				if err != nil {
-					return nil, errors.Join(err, r.tder.Teardown(ctx))
-				}
-				r.tder.Add(teardown)
-
-				var patterns []string
-				if len(path.Methods) == 0 {
-					patterns = append(patterns, pattern)
-				} else {
-					for _, method := range path.Methods {
-						patterns = append(patterns, string(method)+" "+pattern)
-					}
-				}
-
-				for _, pattern := range patterns {
-					if pattern == "" && !strings.Contains(nsPath, "/") {
-						// This is a special scenario where the namespace
-						// path does not contain a '/'. In other words,
-						// it must mean that it is a host.
-
-						// since [HOST] alone is not a valid pattern
-						// we ignore this specific scenario to allow
-						// users to register path like:
-						// nsPath: /example
-						// path: ""
-						// to prevent redirection when /example is accessed
-						// alone
-						continue
-					}
-
-					nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath))
-					mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, nil))
-				}
-			}
-		}
-
 	}
 
-	return r, nil
+	return nil
+}
+
+func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Namespace) error {
+	log := r.log.With(slog.String("namespace", nsName))
+	var transport http.RoundTripper = makeTransport(ns.Transport)
+
+	cache := iplugin.NewPluginCache(r.opts.Plugins)
+	ictx := plugin.InjectionContext{
+		Namespace: nsName,
+		Level:     plugin.LevelNamespace,
+		Logger:    log,
+	}
+
+	wrapTransport, teardown, err := iplugin.UsePlugins(ctx, ictx, cache, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
+	if err != nil {
+		return errors.Join(err, r.tder.Teardown(ctx))
+	}
+	r.tder.Add(teardown)
+
+	transport = wrapTransport(transport)
+
+	p, err := proxy.NewProxy(proxy.Config{
+		Transport:  transport,
+		Namespace:  nsName,
+		BufferPool: pool.NewBufferPool(),
+	})
+	if err != nil {
+		return errors.Join(err, r.tder.Teardown(ctx))
+	}
+
+	nsChain, teardown, err := r.makePluginChain(ctx, ictx, cache,
+		collectIters(ns.Middlewares.Enabled()),
+		collectIters(ns.ReqModifiers.Enabled()),
+		collectIters(ns.Hooks.Enabled()),
+	)
+	if err != nil {
+		return errors.Join(err, r.tder.Teardown(ctx))
+	}
+	r.tder.Add(teardown)
+
+	for _, nsPath := range ns.NSPaths {
+		mux := caramel.Wrap(r.mux).Mount(nsPath)
+
+		for pattern, path := range ns.Paths {
+			ictx := plugin.InjectionContext{
+				Namespace:   nsName,
+				PathPattern: pattern,
+				Level:       plugin.LevelPath,
+				Logger:      slog.Default().With(slog.String("namespace", nsName)),
+			}
+
+			cache = iplugin.NewPluginCache(r.opts.Plugins)
+			pathChain, teardown, err := r.makePluginChain(ctx, ictx, cache,
+				collectIters(path.Middlewares.Enabled()),
+				collectIters(path.ReqModifiers.Enabled()),
+				nil,
+			)
+			if err != nil {
+				return errors.Join(err, r.tder.Teardown(ctx))
+			}
+			r.tder.Add(teardown)
+
+			var patterns []string
+			if len(path.Methods) == 0 {
+				patterns = append(patterns, pattern)
+			} else {
+				for _, method := range path.Methods {
+					patterns = append(patterns, string(method)+" "+pattern)
+				}
+			}
+
+			for _, pattern := range patterns {
+				if pattern == "" && !strings.Contains(nsPath, "/") {
+					// This is a special scenario where the namespace
+					// path does not contain a '/'. In other words,
+					// it must mean that it is a host.
+
+					// since [HOST] alone is not a valid pattern
+					// we ignore this specific scenario to allow
+					// users to register path like:
+					// nsPath: /example
+					// path: ""
+					// to prevent redirection when /example is accessed
+					// alone
+					continue
+				}
+
+				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath))
+				mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, nil))
+			}
+		}
+	}
+
+	return nil
 }
 
 func (r *Router) makePluginChain(ctx context.Context, ictx plugin.InjectionContext, setupper *iplugin.PluginCache, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
