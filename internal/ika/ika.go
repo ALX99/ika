@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path"
 	"runtime"
 	"syscall"
 	"time"
@@ -43,6 +44,14 @@ func Run(configPath string, options config.Options) {
 }
 
 func run(ctx context.Context, configPath string, opts config.Options) (func() error, error) {
+	if configPath == "" {
+		var err error
+		configPath, err = locateConfig()
+		if err != nil {
+			return func() error { return nil }, err
+		}
+	}
+
 	cfg, err := config.Read(configPath)
 	if err != nil {
 		return func() error { return nil }, fmt.Errorf("failed to read config: %w", err)
@@ -77,4 +86,21 @@ func run(ctx context.Context, configPath string, opts config.Options) (func() er
 
 	// Shutdown
 	return flush, errors.Join(s.Shutdown(ctx), router.Shutdown(ctx))
+}
+
+func locateConfig() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// look for ika.yaml and ika.json prioritizing json
+	for _, ext := range []string{".json", ".yaml"} {
+		path := path.Join(wd, "ika"+ext)
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+
+	return "", errors.New("ika.json or ika.yaml not found")
 }

@@ -2,12 +2,12 @@ package config
 
 type (
 	Namespace struct {
-		Transport    Transport `yaml:"transport" json:"transport"`
-		NSPaths      []string  `yaml:"nsPaths" json:"nsPaths"`
-		Paths        Paths     `yaml:"paths" json:"paths"`
-		Middlewares  Plugins   `yaml:"middlewares" json:"middlewares"`
-		ReqModifiers Plugins   `yaml:"reqModifiers" json:"reqModifiers"`
-		Hooks        Plugins   `yaml:"hooks" json:"hooks"`
+		Transport    Transport `json:"transport"`
+		NSPaths      []string  `json:"nsPaths"`
+		Paths        Paths     `json:"paths"`
+		Middlewares  Plugins   `json:"middlewares"`
+		ReqModifiers Plugins   `json:"reqModifiers"`
+		Hooks        Plugins   `json:"hooks"`
 	}
 	Namespaces map[string]Namespace
 )

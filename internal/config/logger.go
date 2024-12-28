@@ -8,10 +8,10 @@ import (
 )
 
 type Logger struct {
-	Level         string   `json:"level" yaml:"level"`
-	Format        string   `json:"format" yaml:"format"`
-	FlushInterval Duration `json:"flushInterval" yaml:"flushInterval"`
-	AddSource     bool     `json:"addSource" yaml:"addSource"`
+	Level         string   `json:"level"`
+	Format        string   `json:"format"`
+	FlushInterval Duration `json:"flushInterval"`
+	AddSource     bool     `json:"addSource"`
 }
 
 func (l *Logger) Normalize() {

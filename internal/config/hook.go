@@ -6,9 +6,9 @@ import (
 
 type (
 	Plugin struct {
-		Name    string         `yaml:"name" json:"name"`
-		Enabled bool           `yaml:"enabled" json:"enabled"`
-		Config  map[string]any `yaml:"config" json:"config"`
+		Name    string         `json:"name"`
+		Enabled bool           `json:"enabled"`
+		Config  map[string]any `json:"config"`
 	}
 	Plugins []Plugin
 )

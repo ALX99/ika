@@ -2,9 +2,9 @@ package config
 
 type (
 	Path struct {
-		Methods      []Method `yaml:"methods" json:"methods"`
-		Middlewares  Plugins  `yaml:"middlewares" json:"middlewares"`
-		ReqModifiers Plugins  `yaml:"reqModifiers" json:"reqModifiers"`
+		Methods      []Method `json:"methods"`
+		Middlewares  Plugins  `json:"middlewares"`
+		ReqModifiers Plugins  `json:"reqModifiers"`
 	}
 	Paths map[string]Path
 )

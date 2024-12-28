@@ -3,17 +3,19 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/yaml"
 )
 
 type Config struct {
-	Servers    []Server   `yaml:"servers"`
-	Namespaces Namespaces `yaml:"namespaces"`
-	Ika        Ika        `yaml:"ika"`
+	Servers    []Server   `json:"servers"`
+	Namespaces Namespaces `json:"namespaces"`
+	Ika        Ika        `json:"ika"`
 }
 
 func Read(path string) (Config, error) {
@@ -24,8 +26,20 @@ func Read(path string) (Config, error) {
 		return cfg, err
 	}
 
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return cfg, err
+	}
+
+	if ext := filepath.Ext(path); ext == ".yaml" {
+		data, err = yaml.YAMLToJSONStrict(data)
+		if err != nil {
+			return cfg, err
+		}
+	}
+
 	defer f.Close()
-	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return cfg, err
 	}
 
@@ -53,27 +67,6 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	}
 	switch value := v.(type) {
 	case float64:
-		*d = Duration(time.Duration(value))
-		return nil
-	case string:
-		tmp, err := time.ParseDuration(value)
-		if err != nil {
-			return err
-		}
-		*d = Duration(tmp)
-		return nil
-	default:
-		return errors.New("invalid duration")
-	}
-}
-
-func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
-	var v any
-	if err := value.Decode(&v); err != nil {
-		return err
-	}
-	switch value := v.(type) {
-	case int:
 		*d = Duration(time.Duration(value))
 		return nil
 	case string:

@@ -1,18 +1,17 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
-
-	"gopkg.in/yaml.v3"
 )
 
 type Method string
 
-func (m *Method) UnmarshalYAML(value *yaml.Node) error {
+func (m *Method) UnmarshalJSON(data []byte) error {
 	var tmp string
-	if err := value.Decode(&tmp); err != nil {
+	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 
