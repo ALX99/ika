@@ -30,7 +30,7 @@ func NewPluginCache(factories map[string]plugin.Factory) *PluginCache {
 	}
 }
 
-func (ps *PluginCache) getPlugin(ctx context.Context, iCtx plugin.InjectionContext, cfg config.Plugin) (plugin.Plugin, bool, error) {
+func (ps *PluginCache) getPlugin(ctx context.Context, ictx plugin.InjectionContext, cfg config.Plugin) (plugin.Plugin, bool, error) {
 	plugin, ok := ps.plugins[cfg.Name]
 	if ok {
 		return plugin, false, nil
@@ -41,7 +41,7 @@ func (ps *PluginCache) getPlugin(ctx context.Context, iCtx plugin.InjectionConte
 		return nil, false, fmt.Errorf("plugin %q not found", cfg.Name)
 	}
 
-	plugin, err := factory.New(ctx, iCtx)
+	plugin, err := factory.New(ctx, ictx)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
 	}
@@ -52,7 +52,7 @@ func (ps *PluginCache) getPlugin(ctx context.Context, iCtx plugin.InjectionConte
 // UsePlugins sets up plugins and calls the provided function with the set up plugins.
 // Plugins are set up in the order they are provided in the config.
 func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
-	iCtx plugin.InjectionContext,
+	ictx plugin.InjectionContext,
 	cache *PluginCache,
 	pluginCfg config.Plugins,
 	fn func(t []initializedPlugin[T]) V,
@@ -63,7 +63,7 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	var tder teardown.Teardowner
 
 	for _, cfg := range pluginCfg {
-		plugin, setup, err := cache.getPlugin(ctx, iCtx, cfg)
+		plugin, setup, err := cache.getPlugin(ctx, ictx, cfg)
 		if err != nil {
 			return v, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 		}
@@ -80,9 +80,9 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 			})
 		}
 
-		iCtx.Logger = iCtx.Logger.With(slog.String("plugin", cfg.Name))
+		ictx.Logger = ictx.Logger.With(slog.String("plugin", cfg.Name))
 		// NOTE this setup might happen more than once for the same plugin
-		err = plugin.Setup(ctx, iCtx, cfg.Config)
+		err = plugin.Setup(ctx, ictx, cfg.Config)
 		if err != nil {
 			return v, tder.Teardown, errors.Join(fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err), tder.Teardown(ctx))
 		}

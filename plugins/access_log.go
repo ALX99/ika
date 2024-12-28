@@ -27,9 +27,9 @@ func (AccessLogger) Name() string {
 	return "accessLog"
 }
 
-func (a *AccessLogger) Setup(ctx context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
-	a.pathPattern = iCtx.PathPattern
-	a.log = iCtx.Logger
+func (a *AccessLogger) Setup(ctx context.Context, ictx plugin.InjectionContext, config map[string]any) error {
+	a.pathPattern = ictx.PathPattern
+	a.log = ictx.Logger
 	return nil
 }
 

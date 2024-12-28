@@ -54,8 +54,8 @@ func (ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
-func (rm *ReqModifier) Setup(ctx context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
-	routePattern := iCtx.PathPattern
+func (rm *ReqModifier) Setup(ctx context.Context, ictx plugin.InjectionContext, config map[string]any) error {
+	routePattern := ictx.PathPattern
 
 	var toPath string
 	if _, ok := config["path"]; ok {
@@ -86,7 +86,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, iCtx plugin.InjectionContext, 
 		}
 	}
 
-	rm.log = iCtx.Logger
+	rm.log = ictx.Logger
 	return nil
 }
 

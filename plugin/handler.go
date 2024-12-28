@@ -2,7 +2,7 @@ package plugin
 
 import "net/http"
 
-// Handler is identical to [http.Handler] except that it returns an error.
+// Handler is identical to [http.Handler] except that it is able to return an error.
 type Handler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request) error
 }

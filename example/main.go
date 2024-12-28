@@ -84,8 +84,8 @@ func (w *tracer) New(context.Context, plugin.InjectionContext) (plugin.Plugin, e
 	return &tracer{}, nil
 }
 
-func (w *tracer) Setup(_ context.Context, iCtx plugin.InjectionContext, config map[string]any) error {
-	w.ns = iCtx.Namespace
+func (w *tracer) Setup(_ context.Context, ictx plugin.InjectionContext, config map[string]any) error {
+	w.ns = ictx.Namespace
 	return nil
 }
 
