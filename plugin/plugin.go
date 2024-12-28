@@ -8,79 +8,93 @@ import (
 
 // TODO
 type MiddlewareHook interface {
+	// HookMiddleware wraps the provided HTTP handler with custom middleware logic.
 	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
 }
 
+// InjectionLevel defines the granularity of plugin injection.
 type (
 	InjectionLevel uint8
 )
 
 const (
+	// LevelPath specifies injection at a specific path level.
 	LevelPath InjectionLevel = iota
+
+	// LevelNamespace specifies injection at a namespace level.
 	LevelNamespace
 )
 
+// Factory is responsible for creating plugin instances.
 type Factory interface {
-	// Name must return the name of the plugin that the factory creates.
+	// Name returns the name of the plugin created by this factory.
 	Name() string
 
-	// New returns an instance of the plugin.
-	//
-	// It is allowed to return the same instance for multiple calls.
-	// However, do note that this might lead to difficult to debug issues.
-	// For this reason, it is recommended to return a new instance for each call.
+	// New creates and returns a new instance of the plugin.
+	// Each call to New can return either a new or shared instance, but using shared instances may cause debugging difficulties.
 	New(ctx context.Context, iCtx InjectionContext) (Plugin, error)
 }
 
-// InjectionContext contains information about the context the plugin was injected into.
+// InjectionContext provides details about the context in which a plugin is injected.
 type InjectionContext struct {
-	// The namespace the plugin is injected into
-	// If it was not injected on a namespace or path level, it will be empty.
+	// Namespace indicates the namespace where the plugin is injected.
+	// Empty if not injected at the namespace or path level.
 	Namespace string
 
-	// The path pattern the plugin as injected into.
-	// If it was not injected on a path level, it will be empty.
+	// PathPattern specifies the path pattern where the plugin is injected.
+	// Empty if not injected at the path level.
 	PathPattern string
 
-	// The level of where the plugin was injected.
+	// Level indicates whether the injection is at the namespace or path level.
 	Level InjectionLevel
 
-	// Logger is the logger that the plugin should use.
+	// Logger is the logger meant for the plugin.
 	Logger *slog.Logger
 }
 
+// Plugin defines the common interface for all plugins in Ika.
 type Plugin interface {
-	// Setup should do the necessary setup for the plugin given the configuration.
+	// Setup initializes the plugin with the given configuration and context.
+	// If injected multiple times at the same level, Setup will be called multiple times.
 	//
-	// In case the same plugin is injected on multiple times on the same level (namespace/path level)
-	// [Plugin.Setup] will be called multiple times.
-	// It is up to individual plugins to handle this scenario.
+	// If injected at a level where the plugin can not operate, an error should be returned.
 	Setup(ctx context.Context, iCtx InjectionContext, config map[string]any) error
 
-	// Teardown should do the necessary teardown for the plugin.
-	// It is called once the plugin is no longer needed.
+	// Teardown cleans up resources when the plugin is no longer needed.
 	Teardown(ctx context.Context) error
 }
 
-// RequestModifier is an interface that plugins can implement to modify requests.
+// RequestModifier allows plugins to modify incoming HTTP requests before processing.
 type RequestModifier interface {
 	Plugin
+
+	// ModifyRequest processes and returns the modified HTTP request.
 	ModifyRequest(r *http.Request) (*http.Request, error)
 }
 
-// Middleware is an interface that plugins can implement to modify both requests and responses.
+// Middleware enables plugins to modify both requests and responses.
 type Middleware interface {
 	Plugin
+
+	// Handler wraps the given handler with custom logic for processing requests and responses.
 	Handler(next Handler) Handler
 }
 
-// TransportHooker is an interface that plugins can implement to modify the transport that ika uses.
+// TransportHooker allows plugins to modify the transport mechanism used by Ika.
 type TransportHooker interface {
 	Plugin
-	HookTransport(transport http.RoundTripper) http.RoundTripper
+
+	// HookTransport returns a new or modified HTTP transport.
+	// It can wrap or replace the existing transport.
+	HookTransport(roundtripper http.RoundTripper) http.RoundTripper
 }
 
-// FirstHandlerHooker is an interface that plugins can implement to modify the first handler that get executed for each path.
+// FirstHandlerHooker enables plugins to hijack the first handler executed for a request.
+//
+// It is semantically equivalent to a middleware, but is executed before all other middleware
+// and thus is useful for things such as tracing or logging.
+//
+// If multiple FirstHandlerHookers are injected, an error will be returned.
 type FirstHandlerHooker interface {
 	Plugin
 	Middleware

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alx99/ika"
+	"github.com/alx99/ika/cmd/option"
 	"github.com/alx99/ika/plugin"
 	"github.com/alx99/ika/plugins"
 	"github.com/grafana/pyroscope-go"
@@ -66,10 +67,10 @@ func (w *noCache) Handler(next plugin.Handler) plugin.Handler {
 func main() {
 	defer setupMonitoring()()
 	ika.Run(
-		ika.WithPlugin(&noCache{}),
-		ika.WithPlugin(&tracer{}),
-		ika.WithPlugin(plugins.AccessLogger{}),
-		ika.WithPlugin(plugins.ReqModifier{}),
+		option.WithPlugin(&noCache{}),
+		option.WithPlugin(&tracer{}),
+		option.WithPlugin(plugins.AccessLogger{}),
+		option.WithPlugin(plugins.ReqModifier{}),
 	)
 }
 
