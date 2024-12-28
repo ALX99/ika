@@ -8,7 +8,7 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/alx99/ika/internal/request"
+	"github.com/alx99/ika/internal/http/request"
 	"github.com/alx99/ika/plugin"
 )
 

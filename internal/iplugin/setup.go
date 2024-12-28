@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/alx99/ika/internal/router/chain"
+	"github.com/alx99/ika/internal/http/router/chain"
 	"github.com/alx99/ika/internal/teardown"
 	"github.com/alx99/ika/plugin"
 )

@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/alx99/ika/internal/config"
+	"github.com/alx99/ika/internal/http/proxy"
+	"github.com/alx99/ika/internal/http/router/caramel"
+	"github.com/alx99/ika/internal/http/router/chain"
 	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/pool"
-	"github.com/alx99/ika/internal/proxy"
-	"github.com/alx99/ika/internal/router/chain"
-	"github.com/alx99/ika/internal/router/routegroup"
 	"github.com/alx99/ika/internal/teardown"
 	"github.com/alx99/ika/plugin"
 	"github.com/valyala/bytebufferpool"
@@ -77,7 +77,7 @@ func MakeRouter(ctx context.Context, cfg config.Config, opts config.Options) (*R
 		r.tder.Add(teardown)
 
 		for _, nsPath := range ns.NSPaths {
-			mux := routegroup.New(r.mux).Mount(nsPath)
+			mux := caramel.Wrap(r.mux).Mount(nsPath)
 
 			for pattern, path := range ns.Paths {
 				iCtx := plugin.InjectionContext{
