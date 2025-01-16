@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/alx99/ika/internal/http/request"
@@ -37,9 +36,8 @@ func (AccessLogger) Teardown(context.Context) error { return nil }
 
 func (a *AccessLogger) Handler(next plugin.Handler) plugin.Handler {
 	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-		st := statusRecorder{ResponseWriter: w}
 		now := time.Now()
-		err := next.ServeHTTP(&st, r)
+		err := next.ServeHTTP(w, r)
 		end := time.Now()
 
 		attrs := []slog.Attr{
@@ -53,7 +51,6 @@ func (a *AccessLogger) Handler(next plugin.Handler) plugin.Handler {
 				slog.Any("headers", headers(r.Header).LogValue()),
 			),
 			slog.Group("response",
-				slog.Int64("status", st.status.Load()),
 				slog.Int64("duration", end.Sub(now).Milliseconds()),
 			),
 			slog.String("pathPattern", a.pathPattern),
@@ -95,23 +92,4 @@ func (h headers) LogValue() slog.Value {
 		attrs = append(attrs, slog.String(k, strings.Join(v, ", ")))
 	}
 	return slog.GroupValue(attrs...)
-}
-
-type statusRecorder struct {
-	http.ResponseWriter
-	status      atomic.Int64
-	writeCalled atomic.Bool
-}
-
-func (w *statusRecorder) WriteHeader(statusCode int) {
-	if !w.writeCalled.Load() {
-		w.status.Store(int64(statusCode))
-	}
-	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-func (w *statusRecorder) Write(b []byte) (int, error) {
-	w.writeCalled.Store(true)
-	w.status.CompareAndSwap(0, http.StatusOK)
-	return w.ResponseWriter.Write(b)
 }

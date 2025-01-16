@@ -67,7 +67,7 @@ namespaces: "testns1": paths: {
 	"/retain-host": {
 		methods: ["GET", "HEAD"]
 		reqModifiers: [
-			// hack to restore the "original" host header for the request, overriden at the namespace level
+			// hack to restore the "original" host header for the request, overridden at the namespace level
 			{
 				name: "basic-modifier"
 				config: path: "/any"
