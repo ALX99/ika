@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -31,7 +32,11 @@ func Run(configPath string, options config.Options) {
 		os.Exit(1)
 	}
 
-	flush, err := run(ctx, cfg, options)
+	makeServer := func(handler http.Handler, servers []config.Server) server.HTTPServer {
+		return server.New(handler, servers)
+	}
+
+	flush, err := run(ctx, makeServer, cfg, options)
 	if err != nil {
 		slog.Error(err.Error())
 	} else {
@@ -48,7 +53,11 @@ func Run(configPath string, options config.Options) {
 	}
 }
 
-func run(ctx context.Context, cfg config.Config, opts config.Options) (func() error, error) {
+func run(ctx context.Context,
+	makeServer func(handler http.Handler, servers []config.Server) server.HTTPServer,
+	cfg config.Config,
+	opts config.Options,
+) (func() error, error) {
 	flush := logger.Initialize(ctx, cfg.Ika.Logger)
 
 	router, err := router.New(cfg, opts, slog.Default())
@@ -61,7 +70,7 @@ func run(ctx context.Context, cfg config.Config, opts config.Options) (func() er
 		return flush, fmt.Errorf("failed to build router: %w", err)
 	}
 
-	s := server.NewServer(router, cfg.Servers)
+	s := makeServer(router, cfg.Servers)
 	err = s.ListenAndServe()
 	if err != nil {
 		return flush, fmt.Errorf("failed to start: %w", err)

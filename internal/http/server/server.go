@@ -11,13 +11,16 @@ import (
 	"github.com/alx99/ika/internal/config"
 )
 
-// Server represents an HTTP server.
-type Server struct {
+type HTTPServer interface {
+	ListenAndServe() error
+	Shutdown(context.Context) error
+}
+
+type MultiServer struct {
 	servers []http.Server
 }
 
-// NewServer creates a new server with the given handler and configuration.
-func NewServer(handler http.Handler, config []config.Server) *Server {
+func New(handler http.Handler, config []config.Server) *MultiServer {
 	var servers []http.Server
 	for _, c := range config {
 		servers = append(servers, http.Server{
@@ -32,11 +35,10 @@ func NewServer(handler http.Handler, config []config.Server) *Server {
 		})
 	}
 
-	return &Server{servers: servers}
+	return &MultiServer{servers: servers}
 }
 
-// ListenAndServe starts the server and listens for incoming connections.
-func (s *Server) ListenAndServe() error {
+func (s *MultiServer) ListenAndServe() error {
 	var errs error
 	var mutex sync.Mutex
 	wg := sync.WaitGroup{}
@@ -59,8 +61,7 @@ func (s *Server) ListenAndServe() error {
 	return errs
 }
 
-// Shutdown gracefully shuts down the server without interrupting any active connections.
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *MultiServer) Shutdown(ctx context.Context) error {
 	var err error
 	for i := range s.servers {
 		err = errors.Join(err, s.servers[i].Shutdown(ctx))
