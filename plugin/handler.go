@@ -1,6 +1,11 @@
 package plugin
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+
+	"github.com/alx99/ika/internal/http/request"
+)
 
 // Handler is identical to [http.Handler] except that it is able to return an error.
 type Handler interface {
@@ -52,6 +57,11 @@ func (f HandlerFunc) ToHTTPHandler(errorHandler func(http.ResponseWriter, *http.
 	})
 }
 
-func defualtErrorHandler(w http.ResponseWriter, _ *http.Request, err error) {
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+func defualtErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	slog.LogAttrs(r.Context(),
+		slog.LevelError,
+		"Error handling request",
+		slog.String("path", request.GetPath(r)),
+		slog.String("error", err.Error()))
+	http.Error(w, "failed to handle request", http.StatusInternalServerError)
 }

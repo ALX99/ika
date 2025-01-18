@@ -10,6 +10,7 @@ import (
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/http/proxy"
+	"github.com/alx99/ika/internal/http/request"
 	"github.com/alx99/ika/internal/http/router/caramel"
 	"github.com/alx99/ika/internal/http/router/chain"
 	"github.com/alx99/ika/internal/iplugin"
@@ -57,14 +58,14 @@ func (r *Router) Build(ctx context.Context) error {
 }
 
 func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Namespace) error {
-	log := r.log.With(slog.String("namespace", nsName))
+	nsLog := r.log.With(slog.String("namespace", nsName))
 	var transport http.RoundTripper = makeTransport(ns.Transport)
 
 	cache := iplugin.NewPluginCache(r.opts.Plugins)
 	ictx := plugin.InjectionContext{
 		Namespace: nsName,
 		Level:     plugin.LevelNamespace,
-		Logger:    log,
+		Logger:    nsLog,
 	}
 
 	wrapTransport, teardown, err := iplugin.UsePlugins(ctx, ictx, cache, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
@@ -102,7 +103,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				Namespace:   nsName,
 				PathPattern: pattern,
 				Level:       plugin.LevelPath,
-				Logger:      slog.Default().With(slog.String("namespace", nsName)),
+				Logger:      nsLog,
 			}
 
 			cache = iplugin.NewPluginCache(r.opts.Plugins)
@@ -142,7 +143,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				}
 
 				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath))
-				mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, nil))
+				mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, buildErrHandler(nsLog)))
 			}
 		}
 	}
@@ -205,5 +206,16 @@ func makeTransport(cfg config.Transport) *http.Transport {
 		MaxResponseHeaderBytes: cfg.MaxResponseHeaderBytes,
 		WriteBufferSize:        cfg.WriteBufferSize,
 		ReadBufferSize:         cfg.ReadBufferSize,
+	}
+}
+
+func buildErrHandler(log *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
+	return func(w http.ResponseWriter, r *http.Request, err error) {
+		log.LogAttrs(r.Context(),
+			slog.LevelError,
+			"Error handling request",
+			slog.String("path", request.GetPath(r)),
+			slog.String("error", err.Error()))
+		http.Error(w, "failed to handle request", http.StatusInternalServerError)
 	}
 }
