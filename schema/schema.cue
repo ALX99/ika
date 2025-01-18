@@ -1,4 +1,4 @@
-package config
+package schema
 
 #Ika: {
 	// The maximum time Ika will wait to achieve a graceful shutdown.

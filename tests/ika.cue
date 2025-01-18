@@ -1,4 +1,4 @@
-import "github.com/alx99/ika/config"
+import "github.com/alx99/ika/schema"
 
 _env: *"local" | "docker" @tag(env)
 
@@ -11,9 +11,9 @@ _hosts: {
 
 _httpbun_host: string @tag(httpbun_host)
 
-ika: config.#Ika
-servers: [...config.#Server]
-namespaces: config.#Namespaces
+ika: schema.#Ika
+servers: [...schema.#Server]
+namespaces: schema.#Namespaces
 
 namespaces: [_]: {
 	// Add access log middleware to all namespaces
@@ -22,7 +22,7 @@ namespaces: [_]: {
 	] | _
 
 	reqModifiers: *[
-		config.#Plugin & {
+		schema.#Plugin & {
 			name: "basic-modifier"
 			config: host: _hosts.httpbun[_env]
 		},

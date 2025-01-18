@@ -1,9 +1,9 @@
 VERSION := 0.0.1
 BIN_DIR := ./bin
 CMD_DIR := ./cmd/ika
-CONFIG_DIR := ./tests
-CONFIG_FILE := $(CONFIG_DIR)/ika.yaml
-TEST_FILE := $(CONFIG_DIR)/tests.js
+TESTS_DIR := ./tests
+CONFIG_FILE := $(TESTS_DIR)/ika.yaml
+TEST_FILE := $(TESTS_DIR)/tests.js
 BUILD_TAGS ?=
 
 .PHONY: image
@@ -60,7 +60,7 @@ e2e-compose: upd
 
 .PHONY: vet
 vet:
-	cue vet -c ./config/ $(CONFIG_DIR)/ika.cue
+	cue vet -c ./schema/ $(TESTS_DIR)/ika.cue
 
 .PHONY: fmt
 fmt:
@@ -69,7 +69,7 @@ fmt:
 cfg: cfg-local
 
 cfg-%: vet fmt
-	cue export -t env=$* $(CONFIG_DIR)/ika.cue --out yaml > $(CONFIG_FILE)
+	cue export -t env=$* $(TESTS_DIR)/ika.cue --out yaml > $(CONFIG_FILE)
 	cp -f $(CONFIG_FILE) internal/ika/
 
 .PHONY: release-patch
