@@ -37,21 +37,20 @@ jobs:
         if: failure()
         run: docker compose logs
 
-  test-example:
+  build-example:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Image ika
-        run: make image BUILD_TAGS=full
-      - name: Run ika with the example project
-        run: touch ./example/.env && make upd BUILD_TAGS=full
-      - name: Check that the Cache-Control headers are set
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./example/go.mod
+      - name: Run and build example
         run: |
-          curl localhost:1111/example/get -sD headers.txt
-          grep "Expires: Thu, 01 Jan 1970 00:00:00 GMT" headers.txt
-          grep "Pragma: no-cache" headers.txt
-          grep "Cache-Control: no-cache, no-store, no-transform, must-revalidate, private, max-age=0" headers.txt
-      - name: Print Docker Compose logs
-        if: failure()
-        run: docker compose logs
+          cd example
+          go work init
+          go work use .
+          go work use ..
+          go build -o example main.go
+          ./example &

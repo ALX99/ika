@@ -12,19 +12,6 @@ services:
       - ./tests/ika.yaml:/config.yaml
     env_file: example/.env
 
-  example:
-    build:
-      context: .
-      dockerfile: ./example/Dockerfile
-      args:
-        VERSION: ${VERSION}
-    ports:
-      - "127.0.0.1:1111:8888"
-    env_file: example/.env
-    command: ["/ika", "-config", "/ika.yaml"]
-    volumes:
-      - ./example/ika.yaml:/ika.yaml
-
   httpbun-local:
     image: sharat87/httpbun:dc21d845d1ec08a34559d1d075d7345b2941244d
     expose: ["80"]
