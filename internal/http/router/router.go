@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 
@@ -176,7 +177,23 @@ func (r *Router) makePluginChain(ctx context.Context, ictx plugin.InjectionConte
 }
 
 func makeTransport(cfg config.Transport) *http.Transport {
+	// todo allow configure
+	d := net.Dialer{
+		Timeout:       0,
+		FallbackDelay: 0,
+		KeepAliveConfig: net.KeepAliveConfig{
+			Enable:   true,
+			Idle:     0,
+			Interval: 0,
+			Count:    0,
+		},
+		Resolver: &net.Resolver{
+			PreferGo:     true,
+			StrictErrors: false,
+		},
+	}
 	return &http.Transport{
+		DialContext:            d.DialContext,
 		DisableKeepAlives:      cfg.DisableKeepAlives,
 		DisableCompression:     cfg.DisableCompression,
 		MaxIdleConns:           cfg.MaxIdleConns,
@@ -189,9 +206,4 @@ func makeTransport(cfg config.Transport) *http.Transport {
 		WriteBufferSize:        cfg.WriteBufferSize,
 		ReadBufferSize:         cfg.ReadBufferSize,
 	}
-}
-
-func defaultErrHandler(w http.ResponseWriter, r *http.Request, err error) {
-	slog.Error("Error handling request", "err", err)
-	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
