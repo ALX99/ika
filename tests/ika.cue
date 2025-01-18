@@ -40,7 +40,7 @@ ika: {
 
 servers: [{addr: ":8888"}]
 
-namespaces: "testns1": nsPaths: ["/testns1", "testns1.com"]
+namespaces: "testns1": mounts: ["/testns1", "testns1.com"]
 namespaces: "testns1": paths: {
 	"/any": {}
 	"/get": {
@@ -114,7 +114,7 @@ namespaces: "testns1": paths: {
 	}
 }
 
-namespaces: "passthrough": nsPaths: ["/passthrough", "passthrough.com"]
+namespaces: "passthrough": mounts: ["/passthrough", "passthrough.com"]
 namespaces: "passthrough": {
 	paths: {
 		"": {}

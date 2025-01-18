@@ -9,7 +9,7 @@ servers:
 
 namespaces:
   example:
-    nsPaths:
+    mounts:
       - /example
     hooks:
       - name: tracer
@@ -26,7 +26,7 @@ namespaces:
           - name: noCache
 
   httpbun.dozy.dev:
-    nsPaths:
+    mounts:
       - httpbun.dozy.dev
     transport:
       maxIdleConnsPerHost: 250
@@ -42,7 +42,7 @@ namespaces:
       /: {}
 
   go.dozy.dev:
-    nsPaths:
+    mounts:
       - go.dozy.dev
     hooks:
       - name: tracer

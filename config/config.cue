@@ -153,7 +153,7 @@ package config
 
 #Namespace: {
 	paths: #Paths
-	nsPaths: [...string]
+	mounts: [...string]
 	transport?:    #Transport
 	middlewares?:  #Plugins
 	reqModifiers?: #Plugins

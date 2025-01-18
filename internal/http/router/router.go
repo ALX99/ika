@@ -98,8 +98,8 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	}
 	r.tder.Add(teardown)
 
-	for _, nsPath := range ns.NSPaths {
-		mux := caramel.Wrap(r.mux).Mount(nsPath)
+	for _, mount := range ns.Mounts {
+		mux := caramel.Wrap(r.mux).Mount(mount)
 
 		for pattern, path := range ns.Paths {
 			ictx := plugin.InjectionContext{
@@ -130,7 +130,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 			}
 
 			for _, pattern := range patterns {
-				if pattern == "" && !strings.Contains(nsPath, "/") {
+				if pattern == "" && !strings.Contains(mount, "/") {
 					// This is a special scenario where the namespace
 					// path does not contain a '/'. In other words,
 					// it must mean that it is a host.
@@ -138,14 +138,14 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 					// since [HOST] alone is not a valid pattern
 					// we ignore this specific scenario to allow
 					// users to register path like:
-					// nsPath: /example
+					// mounts: ["/example"]
 					// path: ""
 					// to prevent redirection when /example is accessed
 					// alone
 					continue
 				}
 
-				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(nsPath))
+				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
 				mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, buildErrHandler(nsLog)))
 			}
 		}

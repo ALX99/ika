@@ -3,7 +3,7 @@ package config
 type (
 	Namespace struct {
 		Transport    Transport `json:"transport"`
-		NSPaths      []string  `json:"nsPaths"`
+		Mounts       []string  `json:"mounts"`
 		Paths        Paths     `json:"paths"`
 		Middlewares  Plugins   `json:"middlewares"`
 		ReqModifiers Plugins   `json:"reqModifiers"`
