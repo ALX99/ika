@@ -36,21 +36,3 @@ jobs:
       - name: Print Docker Compose logs
         if: failure()
         run: docker compose logs
-
-  build-example:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ./example/go.mod
-      - name: Run and build example
-        run: |
-          cd example
-          go work init
-          go work use .
-          go work use ..
-          go build -o example main.go
-          ./example &

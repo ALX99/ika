@@ -27,7 +27,7 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./example
           file: ./example/Dockerfile
           push: true
           tags: ghcr.io/alx99/ika-example:latest
