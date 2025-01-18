@@ -11,13 +11,6 @@ services:
     volumes:
       - ./tests/ika.yaml:/config.yaml
     env_file: example/.env
-  # krakend:
-  #   image: devopsfaith/krakend
-  #   command: ["run", "-c", "/config.json"]
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - ./tests/krakend.json:/config.json
 
   example:
     build:
