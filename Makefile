@@ -38,7 +38,8 @@ run-reload:
 
 .PHONY: test
 test:
-	go test ./...
+	go test -coverpkg=./... -coverprofile=coverage.out -timeout 15s ./...
+	go tool cover -func=coverage.out | grep total
 
 .PHONY: update-test
 update-test:
@@ -69,6 +70,7 @@ cfg: cfg-local
 
 cfg-%: vet fmt
 	cue export -t env=$* $(CONFIG_DIR)/ika.cue --out yaml > $(CONFIG_FILE)
+	cp -f $(CONFIG_FILE) internal/ika/
 
 .PHONY: release-patch
 release-patch:

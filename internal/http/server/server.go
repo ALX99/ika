@@ -23,19 +23,21 @@ type MultiServer struct {
 func New(handler http.Handler, config []config.Server) *MultiServer {
 	var servers []http.Server
 	for _, c := range config {
-		servers = append(servers, http.Server{
-			Handler:                      handler,
-			Addr:                         c.Addr,
-			DisableGeneralOptionsHandler: c.DisableGeneralOptionsHandler,
-			ReadTimeout:                  c.ReadTimeout.Dur(),
-			ReadHeaderTimeout:            c.ReadHeaderTimeout.Dur(),
-			WriteTimeout:                 c.WriteTimeout.Dur(),
-			IdleTimeout:                  c.IdleTimeout.Dur(),
-			MaxHeaderBytes:               c.MaxHeaderBytes,
-		})
+		servers = append(servers, *ConfigureServer(&http.Server{Handler: handler}, c))
 	}
 
 	return &MultiServer{servers: servers}
+}
+
+func ConfigureServer(s *http.Server, c config.Server) *http.Server {
+	s.Addr = c.Addr
+	s.DisableGeneralOptionsHandler = c.DisableGeneralOptionsHandler
+	s.ReadTimeout = c.ReadTimeout.Dur()
+	s.ReadHeaderTimeout = c.ReadHeaderTimeout.Dur()
+	s.WriteTimeout = c.WriteTimeout.Dur()
+	s.IdleTimeout = c.IdleTimeout.Dur()
+	s.MaxHeaderBytes = c.MaxHeaderBytes
+	return s
 }
 
 func (s *MultiServer) ListenAndServe() error {

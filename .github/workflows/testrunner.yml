@@ -15,8 +15,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - uses: cue-lang/setup-cue@v1.0.1
       - name: Run tests
-        run: make test
+        run: |
+          touch ./example/.env
+          make cfg deps-up test
       - name: Print Docker Compose logs
         if: failure()
         run: docker compose logs

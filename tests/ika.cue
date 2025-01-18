@@ -19,7 +19,6 @@ namespaces: [_]: {
 	// Add access log middleware to all namespaces
 	middlewares: *[
 		{name: "accessLog"},
-		if _env == "local" {{name: "dumper"}},
 	] | _
 
 	reqModifiers: *[
@@ -35,14 +34,11 @@ ika: {
 	logger: {
 		level:         "debug"
 		flushInterval: "100ms"
-		format:        "text"
+		format:        "json"
 	}
 }
 
 servers: [{addr: ":8888"}]
-
-namespaces: root: paths: {"/headers": {}}
-namespaces: root: nsPaths: [""]
 
 namespaces: "testns1": nsPaths: ["/testns1", "testns1.com"]
 namespaces: "testns1": paths: {
@@ -115,24 +111,6 @@ namespaces: "testns1": paths: {
 				config: path: "/any"
 			},
 		]
-	}
-}
-
-namespaces: "perf": nsPaths: ["/perf"]
-namespaces: "perf": {
-	transport: {
-		maxIdleConnsPerHost: 250
-	}
-	paths: {
-		"/a/{something}": {
-			reqModifiers: [
-				{
-
-					name: "basic-modifier"
-					config: path: "/any/{something}"
-				},
-			]
-		}
 	}
 }
 

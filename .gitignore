@@ -5,3 +5,4 @@ dist/
 coverage.out
 go.work*
 tests/ika.yaml
+internal/ika/ika.yaml

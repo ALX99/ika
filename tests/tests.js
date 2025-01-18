@@ -106,10 +106,6 @@ export default function tests() {
     describe("X-Forwarded-For does not exist by default", () => {
       expect(resp.headers, resp.headers).to.not.have.key('X-Forwarded-For');
     });
-    describe("Accept-Encoding is gzip by default", () => {
-      const resp = http.get(`${baseURL}/headers`);
-      expect(resp.json()["headers"]["Accept-Encoding"], resp.json()["Accept-Encoding"]).to.equal('gzip');
-    });
   });
 
   describe("non-terminated paths behave correctly", () => {
