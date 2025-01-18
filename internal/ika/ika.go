@@ -25,12 +25,17 @@ func Run(configPath string, options config.Options) {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 	defer cancel()
 
-	flush, err := run(ctx, configPath, options)
+	cfg, err := config.Read(configPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	flush, err := run(ctx, cfg, options)
 	if err != nil {
 		slog.Error(err.Error())
 	} else {
-		slog.Info("ika has shut down")
-		slog.Info("Bye <3")
+		slog.Info("Shutdown finished")
 	}
 	exitOne := !errors.Is(err, context.Canceled)
 
@@ -43,20 +48,7 @@ func Run(configPath string, options config.Options) {
 	}
 }
 
-func run(ctx context.Context, configPath string, opts config.Options) (func() error, error) {
-	if configPath == "" {
-		var err error
-		configPath, err = locateConfig()
-		if err != nil {
-			return func() error { return nil }, err
-		}
-	}
-
-	cfg, err := config.Read(configPath)
-	if err != nil {
-		return func() error { return nil }, fmt.Errorf("failed to read config: %w", err)
-	}
-
+func run(ctx context.Context, cfg config.Config, opts config.Options) (func() error, error) {
 	flush := logger.Initialize(ctx, cfg.Ika.Logger)
 
 	router, err := router.New(cfg, opts, slog.Default())
@@ -93,19 +85,29 @@ func run(ctx context.Context, configPath string, opts config.Options) (func() er
 	return flush, errors.Join(s.Shutdown(ctx), router.Shutdown(ctx))
 }
 
-func locateConfig() (string, error) {
+func readConfig() (config.Config, error) {
+	cfg := config.Config{}
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return cfg, err
 	}
 
+	var cfgFile string
 	// look for ika.yaml and ika.json prioritizing json
 	for _, ext := range []string{".json", ".yaml"} {
-		path := path.Join(wd, "ika"+ext)
-		if _, err := os.Stat(path); err == nil {
-			return path, nil
+		cfgFile = path.Join(wd, "ika"+ext)
+		if _, err := os.Stat(cfgFile); err == nil {
+			break
 		}
 	}
 
-	return "", errors.New("ika.json or ika.yaml not found")
+	if cfgFile == "" {
+		return cfg, errors.New("ika.json or ika.yaml not found")
+	}
+
+	cfg, err = config.Read(cfgFile)
+	if err != nil {
+		return cfg, fmt.Errorf("failed to read config: %w", err)
+	}
+	return cfg, nil
 }
