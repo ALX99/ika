@@ -123,12 +123,16 @@ func ChainFromReqModifiers(reqModifiers []initializedPlugin[plugin.RequestModifi
 	return chain.New(cons...)
 }
 
-func MakeTransportWrapper(hooks []initializedPlugin[plugin.TransportHooker]) func(http.RoundTripper) http.RoundTripper {
-	fn := func(tsp http.RoundTripper) http.RoundTripper {
+func MakeTransportWrapper(hooks []initializedPlugin[plugin.TripperHooker]) func(http.RoundTripper) (http.RoundTripper, error) {
+	var err error
+	fn := func(tripper http.RoundTripper) (http.RoundTripper, error) {
 		for _, hook := range hooks {
-			tsp = hook.plugin.HookTransport(tsp)
+			tripper, err = hook.plugin.HookTripper(tripper)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return tsp
+		return tripper, nil
 	}
 	return fn
 }

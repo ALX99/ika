@@ -74,7 +74,10 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	}
 	r.tder.Add(teardown)
 
-	transport = wrapTransport(transport)
+	transport, err = wrapTransport(transport)
+	if err != nil {
+		return errors.Join(err, r.tder.Teardown(ctx))
+	}
 
 	p, err := proxy.NewProxy(proxy.Config{
 		Transport:  transport,

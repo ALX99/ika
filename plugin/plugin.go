@@ -80,13 +80,13 @@ type Middleware interface {
 	Handler(next Handler) Handler
 }
 
-// TransportHooker allows plugins to modify the transport mechanism used by Ika.
-type TransportHooker interface {
+// TripperHooker allows plugins to modify the [http.RoundTripper] used by Ika.
+type TripperHooker interface {
 	Plugin
 
-	// HookTransport returns a new or modified HTTP transport.
+	// HookTripper returns a new or modified [http.RoundTripper].
 	// It can wrap or replace the existing transport.
-	HookTransport(roundtripper http.RoundTripper) http.RoundTripper
+	HookTripper(tripper http.RoundTripper) (http.RoundTripper, error)
 }
 
 // FirstHandlerHooker enables plugins to hijack the first handler executed for a request.

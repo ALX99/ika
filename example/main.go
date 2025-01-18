@@ -32,7 +32,7 @@ import (
 
 var (
 	version                           = "unknown"
-	_       plugin.TransportHooker    = &tracer{}
+	_       plugin.TripperHooker      = &tracer{}
 	_       plugin.MiddlewareHook     = &tracer{}
 	_       plugin.FirstHandlerHooker = &tracer{}
 )
@@ -78,7 +78,7 @@ type tracer struct {
 	ns string
 }
 
-var _ plugin.TransportHooker = &tracer{}
+var _ plugin.TripperHooker = &tracer{}
 
 func (w *tracer) New(context.Context, plugin.InjectionContext) (plugin.Plugin, error) {
 	return &tracer{}, nil
@@ -97,10 +97,10 @@ func (w *tracer) Teardown(context.Context) error {
 	return nil
 }
 
-func (w *tracer) HookTransport(tsp http.RoundTripper) http.RoundTripper {
-	return otelhttp.NewTransport(tsp,
+func (w *tracer) HookTripper(tripper http.RoundTripper) (http.RoundTripper, error) {
+	return otelhttp.NewTransport(tripper,
 		otelhttp.WithMetricAttributesFn(metaDataAttrs(w.ns)),
-	)
+	), nil
 }
 
 func (t *tracer) Handler(next plugin.Handler) plugin.Handler {
