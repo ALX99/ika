@@ -1,5 +1,5 @@
-github.com/alx99/ika v0.0.30 h1:flxKv1O9TUGpyKIjqT+h4dIwcKTAL5sRpRXAEuLFXcE=
-github.com/alx99/ika v0.0.30/go.mod h1:LFfGV06WC5D+1XgbJqPnpvFk0P9bgP7/qsAaMcQib4M=
+github.com/alx99/ika v0.0.31 h1:m1q6aulLLP4fZQVHSQS9tWPA8tnsLcO/VX+u3tHDa2M=
+github.com/alx99/ika v0.0.31/go.mod h1:LFfGV06WC5D+1XgbJqPnpvFk0P9bgP7/qsAaMcQib4M=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

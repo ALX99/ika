@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/alx99/ika"
-	"github.com/alx99/ika/cmd/option"
-	"github.com/alx99/ika/plugin"
+	"github.com/alx99/ika/gateway"
 	"github.com/alx99/ika/plugins"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/contrib/instrumentation/host"
@@ -31,17 +30,17 @@ import (
 )
 
 var (
-	version                           = "unknown"
-	_       plugin.TripperHooker      = &tracer{}
-	_       plugin.MiddlewareHook     = &tracer{}
-	_       plugin.FirstHandlerHooker = &tracer{}
+	version                        = "unknown"
+	_       ika.TripperHooker      = &tracer{}
+	_       ika.MiddlewareHook     = &tracer{}
+	_       ika.FirstHandlerHooker = &tracer{}
 )
 
-var _ plugin.Middleware = &noCache{}
+var _ ika.Middleware = &noCache{}
 
 type noCache struct{}
 
-func (w *noCache) New(context.Context, plugin.InjectionContext) (plugin.Plugin, error) {
+func (w *noCache) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
 	return &noCache{}, nil
 }
 
@@ -49,7 +48,7 @@ func (w *noCache) Name() string {
 	return "noCache"
 }
 
-func (w *noCache) Setup(_ context.Context, _ plugin.InjectionContext, config map[string]any) error {
+func (w *noCache) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
 	return nil
 }
 
@@ -57,20 +56,20 @@ func (w *noCache) Teardown(context.Context) error {
 	return nil
 }
 
-func (w *noCache) Handler(next plugin.Handler) plugin.Handler {
-	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-		chimw.NoCache(plugin.ToHTTPHandler(next, nil)).ServeHTTP(w, r)
+func (w *noCache) Handler(next ika.Handler) ika.Handler {
+	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		chimw.NoCache(ika.ToHTTPHandler(next, nil)).ServeHTTP(w, r)
 		return nil
 	})
 }
 
 func main() {
 	defer setupMonitoring()()
-	ika.Run(
-		option.WithPlugin(&noCache{}),
-		option.WithPlugin(&tracer{}),
-		option.WithPlugin(plugins.AccessLogger{}),
-		option.WithPlugin(plugins.ReqModifier{}),
+	gateway.Run(
+		gateway.WithPlugin(&noCache{}),
+		gateway.WithPlugin(&tracer{}),
+		gateway.WithPlugin(plugins.AccessLogger{}),
+		gateway.WithPlugin(plugins.ReqModifier{}),
 	)
 }
 
@@ -78,13 +77,13 @@ type tracer struct {
 	ns string
 }
 
-var _ plugin.TripperHooker = &tracer{}
+var _ ika.TripperHooker = &tracer{}
 
-func (w *tracer) New(context.Context, plugin.InjectionContext) (plugin.Plugin, error) {
+func (w *tracer) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
 	return &tracer{}, nil
 }
 
-func (w *tracer) Setup(_ context.Context, ictx plugin.InjectionContext, config map[string]any) error {
+func (w *tracer) Setup(_ context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	w.ns = ictx.Namespace
 	return nil
 }
@@ -103,7 +102,7 @@ func (w *tracer) HookTripper(tripper http.RoundTripper) (http.RoundTripper, erro
 	), nil
 }
 
-func (t *tracer) Handler(next plugin.Handler) plugin.Handler {
+func (t *tracer) Handler(next ika.Handler) ika.Handler {
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attr := metaDataAttrs(t.ns)(r)
 		trace.SpanFromContext(r.Context()).
@@ -118,7 +117,7 @@ func (t *tracer) Handler(next plugin.Handler) plugin.Handler {
 		otelhttp.WithMetricAttributesFn(metaDataAttrs(t.ns)),
 	)
 
-	return plugin.FromHTTPHandler(otelHandler)
+	return ika.FromHTTPHandler(otelHandler)
 }
 
 func (w *tracer) HookMiddleware(_ context.Context, name string, next http.Handler) (http.Handler, error) {
