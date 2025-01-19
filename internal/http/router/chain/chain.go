@@ -6,7 +6,7 @@ package chain
 import (
 	"net/http"
 
-	"github.com/alx99/ika/plugin"
+	"github.com/alx99/ika"
 )
 
 // A constructor for a piece of middleware.
@@ -16,7 +16,7 @@ type Constructor struct {
 	// The middleware name
 	Name string
 	// The middleware function
-	MiddlewareFunc func(plugin.Handler) plugin.Handler
+	MiddlewareFunc func(ika.Handler) ika.Handler
 }
 
 // Chain acts as a list of http.Handler constructors.
@@ -57,12 +57,12 @@ func New(constructors ...Constructor) Chain {
 // and thus several instances of the same middleware will be created
 // when a chain is reused in this way.
 // For proper middleware, this should cause no problems.
-func (c Chain) Then(h plugin.Handler) plugin.Handler {
+func (c Chain) Then(h ika.Handler) ika.Handler {
 	for i := range c.constructors {
 		h = c.constructors[len(c.constructors)-1-i].MiddlewareFunc(h)
 	}
 
-	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		return h.ServeHTTP(w, r)
 	})
 }
@@ -76,7 +76,7 @@ func (c Chain) Then(h plugin.Handler) plugin.Handler {
 //	c.ThenFunc(fn)
 //
 // ThenFunc provides all the guarantees of Then.
-func (c Chain) ThenFunc(fn plugin.HandlerFunc) plugin.Handler {
+func (c Chain) ThenFunc(fn ika.HandlerFunc) ika.Handler {
 	return c.Then(fn)
 }
 

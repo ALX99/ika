@@ -7,30 +7,30 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/http/router/chain"
 	"github.com/alx99/ika/internal/teardown"
-	"github.com/alx99/ika/plugin"
 )
 
 type PluginCache struct {
-	factories map[string]plugin.Factory
-	plugins   map[string]plugin.Plugin
+	factories map[string]ika.PluginFactory
+	plugins   map[string]ika.Plugin
 }
 
-type initializedPlugin[T plugin.Plugin] struct {
+type initializedPlugin[T ika.Plugin] struct {
 	name   string
 	plugin T
 }
 
-func NewPluginCache(factories map[string]plugin.Factory) *PluginCache {
+func NewPluginCache(factories map[string]ika.PluginFactory) *PluginCache {
 	return &PluginCache{
 		factories: factories,
-		plugins:   map[string]plugin.Plugin{},
+		plugins:   map[string]ika.Plugin{},
 	}
 }
 
-func (ps *PluginCache) getPlugin(ctx context.Context, ictx plugin.InjectionContext, cfg config.Plugin) (plugin.Plugin, bool, error) {
+func (ps *PluginCache) getPlugin(ctx context.Context, ictx ika.InjectionContext, cfg config.Plugin) (ika.Plugin, bool, error) {
 	plugin, ok := ps.plugins[cfg.Name]
 	if ok {
 		return plugin, false, nil
@@ -51,8 +51,8 @@ func (ps *PluginCache) getPlugin(ctx context.Context, ictx plugin.InjectionConte
 
 // UsePlugins sets up plugins and calls the provided function with the set up plugins.
 // Plugins are set up in the order they are provided in the config.
-func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
-	ictx plugin.InjectionContext,
+func UsePlugins[T ika.Plugin, V any](ctx context.Context,
+	ictx ika.InjectionContext,
 	cache *PluginCache,
 	pluginCfg config.Plugins,
 	fn func(t []initializedPlugin[T]) V,
@@ -91,7 +91,7 @@ func UsePlugins[T plugin.Plugin, V any](ctx context.Context,
 	return fn(plugins), tder.Teardown, nil
 }
 
-func ChainFromMiddlewares(middlewares []initializedPlugin[plugin.Middleware]) chain.Chain {
+func ChainFromMiddlewares(middlewares []initializedPlugin[ika.Middleware]) chain.Chain {
 	cons := make([]chain.Constructor, len(middlewares))
 	for i := range middlewares {
 		cons[i] = chain.Constructor{
@@ -102,14 +102,14 @@ func ChainFromMiddlewares(middlewares []initializedPlugin[plugin.Middleware]) ch
 	return chain.New(cons...)
 }
 
-func ChainFromReqModifiers(reqModifiers []initializedPlugin[plugin.RequestModifier]) chain.Chain {
+func ChainFromReqModifiers(reqModifiers []initializedPlugin[ika.RequestModifier]) chain.Chain {
 	cons := make([]chain.Constructor, len(reqModifiers))
 
 	for i, rm := range reqModifiers {
 		cons[i] = chain.Constructor{
 			Name: rm.name,
-			MiddlewareFunc: func(next plugin.Handler) plugin.Handler {
-				return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+			MiddlewareFunc: func(next ika.Handler) ika.Handler {
+				return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 					r, err := rm.plugin.ModifyRequest(r)
 					if err != nil {
 						return err
@@ -123,7 +123,7 @@ func ChainFromReqModifiers(reqModifiers []initializedPlugin[plugin.RequestModifi
 	return chain.New(cons...)
 }
 
-func MakeTransportWrapper(hooks []initializedPlugin[plugin.TripperHooker]) func(http.RoundTripper) (http.RoundTripper, error) {
+func MakeTransportWrapper(hooks []initializedPlugin[ika.TripperHooker]) func(http.RoundTripper) (http.RoundTripper, error) {
 	var err error
 	fn := func(tripper http.RoundTripper) (http.RoundTripper, error) {
 		for _, hook := range hooks {
@@ -137,7 +137,7 @@ func MakeTransportWrapper(hooks []initializedPlugin[plugin.TripperHooker]) func(
 	return fn
 }
 
-func ChainFirstHandler(hooks []initializedPlugin[plugin.FirstHandlerHooker]) chain.Chain {
+func ChainFirstHandler(hooks []initializedPlugin[ika.FirstHandlerHooker]) chain.Chain {
 	cons := make([]chain.Constructor, len(hooks))
 	for i := range hooks {
 		cons[i] = chain.Constructor{

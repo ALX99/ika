@@ -9,12 +9,12 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 
-	"github.com/alx99/ika/plugin"
+	"github.com/alx99/ika"
 )
 
 type Dumper struct{}
 
-func (Dumper) New(context.Context, plugin.InjectionContext) (plugin.Plugin, error) {
+func (Dumper) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
 	return &Dumper{}, nil
 }
 
@@ -22,15 +22,15 @@ func (Dumper) Name() string {
 	return "dumper"
 }
 
-func (Dumper) Setup(context.Context, plugin.InjectionContext, map[string]any) error {
+func (Dumper) Setup(context.Context, ika.InjectionContext, map[string]any) error {
 	return nil
 }
 
 func (Dumper) Teardown(context.Context) error { return nil }
 
-func (a *Dumper) Handler(next plugin.Handler) plugin.Handler {
+func (a *Dumper) Handler(next ika.Handler) ika.Handler {
 	log := slog.Default().With(slog.String("plugin", a.Name()))
-	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		dumpedReq, err := httputil.DumpRequest(r, true)
 		if err != nil {
 			return err

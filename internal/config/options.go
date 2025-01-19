@@ -1,7 +1,7 @@
 package config
 
-import "github.com/alx99/ika/plugin"
+import "github.com/alx99/ika"
 
 type Options struct {
-	Plugins map[string]plugin.Factory
+	Plugins map[string]ika.PluginFactory
 }

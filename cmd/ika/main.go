@@ -1,12 +1,11 @@
 package main
 
 import (
-	"github.com/alx99/ika"
-	"github.com/alx99/ika/cmd/option"
+	"github.com/alx99/ika/gateway"
 )
 
-var opts []option.Option
+var opts []gateway.Option
 
 func main() {
-	ika.Run(opts...)
+	gateway.Run(opts...)
 }

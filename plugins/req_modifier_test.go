@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/alx99/ika/plugin"
+	"github.com/alx99/ika"
 )
 
 func BenchmarkRewritePath(b *testing.B) {
-	p, err := ReqModifier{}.New(context.Background(), plugin.InjectionContext{})
+	p, err := ReqModifier{}.New(context.Background(), ika.InjectionContext{})
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func BenchmarkRewritePath(b *testing.B) {
 	config := map[string]any{
 		"path": "/new/{path}",
 	}
-	iCtx := plugin.InjectionContext{
+	iCtx := ika.InjectionContext{
 		PathPattern: "/old/{path}",
 		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}

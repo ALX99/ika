@@ -8,8 +8,8 @@ import (
 	"net/http/httputil"
 	"strings"
 
+	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
-	"github.com/alx99/ika/plugin"
 )
 
 type Config struct {
@@ -43,8 +43,8 @@ func NewProxy(cfg Config) (*Proxy, error) {
 	return &Proxy{rp: rp}, nil
 }
 
-func (p *Proxy) WithPathTrim(trim string) plugin.HandlerFunc {
-	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+func (p *Proxy) WithPathTrim(trim string) ika.HandlerFunc {
+	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, trim)
 		r.URL.RawPath = strings.TrimPrefix(request.GetPath(r), trim)
 		return p.ServeHTTP(w, r)

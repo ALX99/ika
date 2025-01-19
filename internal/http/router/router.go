@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/config"
 	"github.com/alx99/ika/internal/http/proxy"
 	"github.com/alx99/ika/internal/http/request"
@@ -16,7 +17,6 @@ import (
 	"github.com/alx99/ika/internal/iplugin"
 	"github.com/alx99/ika/internal/pool"
 	"github.com/alx99/ika/internal/teardown"
-	"github.com/alx99/ika/plugin"
 )
 
 type Router struct {
@@ -62,9 +62,9 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	var transport http.RoundTripper = makeTransport(ns.Transport)
 
 	cache := iplugin.NewPluginCache(r.opts.Plugins)
-	ictx := plugin.InjectionContext{
+	ictx := ika.InjectionContext{
 		Namespace: nsName,
-		Level:     plugin.LevelNamespace,
+		Level:     ika.LevelNamespace,
 		Logger:    nsLog,
 	}
 
@@ -102,10 +102,10 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 		mux := caramel.Wrap(r.mux).Mount(mount)
 
 		for pattern, path := range ns.Paths {
-			ictx := plugin.InjectionContext{
+			ictx := ika.InjectionContext{
 				Namespace:   nsName,
 				PathPattern: pattern,
-				Level:       plugin.LevelPath,
+				Level:       ika.LevelPath,
 				Logger:      nsLog,
 			}
 
@@ -146,7 +146,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				}
 
 				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
-				mux.Handle(pattern, plugin.ToHTTPHandler(nsChain, buildErrHandler(nsLog)))
+				mux.Handle(pattern, ika.ToHTTPHandler(nsChain, buildErrHandler(nsLog)))
 			}
 		}
 	}
@@ -154,7 +154,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	return nil
 }
 
-func (r *Router) makePluginChain(ctx context.Context, ictx plugin.InjectionContext, setupper *iplugin.PluginCache, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
+func (r *Router) makePluginChain(ctx context.Context, ictx ika.InjectionContext, setupper *iplugin.PluginCache, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
 	var tder teardown.Teardowner
 
 	mwChain, teardown, err := iplugin.UsePlugins(ctx, ictx, setupper, middlewares, iplugin.ChainFromMiddlewares)

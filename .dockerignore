@@ -2,7 +2,7 @@
 !/cmd
 !/internal
 !/middleware
-!/plugin
+!/gateway
 !/plugins
 !/example
 !go.mod

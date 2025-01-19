@@ -11,14 +11,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
-	"github.com/alx99/ika/plugin"
 )
 
 // regular expression to match segments in the rewrite path
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
-var _ plugin.RequestModifier = &ReqModifier{}
+var _ ika.RequestModifier = &ReqModifier{}
 
 // ReqModifier is a ReqModifier that 100% accurately rewrite the request path.
 // This includes totally preserving the original path even if some parts have been encoded.
@@ -46,7 +46,7 @@ type ReqModifier struct {
 	once sync.Once
 }
 
-func (ReqModifier) New(_ context.Context, _ plugin.InjectionContext) (plugin.Plugin, error) {
+func (ReqModifier) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
 	return &ReqModifier{}, nil
 }
 
@@ -54,7 +54,7 @@ func (ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
-func (rm *ReqModifier) Setup(ctx context.Context, ictx plugin.InjectionContext, config map[string]any) error {
+func (rm *ReqModifier) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	routePattern := ictx.PathPattern
 
 	var toPath string

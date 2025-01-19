@@ -7,18 +7,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
-	"github.com/alx99/ika/plugin"
 )
 
-var _ plugin.Middleware = &AccessLogger{}
+var _ ika.Middleware = &AccessLogger{}
 
 type AccessLogger struct {
 	pathPattern string
 	log         *slog.Logger
 }
 
-func (AccessLogger) New(_ context.Context, _ plugin.InjectionContext) (plugin.Plugin, error) {
+func (AccessLogger) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
 	return &AccessLogger{}, nil
 }
 
@@ -26,7 +26,7 @@ func (AccessLogger) Name() string {
 	return "accessLog"
 }
 
-func (a *AccessLogger) Setup(ctx context.Context, ictx plugin.InjectionContext, config map[string]any) error {
+func (a *AccessLogger) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	a.pathPattern = ictx.PathPattern
 	a.log = ictx.Logger
 	return nil
@@ -34,8 +34,8 @@ func (a *AccessLogger) Setup(ctx context.Context, ictx plugin.InjectionContext, 
 
 func (AccessLogger) Teardown(context.Context) error { return nil }
 
-func (a *AccessLogger) Handler(next plugin.Handler) plugin.Handler {
-	return plugin.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+func (a *AccessLogger) Handler(next ika.Handler) ika.Handler {
+	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		now := time.Now()
 		err := next.ServeHTTP(w, r)
 		end := time.Now()

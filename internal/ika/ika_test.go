@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/config"
 	iplugins "github.com/alx99/ika/internal/plugins"
-	"github.com/alx99/ika/plugin"
 	"github.com/alx99/ika/plugins"
 	"github.com/gkampitakis/go-snaps/match"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -312,7 +312,7 @@ func runServer(t *testing.T) (*http.Client, string) {
 	is.NoErr(err)
 
 	opts := config.Options{
-		Plugins: map[string]plugin.Factory{
+		Plugins: map[string]ika.PluginFactory{
 			"basic-modifier": plugins.ReqModifier{},
 			"accessLog":      plugins.AccessLogger{},
 			"dumper":         iplugins.Dumper{},
