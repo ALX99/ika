@@ -31,7 +31,6 @@ type Factory interface {
 	Name() string
 
 	// New creates and returns a new instance of the plugin.
-	// Each call to New can return either a new or shared instance, but using shared instances may cause debugging difficulties.
 	New(ctx context.Context, ictx InjectionContext) (Plugin, error)
 }
 
@@ -55,12 +54,12 @@ type InjectionContext struct {
 // Plugin defines the common interface for all plugins in Ika.
 type Plugin interface {
 	// Setup initializes the plugin with the given configuration and context.
-	// If injected multiple times at the same level, Setup will be called multiple times.
 	//
+	// If injected multiple times at the same level, Setup will be called multiple times.
 	// If injected at a level where the plugin can not operate, an error should be returned.
 	Setup(ctx context.Context, ictx InjectionContext, config map[string]any) error
 
-	// Teardown cleans up resources when the plugin is no longer needed.
+	// Teardown cleans up potential resources used by the plugin.
 	Teardown(ctx context.Context) error
 }
 
