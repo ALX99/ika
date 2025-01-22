@@ -91,7 +91,7 @@ func run(ctx context.Context,
 	defer cancel()
 
 	// Shutdown
-	return flush, errors.Join(s.Shutdown(ctx), router.Shutdown(ctx))
+	return flush, errors.Join(context.Cause(ctx), s.Shutdown(ctx), router.Shutdown(ctx))
 }
 
 func readConfig() (config.Config, error) {
