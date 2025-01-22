@@ -10,7 +10,7 @@ import (
 	"github.com/golang-cz/devslog"
 )
 
-func Initialize(ctx context.Context, cfg config.Logger) func() error {
+func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() error) {
 	cfg.Normalize()
 	w := newBufferedWriter(os.Stdout)
 	var log *slog.Logger
@@ -50,17 +50,16 @@ func Initialize(ctx context.Context, cfg config.Logger) func() error {
 		}
 	}
 
-	slog.SetDefault(log)
-	slog.Info("Logger initialized", "config", cfg)
+	log.Info("Logger initialized", "config", cfg)
 
 	for _, warning := range warnings {
-		slog.LogAttrs(ctx, slog.LevelWarn, warning)
+		log.LogAttrs(ctx, slog.LevelWarn, warning)
 	}
 
 	if cfg.FlushInterval.Dur().Milliseconds() <= 10 {
 		w.SetBuffered(false)
 		log.LogAttrs(ctx, slog.LevelDebug, "Log buffering disabled. Flush interval too low")
-		return func() error { return nil }
+		return log, func() error { return nil }
 	}
 
 	go func() {
@@ -78,5 +77,5 @@ func Initialize(ctx context.Context, cfg config.Logger) func() error {
 			}
 		}
 	}()
-	return w.Flush
+	return log, w.Flush
 }

@@ -58,9 +58,9 @@ func run(ctx context.Context,
 	cfg config.Config,
 	opts config.Options,
 ) (func() error, error) {
-	flush := logger.Initialize(ctx, cfg.Ika.Logger)
+	log, flush := logger.Initialize(ctx, cfg.Ika.Logger)
 
-	router, err := router.New(cfg, opts, slog.Default())
+	router, err := router.New(cfg, opts, log)
 	if err != nil {
 		return flush, fmt.Errorf("failed to create router: %w", err)
 	}
