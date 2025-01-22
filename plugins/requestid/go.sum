@@ -1,0 +1,6 @@
+github.com/alx99/ika v0.0.31 h1:m1q6aulLLP4fZQVHSQS9tWPA8tnsLcO/VX+u3tHDa2M=
+github.com/alx99/ika v0.0.31/go.mod h1:LFfGV06WC5D+1XgbJqPnpvFk0P9bgP7/qsAaMcQib4M=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/matryer/is v1.4.1 h1:55ehd8zaGABKLXQUe2awZ99BD/PTc2ls+KV/dXphgEQ=
+github.com/matryer/is v1.4.1/go.mod h1:8I/i5uYgLzgsgEloJE1U6xx5HkBQpAZvepWuujKwMRU=
