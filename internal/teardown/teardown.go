@@ -3,6 +3,7 @@ package teardown
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 type (
@@ -22,7 +23,9 @@ func (t Teardowner) Add(teardown ...TeardownFunc) Teardowner {
 func (t Teardowner) Teardown(ctx context.Context) error {
 	var err error
 	for _, teardown := range t {
-		err = errors.Join(err, teardown(ctx))
+		tearDownCtx, cancel := context.WithTimeoutCause(ctx, 5*time.Second, errors.New("teardown timeout exceeded"))
+		err = errors.Join(err, teardown(tearDownCtx))
+		cancel()
 	}
 	return err
 }
