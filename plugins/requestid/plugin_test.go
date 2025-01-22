@@ -9,23 +9,24 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/alx99/ika"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
+	"github.com/segmentio/ksuid"
 )
 
 func TestModifyRequest_uuidv7(t *testing.T) {
 	is := is.New(t)
 	t.Parallel()
 	reqIDHeader := "X-Request-ID"
-	p := &requestID{
-		cfg: config{
-			Header:   reqIDHeader,
-			Override: false,
-			Append:   false,
-			Variant:  uuidV7,
-		},
-	}
-	var err error
+	p := plugin{}
+	cfg := make(map[string]any)
+	cfg["Header"] = reqIDHeader
+	cfg["Variant"] = vUUIDv7
+
+	err := p.Setup(context.Background(), ika.InjectionContext{}, cfg)
+	is.NoErr(err)
+
 	r := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 
 	// Test setting request ID
@@ -48,6 +49,7 @@ func TestModifyRequest_uuidv7(t *testing.T) {
 	is.Equal(reqID, reqID2)
 	reqID2 = assertUUID(t, vals[1])
 	is.True(reqID != reqID2)
+	is.True(len(vals) == 2)
 
 	// Test overriding
 	p.cfg.Override = true
@@ -100,6 +102,40 @@ func BenchmarkRand(b *testing.B) {
 		buf := make([]byte, 16)
 		for i := 0; i < b.N; i++ {
 			_, err := cha.Read(buf)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+func BenchmarkIDGeneration(b *testing.B) {
+	seed := [32]byte{}
+	rand.Read(seed[:])
+	cha := rrand2.NewChaCha8(seed)
+	ksuid.SetRand(cha)
+	uuid.SetRand(cha)
+	uuid.EnableRandPool()
+
+	b.Run("ksuid", func(b *testing.B) {
+		_, err := ksuid.NewRandom()
+		if err != nil {
+			b.Fatal(err)
+		}
+	})
+
+	b.Run("uuidv7", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := uuid.NewV7()
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("uuidv4", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := uuid.NewRandom()
 			if err != nil {
 				b.Fatal(err)
 			}

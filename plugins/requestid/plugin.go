@@ -3,26 +3,24 @@ package requestid
 import (
 	"context"
 	cryptoRand "crypto/rand"
+	"errors"
 	"math/rand/v2"
 	"net/http"
 
 	"github.com/alx99/ika"
 	"github.com/google/uuid"
+	"github.com/segmentio/ksuid"
 )
 
-type requestID struct {
-	cfg config
+type plugin struct {
+	cfg   config
+	genID func() (string, error)
 }
 
-func (p *requestID) ModifyRequest(r *http.Request) (*http.Request, error) {
-	var reqID string
-
-	if p.cfg.Variant == uuidV7 {
-		uuid, err := uuid.NewV7()
-		if err != nil {
-			return nil, err // impossible to fail
-		}
-		reqID = uuid.String()
+func (p *plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
+	reqID, err := p.genID()
+	if err != nil {
+		return nil, err
 	}
 
 	if p.cfg.Override {
@@ -38,34 +36,72 @@ func (p *requestID) ModifyRequest(r *http.Request) (*http.Request, error) {
 	return r, nil
 }
 
-func (*requestID) Name() string {
+func (*plugin) Name() string {
 	return "requestID"
 }
 
-func (*requestID) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
-	return &requestID{}, nil
+func (*plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
+	return &plugin{}, nil
 }
 
-func (p *requestID) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
-	seed := [32]byte{}
-	_, err := cryptoRand.Read(seed[:])
-	if err != nil {
-		return err
-	}
-	uuid.SetRand(rand.NewChaCha8(seed))
-	uuid.EnableRandPool()
-
+func (p *plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
 	if err := toStruct(config, &p.cfg); err != nil {
 		return err
 	}
-	return p.cfg.validate()
+
+	if err := p.cfg.validate(); err != nil {
+		return err
+	}
+
+	var err error
+	p.genID, err = makeRandFun(p.cfg.Variant)
+	return err
 }
 
-func (*requestID) Teardown(context.Context) error {
+func (*plugin) Teardown(context.Context) error {
 	return nil
 }
 
+func makeRandFun(variant string) (func() (string, error), error) {
+	seed := [32]byte{}
+	_, err := cryptoRand.Read(seed[:])
+	if err != nil {
+		return nil, err
+	}
+	chacha := rand.NewChaCha8(seed)
+
+	switch variant {
+	case vUUIDv4:
+		uuid.SetRand(chacha)
+		uuid.EnableRandPool()
+		return func() (string, error) {
+			uuid, err := uuid.NewRandom()
+			if err != nil {
+				return "", err
+			}
+			return uuid.String(), nil
+		}, nil
+	case vUUIDv7:
+		uuid.SetRand(chacha)
+		uuid.EnableRandPool()
+		return func() (string, error) {
+			uuid, err := uuid.NewV7()
+			if err != nil {
+				return "", err
+			}
+			return uuid.String(), nil
+		}, nil
+	case vKSUID:
+		ksuid.SetRand(chacha)
+		return func() (string, error) {
+			ksuid, err := ksuid.NewRandom()
+			return ksuid.String(), err
+		}, nil
+	}
+	return nil, errors.New("unknown variant")
+}
+
 var (
-	_ ika.RequestModifier = &requestID{}
-	_ ika.PluginFactory   = &requestID{}
+	_ ika.RequestModifier = &plugin{}
+	_ ika.PluginFactory   = &plugin{}
 )

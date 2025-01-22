@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 )
 
 type config struct {
@@ -17,12 +18,14 @@ type config struct {
 	Append bool `json:"append"`
 
 	// Variant is the request id variant to generate.
-	// The following variants are supported: UUIDv7
+	// The following variants are supported: UUIDv4, UUIDv7, KSUID
 	Variant string `json:"variant"`
 }
 
 const (
-	uuidV7 = "UUIDv7"
+	vUUIDv4 = "UUIDv4"
+	vUUIDv7 = "UUIDv7"
+	vKSUID  = "KSUID"
 )
 
 func (c *config) validate() error {
@@ -30,7 +33,11 @@ func (c *config) validate() error {
 		return errors.New("header is required")
 	}
 
-	if c.Variant != uuidV7 {
+	if !slices.Contains([]string{
+		vUUIDv4,
+		vUUIDv7,
+		vKSUID,
+	}, c.Variant) {
 		return errors.New("invalid variant")
 	}
 
