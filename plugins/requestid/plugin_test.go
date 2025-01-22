@@ -2,6 +2,9 @@ package requestid
 
 import (
 	"context"
+	"crypto/rand"
+	rrand "math/rand"
+	rrand2 "math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -61,4 +64,45 @@ func assertUUID(t *testing.T, uuidStr string) uuid.UUID {
 	uuid, err := uuid.Parse(uuidStr)
 	is.NoErr(err)
 	return uuid
+}
+
+func BenchmarkRand(b *testing.B) {
+	b.Run("CryptoRand", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		buf := make([]byte, 16)
+		for i := 0; i < b.N; i++ {
+			_, err := rand.Read(buf)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("RandRand", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		buf := make([]byte, 16)
+		for i := 0; i < b.N; i++ {
+			_, err := rrand.Read(buf)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("ChaChaRand", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		seed := [32]byte{}
+		rand.Read(seed[:])
+		cha := rrand2.NewChaCha8(seed)
+		buf := make([]byte, 16)
+		for i := 0; i < b.N; i++ {
+			_, err := cha.Read(buf)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }

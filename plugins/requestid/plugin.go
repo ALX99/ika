@@ -2,7 +2,8 @@ package requestid
 
 import (
 	"context"
-	"crypto/rand"
+	cryptoRand "crypto/rand"
+	"math/rand/v2"
 	"net/http"
 
 	"github.com/alx99/ika"
@@ -19,7 +20,7 @@ func (p *requestID) ModifyRequest(r *http.Request) (*http.Request, error) {
 	if p.cfg.Variant == uuidV7 {
 		uuid, err := uuid.NewV7()
 		if err != nil {
-			return nil, err // as of Go 1.24 this should never happen
+			return nil, err // impossible to fail
 		}
 		reqID = uuid.String()
 	}
@@ -46,7 +47,12 @@ func (*requestID) New(context.Context, ika.InjectionContext) (ika.Plugin, error)
 }
 
 func (p *requestID) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
-	uuid.SetRand(rand.Reader)
+	seed := [32]byte{}
+	_, err := cryptoRand.Read(seed[:])
+	if err != nil {
+		return err
+	}
+	uuid.SetRand(rand.NewChaCha8(seed))
 	uuid.EnableRandPool()
 
 	if err := toStruct(config, &p.cfg); err != nil {
