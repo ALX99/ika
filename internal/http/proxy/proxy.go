@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"context"
-	"log"
+	stdlog "log"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -24,11 +24,11 @@ type Proxy struct {
 
 type keyErr struct{}
 
-func NewProxy(cfg Config) (*Proxy, error) {
+func NewProxy(log *slog.Logger, cfg Config) (*Proxy, error) {
 	rp := httputil.ReverseProxy{
 		BufferPool: cfg.BufferPool,
 		Transport:  cfg.Transport,
-		ErrorLog:   log.New(slogIOWriter{}, "httputil.ReverseProxy ", log.LstdFlags),
+		ErrorLog:   stdlog.New(slogIOWriter{log: log}, "httputil.ReverseProxy ", stdlog.LstdFlags),
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			newReq := r.WithContext(context.WithValue(r.Context(), keyErr{}, err))
 			*r = *newReq
@@ -61,9 +61,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-type slogIOWriter struct{}
+type slogIOWriter struct{ log *slog.Logger }
 
-func (slogIOWriter) Write(p []byte) (n int, err error) {
-	slog.Error(string(p))
+func (s slogIOWriter) Write(p []byte) (n int, err error) {
+	s.log.Error(string(p))
 	return len(p), nil
 }

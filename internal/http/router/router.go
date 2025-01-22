@@ -58,14 +58,14 @@ func (r *Router) Build(ctx context.Context) error {
 }
 
 func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Namespace) error {
-	nsLog := r.log.With(slog.String("namespace", nsName))
+	log := r.log.With(slog.String("namespace", nsName))
 	var transport http.RoundTripper = makeTransport(ns.Transport)
 
 	cache := iplugin.NewPluginCache(r.opts.Plugins)
 	ictx := ika.InjectionContext{
 		Namespace: nsName,
 		Level:     ika.LevelNamespace,
-		Logger:    nsLog,
+		Logger:    log,
 	}
 
 	wrapTransport, teardown, err := iplugin.UsePlugins(ctx, ictx, cache, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
@@ -79,7 +79,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
 
-	p, err := proxy.NewProxy(proxy.Config{
+	p, err := proxy.NewProxy(log, proxy.Config{
 		Transport:  transport,
 		Namespace:  nsName,
 		BufferPool: pool.NewBufferPool(),
@@ -106,7 +106,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				Namespace:   nsName,
 				PathPattern: pattern,
 				Level:       ika.LevelPath,
-				Logger:      nsLog,
+				Logger:      log,
 			}
 
 			cache = iplugin.NewPluginCache(r.opts.Plugins)
@@ -146,7 +146,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				}
 
 				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
-				mux.Handle(pattern, ika.ToHTTPHandler(nsChain, buildErrHandler(nsLog)))
+				mux.Handle(pattern, ika.ToHTTPHandler(nsChain, buildErrHandler(log)))
 			}
 		}
 	}
