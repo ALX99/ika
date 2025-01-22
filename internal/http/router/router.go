@@ -181,19 +181,14 @@ func (r *Router) makePluginChain(ctx context.Context, ictx ika.InjectionContext,
 }
 
 func makeTransport(cfg config.Transport) *http.Transport {
-	// todo allow configure
 	d := net.Dialer{
-		Timeout:       0,
-		FallbackDelay: 0,
+		Timeout:       cfg.Dialer.Timeout.Dur(),
+		FallbackDelay: cfg.Dialer.FallbackDelay.Dur(),
 		KeepAliveConfig: net.KeepAliveConfig{
-			Enable:   true,
-			Idle:     0,
-			Interval: 0,
-			Count:    0,
-		},
-		Resolver: &net.Resolver{
-			PreferGo:     true,
-			StrictErrors: false,
+			Enable:   cfg.Dialer.KeepAliveConfig.Enable,
+			Idle:     cfg.Dialer.KeepAliveConfig.Idle.Dur(),
+			Interval: cfg.Dialer.KeepAliveConfig.Interval.Dur(),
+			Count:    cfg.Dialer.KeepAliveConfig.Count,
 		},
 	}
 	return &http.Transport{

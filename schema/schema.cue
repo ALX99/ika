@@ -149,6 +149,47 @@ package schema
 	// To use a custom dialer or TLS config and still attempt HTTP/2
 	// upgrades, set this to true.
 	forceAttemptHTTP2?: bool
+
+	// dialer specifies the dialer configuration for the transport.
+	dialer: #Dialer
+}
+
+#Dialer: {
+	// timeout is the maximum amount of time a dial will wait for a connect to complete.
+	// If Deadline is also set, it may fail earlier.
+	// The default is no timeout.
+	// When using TCP and dialing a host name with multiple IP addresses, the timeout may be divided between them.
+	// With or without a timeout, the operating system may impose its own earlier timeout.
+	// For instance, TCP timeouts are often around 3 minutes.
+	timeout?: string
+
+	// fallbackDelay specifies the length of time to wait before spawning a RFC 6555 Fast Fallback connection.
+	// That is, this is the amount of time to wait for IPv6 to succeed before assuming that IPv6 is misconfigured and falling back to IPv4.
+	// If zero, a default delay of 300ms is used.
+	// A negative value disables Fast Fallback support.
+	fallbackDelay?: string
+
+	// keepAliveConfig specifies the keep-alive probe configuration for an active network connection.
+	keepAliveConfig?: #KeepAliveConfig
+}
+
+#KeepAliveConfig: {
+	// enable, if true, keep-alive probes are enabled.
+	enable?: bool
+
+	// idle is the time that the connection must be idle before
+	// the first keep-alive probe is sent.
+	// If zero, a default value of 15 seconds is used.
+	idle?: string
+
+	// interval is the time between keep-alive probes.
+	// If zero, a default value of 15 seconds is used.
+	interval?: string
+
+	// count is the maximum number of keep-alive probes that
+	// can go unanswered before dropping a connection.
+	// If zero, a default value of 9 is used.
+	count?: int
 }
 
 #Namespace: {
