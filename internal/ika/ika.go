@@ -23,7 +23,7 @@ var start = time.Now()
 
 // Run starts Ika
 func Run(configPath string, options config.Options) {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
 	defer cancel()
 
 	cfg, err := config.Read(configPath)
