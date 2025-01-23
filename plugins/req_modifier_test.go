@@ -11,7 +11,7 @@ import (
 )
 
 func BenchmarkRewritePath(b *testing.B) {
-	p, err := ReqModifier{}.New(context.Background(), ika.InjectionContext{})
+	p, err := (&ReqModifier{}).New(context.Background(), ika.InjectionContext{})
 	if err != nil {
 		b.Fatal(err)
 	}

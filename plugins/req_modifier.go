@@ -46,11 +46,11 @@ type ReqModifier struct {
 	once sync.Once
 }
 
-func (ReqModifier) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
+func (*ReqModifier) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
 	return &ReqModifier{}, nil
 }
 
-func (ReqModifier) Name() string {
+func (*ReqModifier) Name() string {
 	return "basic-modifier"
 }
 
@@ -90,11 +90,11 @@ func (rm *ReqModifier) Setup(ctx context.Context, ictx ika.InjectionContext, con
 	return nil
 }
 
-func (rm *ReqModifier) ModifyRequest(r *http.Request) (*http.Request, error) {
+func (rm *ReqModifier) ModifyRequest(r *http.Request) error {
 	if rm.pathRewriteEnabled {
 		rm.once.Do(func() { rm.setupPathRewrite(r.Pattern) })
 		if err := rm.rewritePath(r); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -102,7 +102,7 @@ func (rm *ReqModifier) ModifyRequest(r *http.Request) (*http.Request, error) {
 		rm.rewriteHost(r)
 	}
 
-	return r, nil
+	return nil
 }
 
 func (rm *ReqModifier) rewritePath(r *http.Request) error {
@@ -138,7 +138,7 @@ func (rm *ReqModifier) rewritePath(r *http.Request) error {
 		slog.String("from", path), slog.String("to", r.URL.RawPath))
 	return nil
 }
-func (ReqModifier) Teardown(context.Context) error { return nil }
+func (*ReqModifier) Teardown(context.Context) error { return nil }
 
 func (rm *ReqModifier) rewriteHost(r *http.Request) {
 	if !rm.retainHostHeader {

@@ -8,17 +8,6 @@ import (
 	"github.com/alx99/ika/internal/http/request"
 )
 
-// TODO
-type MiddlewareHook interface {
-	// HookMiddleware wraps the provided HTTP handler with custom middleware logic.
-	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
-}
-
-// InjectionLevel defines the granularity of plugin injection.
-type (
-	InjectionLevel uint8
-)
-
 const (
 	// LevelPath specifies injection at a specific path level.
 	LevelPath InjectionLevel = iota
@@ -26,6 +15,20 @@ const (
 	// LevelNamespace specifies injection at a namespace level.
 	LevelNamespace
 )
+
+// InjectionLevel defines the granularity of plugin injection.
+type (
+	InjectionLevel uint8
+)
+
+// ErrorHandler is a function that handles errors that occur during request processing.
+type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error)
+
+// TODO
+type MiddlewareHook interface {
+	// HookMiddleware wraps the provided HTTP handler with custom middleware logic.
+	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
+}
 
 // PluginFactory is responsible for creating plugin instances.
 type PluginFactory interface {
@@ -70,7 +73,7 @@ type RequestModifier interface {
 	Plugin
 
 	// ModifyRequest processes and returns the modified HTTP request.
-	ModifyRequest(r *http.Request) (*http.Request, error)
+	ModifyRequest(r *http.Request) error
 }
 
 // Middleware enables plugins to modify both requests and responses.
@@ -90,18 +93,18 @@ type TripperHooker interface {
 	HookTripper(tripper http.RoundTripper) (http.RoundTripper, error)
 }
 
-// FirstHandlerHooker enables plugins to hijack the first handler executed for a request.
+// OnRequestHooker enables hooks that run when a request is received.
 //
 // It is semantically equivalent to a middleware, but is executed before all other middleware
 // and thus is useful for things such as tracing or logging.
-type FirstHandlerHooker interface {
+type OnRequestHooker interface {
 	Plugin
 	Middleware
 }
 
 // Handler is identical to [http.Handler] except that it is able to return an error.
 type Handler interface {
-	ServeHTTP(http.ResponseWriter, *http.Request) error
+	ServeHTTP(w http.ResponseWriter, r *http.Request) error
 }
 
 // HandlerFunc is an adapter to allow the use of ordinary functions as [Handler]s.
@@ -111,21 +114,13 @@ func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return f(w, r)
 }
 
-// FromHTTPHandler turns an [http.Handler] into an [Handler].
-func FromHTTPHandler(h http.Handler) Handler {
-	return HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-		h.ServeHTTP(w, r)
-		return nil
-	})
-}
-
 // ToHTTPHandler converts an [Handler] into an [http.Handler] using [HandlerFunc.ToHTTPHandler].
-func ToHTTPHandler(h Handler, errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
+func ToHTTPHandler(h Handler, errHandler ErrorHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := h.ServeHTTP(w, r)
 		if err != nil {
-			if errorHandler != nil {
-				errorHandler(w, r, err)
+			if errHandler != nil {
+				errHandler(w, r, err)
 				return
 			}
 			defualtErrorHandler(w, r, err)
@@ -136,12 +131,12 @@ func ToHTTPHandler(h Handler, errorHandler func(http.ResponseWriter, *http.Reque
 // ToHTTPHandler converts an [Handler] into an [http.Handler].
 // If the function returns an error, it will be written to the response using the provided error handler.
 // If the error handler is nil, the error will be written as a 500 Internal Server Error.
-func (f HandlerFunc) ToHTTPHandler(errorHandler func(http.ResponseWriter, *http.Request, error)) http.Handler {
+func (f HandlerFunc) ToHTTPHandler(errHandler ErrorHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := f.ServeHTTP(w, r)
 		if err != nil {
-			if errorHandler != nil {
-				errorHandler(w, r, err)
+			if errHandler != nil {
+				errHandler(w, r, err)
 				return
 			}
 			defualtErrorHandler(w, r, err)

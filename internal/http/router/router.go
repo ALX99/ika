@@ -99,7 +99,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	r.tder.Add(teardown)
 
 	for _, mount := range ns.Mounts {
-		mux := caramel.Wrap(r.mux).Mount(mount)
+		c := caramel.Wrap(r.mux).Mount(mount)
 
 		for pattern, path := range ns.Paths {
 			ictx := ika.InjectionContext{
@@ -146,7 +146,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				}
 
 				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
-				mux.Handle(pattern, ika.ToHTTPHandler(nsChain, buildErrHandler(log)))
+				c.Handle(pattern, ika.ToHTTPHandler(nsChain, buildErrHandler(log)))
 			}
 		}
 	}
@@ -207,7 +207,7 @@ func makeTransport(cfg config.Transport) *http.Transport {
 	}
 }
 
-func buildErrHandler(log *slog.Logger) func(http.ResponseWriter, *http.Request, error) {
+func buildErrHandler(log *slog.Logger) ika.ErrorHandler {
 	return func(w http.ResponseWriter, r *http.Request, err error) {
 		log.LogAttrs(r.Context(),
 			slog.LevelError,

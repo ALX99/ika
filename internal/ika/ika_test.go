@@ -312,7 +312,7 @@ func runServer(t *testing.T) (*http.Client, string) {
 
 	opts := config.Options{
 		Plugins: map[string]ika.PluginFactory{
-			"basic-modifier": plugins.ReqModifier{},
+			"basic-modifier": &plugins.ReqModifier{},
 			"accessLog":      plugins.AccessLogger{},
 		},
 	}

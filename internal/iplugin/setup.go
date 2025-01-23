@@ -110,7 +110,7 @@ func ChainFromReqModifiers(reqModifiers []initializedPlugin[ika.RequestModifier]
 			Name: rm.name,
 			MiddlewareFunc: func(next ika.Handler) ika.Handler {
 				return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-					r, err := rm.plugin.ModifyRequest(r)
+					err := rm.plugin.ModifyRequest(r)
 					if err != nil {
 						return err
 					}
@@ -137,7 +137,7 @@ func MakeTransportWrapper(hooks []initializedPlugin[ika.TripperHooker]) func(htt
 	return fn
 }
 
-func ChainFirstHandler(hooks []initializedPlugin[ika.FirstHandlerHooker]) chain.Chain {
+func ChainFirstHandler(hooks []initializedPlugin[ika.OnRequestHooker]) chain.Chain {
 	cons := make([]chain.Constructor, len(hooks))
 	for i := range hooks {
 		cons[i] = chain.Constructor{

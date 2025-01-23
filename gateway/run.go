@@ -16,6 +16,7 @@ var (
 	configPath   = flag.String("config", "ika.yaml", "Path to the configuration file.")
 )
 
+// Run runs Ika gateway.
 func Run(opts ...Option) {
 	flag.Parse()
 	if *printVersion {
@@ -37,7 +38,8 @@ func Run(opts ...Option) {
 // Option represents an option for Run.
 type Option func(*config.Options) error
 
-// WithPlugin registers a plugin.
+// WithPlugin registers a plugin factory with Ika.
+// Once registered, the plugin which the factory creates can be used in the configuration file.
 func WithPlugin(factory ika.PluginFactory) Option {
 	return func(cfg *config.Options) error {
 		if cfg.Plugins == nil {
