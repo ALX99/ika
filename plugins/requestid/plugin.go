@@ -37,7 +37,7 @@ func (p *plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
 }
 
 func (*plugin) Name() string {
-	return "requestID"
+	return "request-id"
 }
 
 func (*plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
