@@ -1,5 +1,9 @@
 github.com/alx99/ika v0.0.32 h1:QHFBKGPndoHkkeW5od1pPEt9sbs2AWBYxp1mNzF0n2E=
 github.com/alx99/ika v0.0.32/go.mod h1:2E+2ybb1BiaP8WAO8Q7YJGI9EtdEyuYXhLBXJA87sm4=
+github.com/alx99/ika/plugins/accesslog v0.0.0-20250125091555-87b3608a528f h1:/h6BNKeQy2STFftZ99Npc2ZtgvFFURzhPclk0nS9Oe0=
+github.com/alx99/ika/plugins/accesslog v0.0.0-20250125091555-87b3608a528f/go.mod h1:AYQwZg+sPIW1crwZVy9ASNeCCgtd1WgXBMzqxcZpJoI=
+github.com/alx99/ika/plugins/accesslog v0.0.0-20250125092701-4ad32e3c0adf h1:gt5OA68iBvcHAlF03znxpqEp1bIonq6L0p83I9eC1Kc=
+github.com/alx99/ika/plugins/accesslog v0.0.0-20250125092701-4ad32e3c0adf/go.mod h1:AYQwZg+sPIW1crwZVy9ASNeCCgtd1WgXBMzqxcZpJoI=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

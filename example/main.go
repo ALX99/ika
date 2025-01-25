@@ -11,6 +11,7 @@ import (
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/gateway"
 	"github.com/alx99/ika/plugins"
+	"github.com/alx99/ika/plugins/accesslog"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -68,7 +69,7 @@ func main() {
 	gateway.Run(
 		gateway.WithPlugin(&noCache{}),
 		gateway.WithPlugin(&tracer{}),
-		gateway.WithPlugin(&plugins.AccessLogger{}),
+		gateway.WithPlugin(&accesslog.Plugin{}),
 		gateway.WithPlugin(&plugins.ReqModifier{}),
 	)
 }
