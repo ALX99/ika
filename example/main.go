@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	version                        = "unknown"
-	_       ika.TripperHooker      = &tracer{}
-	_       ika.MiddlewareHook     = &tracer{}
-	_       ika.FirstHandlerHooker = &tracer{}
+	version                     = "unknown"
+	_       ika.TripperHooker   = &tracer{}
+	_       ika.MiddlewareHook  = &tracer{}
+	_       ika.OnRequestHooker = &tracer{}
 )
 
 var _ ika.Middleware = &noCache{}
@@ -68,8 +68,8 @@ func main() {
 	gateway.Run(
 		gateway.WithPlugin(&noCache{}),
 		gateway.WithPlugin(&tracer{}),
-		gateway.WithPlugin(plugins.AccessLogger{}),
-		gateway.WithPlugin(plugins.ReqModifier{}),
+		gateway.WithPlugin(&plugins.AccessLogger{}),
+		gateway.WithPlugin(&plugins.ReqModifier{}),
 	)
 }
 
@@ -117,7 +117,10 @@ func (t *tracer) Handler(next ika.Handler) ika.Handler {
 		otelhttp.WithMetricAttributesFn(metaDataAttrs(t.ns)),
 	)
 
-	return ika.FromHTTPHandler(otelHandler)
+	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		otelHandler.ServeHTTP(w, r)
+		return nil
+	})
 }
 
 func (w *tracer) HookMiddleware(_ context.Context, name string, next http.Handler) (http.Handler, error) {
