@@ -1,4 +1,4 @@
-module github.com/alx99/ika/requestid
+module github.com/alx99/ika/plugins/requestid
 
 go 1.23.5
 

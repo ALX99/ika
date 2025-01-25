@@ -1,4 +1,4 @@
-module github.com/alx99/ika/accesslog
+module github.com/alx99/ika/plugins/accesslog
 
 go 1.23.5
 
