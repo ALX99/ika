@@ -1,4 +1,4 @@
-package requestid
+package basicauth
 
 import (
 	"net/url"
