@@ -19,7 +19,7 @@ namespaces:
           host: http://httpbun
 
     middlewares:
-      - name: accessLog
+      - name: access-log
     paths:
       /:
         middlewares:
@@ -37,7 +37,7 @@ namespaces:
         config:
           host: https://httpbun.com
     middlewares:
-      - name: accessLog
+      - name: access-log
     paths:
       /: {}
 
@@ -51,6 +51,6 @@ namespaces:
         config:
           host: https://go.dev
     middlewares:
-      - name: accessLog
+      - name: access-log
     paths:
       /: {}

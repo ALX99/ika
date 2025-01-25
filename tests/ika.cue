@@ -16,11 +16,6 @@ servers: [...schema.#Server]
 namespaces: schema.#Namespaces
 
 namespaces: [_]: {
-	// Add access log middleware to all namespaces
-	middlewares: *[
-		{name: "accessLog"},
-	] | _
-
 	reqModifiers: *[
 		schema.#Plugin & {
 			name: "basic-modifier"

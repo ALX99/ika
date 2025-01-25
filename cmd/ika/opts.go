@@ -9,5 +9,4 @@ import (
 
 func init() {
 	opts = append(opts, gateway.WithPlugin(&plugins.ReqModifier{}))
-	opts = append(opts, gateway.WithPlugin(&plugins.AccessLogger{}))
 }

@@ -68,7 +68,7 @@ namespaces:
         config:
           host: https://dummyjson.com
     middlewares:
-      - name: accessLog
+      - name: access-log
     paths:
       /users: {}
 ```
