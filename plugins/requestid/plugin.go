@@ -12,20 +12,20 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-type plugin struct {
+type Plugin struct {
 	cfg   config
 	genID func() (string, error)
 }
 
-func (*plugin) Name() string {
+func (*Plugin) Name() string {
 	return "request-id"
 }
 
-func (*plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
-	return &plugin{}, nil
+func (*Plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
+	return &Plugin{}, nil
 }
 
-func (p *plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
+func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
 	if err := toStruct(config, &p.cfg); err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (p *plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 	return err
 }
 
-func (p *plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
+func (p *Plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
 	reqID, err := p.genID()
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (p *plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
 	return r, nil
 }
 
-func (*plugin) Teardown(context.Context) error {
+func (*Plugin) Teardown(context.Context) error {
 	return nil
 }
 
@@ -102,6 +102,6 @@ func makeRandFun(variant string) (func() (string, error), error) {
 }
 
 var (
-	_ ika.RequestModifier = &plugin{}
-	_ ika.PluginFactory   = &plugin{}
+	_ ika.RequestModifier = &Plugin{}
+	_ ika.PluginFactory   = &Plugin{}
 )

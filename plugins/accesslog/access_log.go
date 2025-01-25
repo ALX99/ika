@@ -10,7 +10,7 @@ import (
 	"github.com/alx99/ika/internal/http/request"
 )
 
-type plugin struct {
+type Plugin struct {
 	cfg pConfig
 
 	ikaPattern     string
@@ -19,15 +19,15 @@ type plugin struct {
 	log            *slog.Logger
 }
 
-func (plugin) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
-	return &plugin{}, nil
+func (Plugin) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
+	return &Plugin{}, nil
 }
 
-func (plugin) Name() string {
+func (Plugin) Name() string {
 	return "access-log"
 }
 
-func (p *plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
+func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	cfg := pConfig{}
 	if err := toStruct(config, &cfg); err != nil {
 		return err
@@ -41,12 +41,12 @@ func (p *plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config ma
 	return nil
 }
 
-func (p *plugin) Handler(next ika.Handler) ika.Handler {
+func (p *Plugin) Handler(next ika.Handler) ika.Handler {
 	p.next = next
 	return p
 }
 
-func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	now := time.Now()
 	err := p.next.ServeHTTP(w, r)
 	end := time.Now()
@@ -68,9 +68,9 @@ func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
-func (plugin) Teardown(context.Context) error { return nil }
+func (Plugin) Teardown(context.Context) error { return nil }
 
-func (p *plugin) makeReqAttrs(r *http.Request) []any {
+func (p *Plugin) makeReqAttrs(r *http.Request) []any {
 	requestAttrs := []any{
 		slog.String("method", r.Method),
 		slog.String("path", request.GetPath(r)),
@@ -96,6 +96,6 @@ func (p *plugin) makeReqAttrs(r *http.Request) []any {
 }
 
 var (
-	_ ika.Middleware    = &plugin{}
-	_ ika.PluginFactory = &plugin{}
+	_ ika.Middleware    = &Plugin{}
+	_ ika.PluginFactory = &Plugin{}
 )
