@@ -41,7 +41,7 @@ func New(cfg config.Config, opts config.Options, log *slog.Logger) (*Router, err
 		mux:  http.NewServeMux(),
 		cfg:  cfg,
 		opts: opts,
-		log:  log.With(slog.String("module", "router")),
+		log:  log,
 	}, nil
 }
 
