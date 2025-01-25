@@ -17,6 +17,44 @@ type plugin struct {
 	next             ika.Handler
 }
 
+func (*plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
+	return &plugin{}, nil
+}
+
+func (*plugin) Name() string {
+	return "basic-auth"
+}
+
+func (p *plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
+	cfg := pConfig{}
+	if err := toStruct(config, &cfg); err != nil {
+		return err
+	}
+
+	if err := cfg.validate(); err != nil {
+		return err
+	}
+
+	if cfg.Incoming != nil {
+		inUser, inPass, err := cfg.Incoming.credentials()
+		if err != nil {
+			return err
+		}
+		p.inUser, p.inPass = []byte(inUser), []byte(inPass)
+	}
+
+	if cfg.Outgoing != nil {
+		var err error
+		p.outUser, p.outPass, err = cfg.Incoming.credentials()
+		if err != nil {
+			return err
+		}
+	}
+	p.inEncoding = cfg.Incoming.Encoding
+
+	return nil
+}
+
 func (p *plugin) Handler(next ika.Handler) ika.Handler {
 	p.next = next
 	return p
@@ -52,44 +90,6 @@ func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return p.next.ServeHTTP(w, r)
-}
-
-func (*plugin) Name() string {
-	return "basic-auth"
-}
-
-func (*plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
-	return &plugin{}, nil
-}
-
-func (p *plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
-	cfg := pConfig{}
-	if err := toStruct(config, &cfg); err != nil {
-		return err
-	}
-
-	if err := cfg.validate(); err != nil {
-		return err
-	}
-
-	if cfg.Incoming != nil {
-		inUser, inPass, err := cfg.Incoming.credentials()
-		if err != nil {
-			return err
-		}
-		p.inUser, p.inPass = []byte(inUser), []byte(inPass)
-	}
-
-	if cfg.Outgoing != nil {
-		var err error
-		p.outUser, p.outPass, err = cfg.Incoming.credentials()
-		if err != nil {
-			return err
-		}
-	}
-	p.inEncoding = cfg.Incoming.Encoding
-
-	return nil
 }
 
 func (*plugin) Teardown(context.Context) error {

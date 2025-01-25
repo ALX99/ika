@@ -17,25 +17,6 @@ type plugin struct {
 	genID func() (string, error)
 }
 
-func (p *plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
-	reqID, err := p.genID()
-	if err != nil {
-		return nil, err
-	}
-
-	if p.cfg.Override {
-		r.Header.Set(p.cfg.Header, reqID)
-	} else if p.cfg.Append {
-		r.Header.Add(p.cfg.Header, reqID)
-	} else {
-		if r.Header.Get(p.cfg.Header) == "" {
-			r.Header.Add(p.cfg.Header, reqID)
-		}
-	}
-
-	return r, nil
-}
-
 func (*plugin) Name() string {
 	return "request-id"
 }
@@ -56,6 +37,25 @@ func (p *plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 	var err error
 	p.genID, err = makeRandFun(p.cfg.Variant)
 	return err
+}
+
+func (p *plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
+	reqID, err := p.genID()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.cfg.Override {
+		r.Header.Set(p.cfg.Header, reqID)
+	} else if p.cfg.Append {
+		r.Header.Add(p.cfg.Header, reqID)
+	} else {
+		if r.Header.Get(p.cfg.Header) == "" {
+			r.Header.Add(p.cfg.Header, reqID)
+		}
+	}
+
+	return r, nil
 }
 
 func (*plugin) Teardown(context.Context) error {
