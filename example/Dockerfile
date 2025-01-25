@@ -17,5 +17,6 @@ COPY --from=build \
   /etc/ssl/certs/ca-certificates.crt \
   /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /bin/example /example
+COPY ika.yaml /ika.yaml
 
 CMD ["/example"]
