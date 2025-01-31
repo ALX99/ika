@@ -1,9 +1,13 @@
 package ika
 
 import (
+	"cmp"
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/alx99/ika/internal/http/request"
 )
@@ -123,7 +127,7 @@ func ToHTTPHandler(h Handler, errHandler ErrorHandler) http.Handler {
 				errHandler(w, r, err)
 				return
 			}
-			defualtErrorHandler(w, r, err)
+			defaultErrorHandler(w, r, err)
 		}
 	})
 }
@@ -139,16 +143,97 @@ func (f HandlerFunc) ToHTTPHandler(errHandler ErrorHandler) http.Handler {
 				errHandler(w, r, err)
 				return
 			}
-			defualtErrorHandler(w, r, err)
+			defaultErrorHandler(w, r, err)
 		}
 	})
 }
 
-func defualtErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+// defaultErrorHandler is the default error handler used by Ika.
+// It writes the error to the response in JSON format if the client accepts JSON,
+// otherwise it writes the error as plain text.
+//
+// If the error implements the following interfaces:
+//
+// status() int
+// typeURI() string
+// title() string
+// detail() string
+//
+// The response will be populated with the appropriate values.
+func defaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	logWriteError := func(err error) {
+		slog.LogAttrs(r.Context(),
+			slog.LevelError,
+			"Error writing error response",
+			slog.String("error", err.Error()))
+	}
+
+	errorResp := struct {
+		Type   string `json:"type,omitzero"`
+		Title  string `json:"title,omitzero"`
+		Detail string `json:"detail,omitzero"`
+		Status int    `json:"status,omitzero"`
+	}{}
+
+	errorResp.Status = http.StatusInternalServerError
+
+	if err, ok := err.(interface{ status() int }); ok {
+		errorResp.Status = err.status()
+	}
+
+	if err, ok := err.(interface{ typeURI() string }); ok {
+		errorResp.Type = err.typeURI()
+	}
+
+	if err, ok := err.(interface{ title() string }); ok {
+		errorResp.Title = err.title()
+	}
+
+	if err, ok := err.(interface{ detail() string }); ok {
+		errorResp.Detail = err.detail()
+	}
+
+	errorResp.Status = cmp.Or(errorResp.Status, http.StatusInternalServerError)
+	w.WriteHeader(errorResp.Status)
+
+	errorResp.Detail = cmp.Or(
+		errorResp.Detail,
+		http.StatusText(errorResp.Status),
+		"An error occurred while processing the request",
+	)
+
 	slog.LogAttrs(r.Context(),
 		slog.LevelError,
 		"Error handling request",
 		slog.String("path", request.GetPath(r)),
 		slog.String("error", err.Error()))
-	http.Error(w, "failed to handle request", http.StatusInternalServerError)
+
+	accept := strings.Split(r.Header.Get("Accept"), ",")
+
+	for i := range accept {
+		if j := strings.Index(accept[i], ";"); j != -1 {
+			accept[i] = accept[i][:j]
+		}
+	}
+
+	h := w.Header()
+	h.Del("Content-Length")
+
+	switch {
+	case slices.Contains(accept, "application/json") || slices.Contains(accept, "*/*"):
+		if err := json.NewEncoder(w).Encode(errorResp); err != nil {
+			logWriteError(err)
+			return
+		}
+		h.Set("Content-Type", "text/json; charset=utf-8")
+		h.Set("X-Content-Type-Options", "nosniff")
+
+	default: // default to plain text
+		if _, err := w.Write([]byte(errorResp.Detail)); err != nil {
+			logWriteError(err)
+			return
+		}
+		h.Set("Content-Type", "text/plain; charset=utf-8")
+		h.Set("X-Content-Type-Options", "nosniff")
+	}
 }
