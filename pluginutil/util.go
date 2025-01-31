@@ -1,6 +1,5 @@
-// Package util provides utility functions for plugins.
-// It is not a plugin itself.
-package util
+// Package pluginutil provides utility functions for plugins.
+package pluginutil
 
 import (
 	"encoding/json"
@@ -10,6 +9,9 @@ import (
 )
 
 // ToStruct unmarshals the given config map to the target struct.
+//
+// For this to work, the target struct must be a pointer to a struct
+// with JSON struct tags.
 func ToStruct(config map[string]any, target any) error {
 	if target == nil {
 		return errors.New("target is nil")
