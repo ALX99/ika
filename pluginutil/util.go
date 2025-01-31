@@ -17,8 +17,8 @@ func ToStruct(config map[string]any, target any) error {
 		return errors.New("target is nil")
 	}
 
-	if reflect.ValueOf(target).Kind() == reflect.Ptr {
-		target = reflect.ValueOf(target).Elem().Interface()
+	if reflect.ValueOf(target).Kind() != reflect.Ptr {
+		return fmt.Errorf("target must be a pointer")
 	}
 
 	data, err := json.Marshal(config)
