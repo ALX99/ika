@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/alx99/ika"
+	"github.com/alx99/ika/pluginutil"
 	"github.com/google/uuid"
 	"github.com/segmentio/ksuid"
 )
@@ -26,7 +27,7 @@ func (*Plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
 }
 
 func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
-	if err := toStruct(config, &p.cfg); err != nil {
+	if err := pluginutil.ToStruct(config, &p.cfg); err != nil {
 		return err
 	}
 
@@ -39,10 +40,10 @@ func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 	return err
 }
 
-func (p *Plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
+func (p *Plugin) ModifyRequest(r *http.Request) error {
 	reqID, err := p.genID()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if p.cfg.Override {
@@ -55,7 +56,7 @@ func (p *Plugin) ModifyRequest(r *http.Request) (*http.Request, error) {
 		}
 	}
 
-	return r, nil
+	return nil
 }
 
 func (*Plugin) Teardown(context.Context) error {

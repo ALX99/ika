@@ -1,5 +1,7 @@
 github.com/alx99/ika v0.0.32 h1:QHFBKGPndoHkkeW5od1pPEt9sbs2AWBYxp1mNzF0n2E=
 github.com/alx99/ika v0.0.32/go.mod h1:2E+2ybb1BiaP8WAO8Q7YJGI9EtdEyuYXhLBXJA87sm4=
+github.com/alx99/ika/pluginutil v1.0.0 h1:rmcQj5fyV8VD2LEGioCme5Vu1pLnMl0smM5pQLkVKic=
+github.com/alx99/ika/pluginutil v1.0.0/go.mod h1:5VMbpWNCrpkQeuw77RQGRTyuA7GQLwc67FOBwAHEzQI=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/segmentio/ksuid v1.0.4 h1:sBo2BdShXjmcugAMwjugoGUdUV0pcxY5mW4xKRn3v4c=
