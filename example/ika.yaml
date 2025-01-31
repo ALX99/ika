@@ -14,6 +14,11 @@ namespaces:
     hooks:
       - name: tracer
     reqModifiers:
+      - name: request-id
+        config:
+          header: X-Request-ID
+          variant: KSUID
+          override: true
       - name: basic-modifier
         config:
           host: http://httpbun
@@ -33,6 +38,11 @@ namespaces:
     hooks:
       - name: tracer
     reqModifiers:
+      - name: request-id
+        config:
+          header: X-Request-ID
+          variant: KSUID
+          override: true
       - name: basic-modifier
         config:
           host: https://httpbun.com
@@ -47,6 +57,11 @@ namespaces:
     hooks:
       - name: tracer
     reqModifiers:
+      - name: request-id
+        config:
+          header: X-Request-ID
+          variant: KSUID
+          override: true
       - name: basic-modifier
         config:
           host: https://go.dev

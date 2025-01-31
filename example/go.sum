@@ -1,9 +1,11 @@
-github.com/alx99/ika v0.0.32 h1:QHFBKGPndoHkkeW5od1pPEt9sbs2AWBYxp1mNzF0n2E=
-github.com/alx99/ika v0.0.32/go.mod h1:2E+2ybb1BiaP8WAO8Q7YJGI9EtdEyuYXhLBXJA87sm4=
-github.com/alx99/ika/plugins/accesslog v0.0.0-20250125091555-87b3608a528f h1:/h6BNKeQy2STFftZ99Npc2ZtgvFFURzhPclk0nS9Oe0=
-github.com/alx99/ika/plugins/accesslog v0.0.0-20250125091555-87b3608a528f/go.mod h1:AYQwZg+sPIW1crwZVy9ASNeCCgtd1WgXBMzqxcZpJoI=
+github.com/alx99/ika v0.0.33 h1:+NT6tnlcSd2O3pnQVQFgJtyRHHw+EYmCG6jakVepefo=
+github.com/alx99/ika v0.0.33/go.mod h1:2E+2ybb1BiaP8WAO8Q7YJGI9EtdEyuYXhLBXJA87sm4=
 github.com/alx99/ika/plugins/accesslog v0.0.0-20250125092701-4ad32e3c0adf h1:gt5OA68iBvcHAlF03znxpqEp1bIonq6L0p83I9eC1Kc=
 github.com/alx99/ika/plugins/accesslog v0.0.0-20250125092701-4ad32e3c0adf/go.mod h1:AYQwZg+sPIW1crwZVy9ASNeCCgtd1WgXBMzqxcZpJoI=
+github.com/alx99/ika/plugins/requestid v0.0.1 h1:nD6xH94AgFLmP+wzXjXc51CkEAZW39rokg7VxAuDGvw=
+github.com/alx99/ika/plugins/requestid v0.0.1/go.mod h1:f6coNioUH+tCg7bALtgy+5DqMT9GQuGQEIrkns+M9GM=
+github.com/alx99/ika/pluginutil v1.0.0 h1:rmcQj5fyV8VD2LEGioCme5Vu1pLnMl0smM5pQLkVKic=
+github.com/alx99/ika/pluginutil v1.0.0/go.mod h1:5VMbpWNCrpkQeuw77RQGRTyuA7GQLwc67FOBwAHEzQI=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -63,6 +65,8 @@ github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 h1:o4JXh1EVt
 github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
+github.com/segmentio/ksuid v1.0.4 h1:sBo2BdShXjmcugAMwjugoGUdUV0pcxY5mW4xKRn3v4c=
+github.com/segmentio/ksuid v1.0.4/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
 github.com/shirou/gopsutil/v4 v4.24.11 h1:WaU9xqGFKvFfsUv94SXcUPD7rCkU0vr/asVdQOBZNj8=
 github.com/shirou/gopsutil/v4 v4.24.11/go.mod h1:s4D/wg+ag4rG0WO7AiTj2BeYCRhym0vM7DHbZRxnIT8=
 github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=

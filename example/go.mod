@@ -3,8 +3,9 @@ module github.com/alx99/ika/example
 go 1.23.5
 
 require (
-	github.com/alx99/ika v0.0.32
+	github.com/alx99/ika v0.0.33
 	github.com/alx99/ika/plugins/accesslog v0.0.0-20250125092701-4ad32e3c0adf
+	github.com/alx99/ika/plugins/requestid v0.0.1
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/grafana/pyroscope-go v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.58.0
@@ -19,6 +20,7 @@ require (
 )
 
 require (
+	github.com/alx99/ika/pluginutil v1.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -32,6 +34,7 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/segmentio/ksuid v1.0.4 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.11 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.9.0 // indirect

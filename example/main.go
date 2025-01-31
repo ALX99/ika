@@ -12,6 +12,7 @@ import (
 	"github.com/alx99/ika/gateway"
 	"github.com/alx99/ika/plugins"
 	"github.com/alx99/ika/plugins/accesslog"
+	"github.com/alx99/ika/plugins/requestid"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -67,6 +68,7 @@ func (w *noCache) Handler(next ika.Handler) ika.Handler {
 func main() {
 	defer setupMonitoring()()
 	gateway.Run(
+		gateway.WithPlugin(&requestid.Plugin{}),
 		gateway.WithPlugin(&noCache{}),
 		gateway.WithPlugin(&tracer{}),
 		gateway.WithPlugin(&accesslog.Plugin{}),
