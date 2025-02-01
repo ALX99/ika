@@ -14,6 +14,7 @@ import (
 )
 
 type Plugin struct {
+	next  ika.Handler
 	cfg   config
 	genID func() (string, error)
 }
@@ -40,7 +41,12 @@ func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 	return err
 }
 
-func (p *Plugin) ModifyRequest(r *http.Request) error {
+func (p *Plugin) Handler(next ika.Handler) ika.Handler {
+	p.next = next
+	return p
+}
+
+func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	reqID, err := p.genID()
 	if err != nil {
 		return err
@@ -56,7 +62,7 @@ func (p *Plugin) ModifyRequest(r *http.Request) error {
 		}
 	}
 
-	return nil
+	return p.next.ServeHTTP(w, r)
 }
 
 func (*Plugin) Teardown(context.Context) error {
@@ -103,6 +109,6 @@ func makeRandFun(variant string) (func() (string, error), error) {
 }
 
 var (
-	_ ika.RequestModifier = &Plugin{}
+	_ ika.OnRequestHooker = &Plugin{}
 	_ ika.PluginFactory   = &Plugin{}
 )
