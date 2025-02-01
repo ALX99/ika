@@ -1,0 +1,25 @@
+#!/bin/bash
+# This script is used to tidy up the project.
+
+set -euo pipefail
+
+
+dirs=(
+  "."
+  "example"
+  "plugins"
+)
+
+for dir in "plugins"/*; do
+  if [[ -d "$dir" ]]; then
+    dirs+=("$dir")
+  fi
+done
+
+for dir in "${dirs[@]}"; do
+  echo "Tidying up $dir..."
+  pushd "$dir"
+  go mod tidy
+  popd
+done
+

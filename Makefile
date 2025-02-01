@@ -94,3 +94,7 @@ release:
 		git push origin $$latest_tag; \
 		echo "Pushed tag $$latest_tag"; \
 	fi
+
+.PHONY: tidy
+tidy:
+	./scripts/tidy
