@@ -49,6 +49,10 @@ func (ps *PluginCache) getPlugin(ctx context.Context, ictx ika.InjectionContext,
 	return plugin, true, nil
 }
 
+func (ps *PluginCache) dropPlugin(name string) {
+	delete(ps.plugins, name)
+}
+
 // UsePlugins sets up plugins and calls the provided function with the set up plugins.
 // Plugins are set up in the order they are provided in the config.
 func UsePlugins[T ika.Plugin, V any](ctx context.Context,
@@ -56,6 +60,7 @@ func UsePlugins[T ika.Plugin, V any](ctx context.Context,
 	cache *PluginCache,
 	pluginCfg config.Plugins,
 	fn func(t []initializedPlugin[T]) V,
+	mustImpl bool,
 ) (V, teardown.TeardownFunc, error) {
 	var t T
 	var v V
@@ -63,17 +68,23 @@ func UsePlugins[T ika.Plugin, V any](ctx context.Context,
 	var tder teardown.Teardowner
 
 	for _, cfg := range pluginCfg {
-		plugin, setup, err := cache.getPlugin(ctx, ictx, cfg)
+		plugin, created, err := cache.getPlugin(ctx, ictx, cfg)
 		if err != nil {
 			return v, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 		}
 
-		if setup {
-			tder.Add(plugin.Teardown)
-			castedPlugin, ok := plugin.(T)
-			if !ok {
+		castedPlugin, ok := plugin.(T)
+		if !ok {
+			if mustImpl {
 				return v, tder.Teardown, errors.Join(fmt.Errorf("plugin %q does not implement interface %T", cfg.Name, t), tder.Teardown(ctx))
 			}
+			cache.dropPlugin(cfg.Name)
+			continue
+		}
+
+		if created {
+			tder.Add(plugin.Teardown) // ensure teardown is called at least once
+
 			plugins = append(plugins, initializedPlugin[T]{
 				name:   cfg.Name,
 				plugin: castedPlugin,
@@ -81,6 +92,7 @@ func UsePlugins[T ika.Plugin, V any](ctx context.Context,
 		}
 
 		ictx.Logger = ictx.Logger.With(slog.String("plugin", cfg.Name))
+
 		// NOTE this setup might happen more than once for the same plugin
 		err = plugin.Setup(ctx, ictx, cfg.Config)
 		if err != nil {
@@ -123,7 +135,7 @@ func ChainFromReqModifiers(reqModifiers []initializedPlugin[ika.RequestModifier]
 	return chain.New(cons...)
 }
 
-func MakeTransportWrapper(hooks []initializedPlugin[ika.TripperHooker]) func(http.RoundTripper) (http.RoundTripper, error) {
+func MakeTripperHooks(hooks []initializedPlugin[ika.TripperHooker]) func(http.RoundTripper) (http.RoundTripper, error) {
 	var err error
 	fn := func(tripper http.RoundTripper) (http.RoundTripper, error) {
 		for _, hook := range hooks {
@@ -137,7 +149,7 @@ func MakeTransportWrapper(hooks []initializedPlugin[ika.TripperHooker]) func(htt
 	return fn
 }
 
-func ChainFirstHandler(hooks []initializedPlugin[ika.OnRequestHooker]) chain.Chain {
+func ChainOnRequestHooks(hooks []initializedPlugin[ika.OnRequestHooker]) chain.Chain {
 	cons := make([]chain.Constructor, len(hooks))
 	for i := range hooks {
 		cons[i] = chain.Constructor{

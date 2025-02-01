@@ -68,13 +68,16 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 		Logger:    log,
 	}
 
-	wrapTransport, teardown, err := iplugin.UsePlugins(ctx, ictx, cache, collectIters(ns.Hooks.Enabled()), iplugin.MakeTransportWrapper)
+	tripperHooks, teardown, err := iplugin.UsePlugins(
+		ctx, ictx, cache, collectIters(ns.Hooks.Enabled()),
+		iplugin.MakeTripperHooks, false,
+	)
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
 	r.tder.Add(teardown)
 
-	transport, err = wrapTransport(transport)
+	transport, err = tripperHooks(transport)
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
@@ -157,25 +160,31 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 func (r *Router) makePluginChain(ctx context.Context, ictx ika.InjectionContext, setupper *iplugin.PluginCache, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
 	var tder teardown.Teardowner
 
-	mwChain, teardown, err := iplugin.UsePlugins(ctx, ictx, setupper, middlewares, iplugin.ChainFromMiddlewares)
+	mwChain, teardown, err := iplugin.UsePlugins(
+		ctx, ictx, setupper, middlewares,
+		iplugin.ChainFromMiddlewares, true)
 	if err != nil {
 		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 	}
 	tder.Add(teardown)
 
-	reqModChain, teardown, err := iplugin.UsePlugins(ctx, ictx, setupper, reqModifiers, iplugin.ChainFromReqModifiers)
+	reqModChain, teardown, err := iplugin.UsePlugins(
+		ctx, ictx, setupper, reqModifiers,
+		iplugin.ChainFromReqModifiers, true)
 	if err != nil {
 		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 	}
 	tder.Add(teardown)
 
-	firstHandlerChain, teardown, err := iplugin.UsePlugins(ctx, ictx, setupper, hooks, iplugin.ChainFirstHandler)
+	onReqChain, teardown, err := iplugin.UsePlugins(
+		ctx, ictx, setupper, hooks,
+		iplugin.ChainOnRequestHooks, false)
 	if err != nil {
 		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
 	}
 	tder.Add(teardown)
 
-	ch := chain.New().Extend(firstHandlerChain).Extend(reqModChain).Extend(mwChain)
+	ch := chain.New().Extend(onReqChain).Extend(reqModChain).Extend(mwChain)
 
 	return ch, teardown, nil
 }
