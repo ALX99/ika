@@ -5,7 +5,7 @@ go 1.23.5
 require (
 	github.com/alx99/ika v0.0.33
 	github.com/alx99/ika/plugins/accesslog v0.0.0-20250125092701-4ad32e3c0adf
-	github.com/alx99/ika/plugins/requestid v0.0.1
+	github.com/alx99/ika/plugins/requestid v0.0.2
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/grafana/pyroscope-go v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.58.0
@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	github.com/alx99/ika/pluginutil v1.0.0 // indirect
+	github.com/alx99/ika/pluginutil v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
