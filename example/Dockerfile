@@ -1,6 +1,6 @@
 FROM golang:1.23-alpine AS build
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates git
 
 WORKDIR /src
 
