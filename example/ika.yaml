@@ -13,18 +13,20 @@ namespaces:
       - /example
     hooks:
       - name: tracer
-    reqModifiers:
       - name: request-id
         config:
           header: X-Request-ID
           variant: KSUID
           override: true
+    reqModifiers:
       - name: basic-modifier
         config:
           host: http://httpbun
 
     middlewares:
       - name: access-log
+        config:
+          headers: [X-Request-ID]
     paths:
       /:
         middlewares:
@@ -37,17 +39,19 @@ namespaces:
       maxIdleConnsPerHost: 250
     hooks:
       - name: tracer
-    reqModifiers:
       - name: request-id
         config:
           header: X-Request-ID
           variant: KSUID
           override: true
+    reqModifiers:
       - name: basic-modifier
         config:
           host: https://httpbun.com
     middlewares:
       - name: access-log
+        config:
+          headers: [X-Request-ID]
     paths:
       /: {}
 
@@ -56,16 +60,18 @@ namespaces:
       - go.dozy.dev
     hooks:
       - name: tracer
-    reqModifiers:
       - name: request-id
         config:
           header: X-Request-ID
           variant: KSUID
           override: true
+    reqModifiers:
       - name: basic-modifier
         config:
           host: https://go.dev
     middlewares:
       - name: access-log
+        config:
+          headers: [X-Request-ID]
     paths:
       /: {}
