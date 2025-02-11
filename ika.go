@@ -127,7 +127,7 @@ func ToHTTPHandler(h Handler, errHandler ErrorHandler) http.Handler {
 				errHandler(w, r, err)
 				return
 			}
-			defaultErrorHandler(w, r, err)
+			DefaultErrorHandler(w, r, err)
 		}
 	})
 }
@@ -143,12 +143,12 @@ func (f HandlerFunc) ToHTTPHandler(errHandler ErrorHandler) http.Handler {
 				errHandler(w, r, err)
 				return
 			}
-			defaultErrorHandler(w, r, err)
+			DefaultErrorHandler(w, r, err)
 		}
 	})
 }
 
-// defaultErrorHandler is the default error handler used by Ika.
+// DefaultErrorHandler is the default error handler used by Ika.
 // It writes the error to the response in JSON format if the client accepts JSON,
 // otherwise it writes the error as plain text.
 //
@@ -160,7 +160,7 @@ func (f HandlerFunc) ToHTTPHandler(errHandler ErrorHandler) http.Handler {
 // detail() string
 //
 // The response will be populated with the appropriate values.
-func defaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+func DefaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	logWriteError := func(err error) {
 		slog.LogAttrs(r.Context(),
 			slog.LevelError,
