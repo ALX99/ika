@@ -1,7 +1,6 @@
 package basicauth
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -105,18 +104,4 @@ func (c *basicAuthConfig) credentials() (user, pass string, err error) {
 		}
 	}
 	return user, pass, nil
-}
-
-func toStruct(config map[string]any, target any) error {
-	data, err := json.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("failed to marshal config to JSON: %w", err)
-	}
-
-	err = json.Unmarshal(data, target)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal JSON to config: %w", err)
-	}
-
-	return nil
 }

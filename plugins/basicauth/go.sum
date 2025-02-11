@@ -1,4 +1,6 @@
 github.com/alx99/ika v0.0.32 h1:QHFBKGPndoHkkeW5od1pPEt9sbs2AWBYxp1mNzF0n2E=
 github.com/alx99/ika v0.0.32/go.mod h1:2E+2ybb1BiaP8WAO8Q7YJGI9EtdEyuYXhLBXJA87sm4=
+github.com/alx99/ika/pluginutil v1.2.0 h1:un2rbrlHIESm6oEeQ8T+yKkMP8Sbd5tl5rh1JnehtrA=
+github.com/alx99/ika/pluginutil v1.2.0/go.mod h1:5VMbpWNCrpkQeuw77RQGRTyuA7GQLwc67FOBwAHEzQI=
 github.com/matryer/is v1.4.1 h1:55ehd8zaGABKLXQUe2awZ99BD/PTc2ls+KV/dXphgEQ=
 github.com/matryer/is v1.4.1/go.mod h1:8I/i5uYgLzgsgEloJE1U6xx5HkBQpAZvepWuujKwMRU=

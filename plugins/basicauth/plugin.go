@@ -3,11 +3,11 @@ package basicauth
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
 	"net/http"
 	"net/url"
 
 	"github.com/alx99/ika"
+	"github.com/alx99/ika/pluginutil"
 )
 
 type Plugin struct {
@@ -27,7 +27,7 @@ func (*Plugin) Name() string {
 
 func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
 	cfg := pConfig{}
-	if err := toStruct(config, &cfg); err != nil {
+	if err := pluginutil.ToStruct(config, &cfg); err != nil {
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	if p.inUser != nil || p.inPass != nil {
 		user, pass, ok := r.BasicAuth()
 		if !ok {
-			return errors.New("basic auth required")
+			return pluginutil.NewError(http.StatusText(http.StatusUnauthorized), "invalid credentials", "", http.StatusUnauthorized)
 		}
 
 		if p.inEncoding == "urlencoding" {
@@ -81,7 +81,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 
 		if subtle.ConstantTimeCompare([]byte(user), []byte(p.inUser)) != 1 ||
 			subtle.ConstantTimeCompare([]byte(pass), []byte(p.inPass)) != 1 {
-			return errors.New("invalid credentials")
+			return pluginutil.NewError(http.StatusText(http.StatusUnauthorized), "invalid credentials", "", http.StatusUnauthorized)
 		}
 	}
 
