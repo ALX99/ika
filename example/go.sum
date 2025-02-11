@@ -1,5 +1,5 @@
-github.com/alx99/ika v0.0.35 h1:zGoUFHaNTo9fq/E/9tg7awJOOxbRPgC+WALOFnEve7E=
-github.com/alx99/ika v0.0.35/go.mod h1:G93sLjF/OHnR5sTZBUeLEmhH7APErBnLfDxgXYb+VUA=
+github.com/alx99/ika v0.0.38 h1:3o2bKCM0DQFDyhSOJ+eUmB8QTnLmIKVR6XZ+K4GlVXI=
+github.com/alx99/ika v0.0.38/go.mod h1:G93sLjF/OHnR5sTZBUeLEmhH7APErBnLfDxgXYb+VUA=
 github.com/alx99/ika/plugins/accesslog v0.0.1 h1:bSntV5IMVooDVgY7wnNcuE6J4tXiYrrQkbG4A5iUw88=
 github.com/alx99/ika/plugins/accesslog v0.0.1/go.mod h1:AYQwZg+sPIW1crwZVy9ASNeCCgtd1WgXBMzqxcZpJoI=
 github.com/alx99/ika/plugins/basicauth v0.0.2 h1:TnTy8AmHSVlI9LRfipdX64QBi8cXg1NkhETy/tUKUUo=

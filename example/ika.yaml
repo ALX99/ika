@@ -3,6 +3,7 @@ ika:
   logger:
     level: debug
     format: text
+    addSource: true
 
 servers:
   - addr: :8888
@@ -54,11 +55,12 @@ namespaces:
           headers: [X-Request-ID]
     paths:
       /: {}
-      /hi:
+      /auth:
         middlewares:
           - name: basic-auth
             config:
               incoming:
+                type: static
                 username: user
                 password: pass
 
