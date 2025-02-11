@@ -3,6 +3,8 @@ package logger
 import (
 	"testing"
 	"time"
+
+	"github.com/matryer/is"
 )
 
 type slowWriter struct{}
@@ -13,13 +15,18 @@ func (w *slowWriter) Write(p []byte) (n int, err error) {
 }
 
 func BenchmarkWriter(b *testing.B) {
+	is := is.New(b)
 	w := newBufferedWriter(&slowWriter{})
 	time.Sleep(1 * time.Second)
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		w.Write([]byte("testaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+		_, err := w.Write([]byte("testaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+		is.NoErr(err)
 	}
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		b.Fatal(err)
+	}
+	is.NoErr(w.Flush())
 }
