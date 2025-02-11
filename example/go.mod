@@ -5,9 +5,9 @@ go 1.23.5
 require (
 	github.com/alx99/ika v0.0.38
 	github.com/alx99/ika/plugins/accesslog v0.0.1
-	github.com/alx99/ika/plugins/basicauth v0.0.2
+	github.com/alx99/ika/plugins/basicauth v0.0.3
 	github.com/alx99/ika/plugins/requestid v0.1.0
-	github.com/go-chi/chi/v5 v5.2.0
+	github.com/go-chi/chi/v5 v5.2.1
 	github.com/grafana/pyroscope-go v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	github.com/alx99/ika/pluginutil v1.2.0 // indirect
+	github.com/alx99/ika/pluginutil v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
