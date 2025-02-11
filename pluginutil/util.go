@@ -17,23 +17,28 @@ type Error struct {
 	status  int
 }
 
+// NewError creates a new Error.
+func NewError(title, detail, typeURI string, status int) Error {
+	return Error{title: title, detail: detail, typeURI: typeURI, status: status}
+}
+
 // Error returns the detail of the error.
-func (e *Error) Error() string {
+func (e Error) Error() string {
 	return e.detail
 }
 
 // Status returns the status code of the error.
-func (e *Error) Status() int {
+func (e Error) Status() int {
 	return e.status
 }
 
 // TypeURI returns the type URI of the error.
-func (e *Error) TypeURI() string {
+func (e Error) TypeURI() string {
 	return e.typeURI
 }
 
 // Title returns the title of the error.
-func (e *Error) Title() string {
+func (e Error) Title() string {
 	return e.title
 }
 
