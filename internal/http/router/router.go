@@ -222,6 +222,6 @@ func buildErrHandler(log *slog.Logger) ika.ErrorHandler {
 			"Error handling request",
 			slog.String("path", request.GetPath(r)),
 			slog.String("error", err.Error()))
-		http.Error(w, "failed to handle request", http.StatusInternalServerError)
+		ika.DefaultErrorHandler(w, r, err)
 	}
 }
