@@ -46,7 +46,11 @@ func (ps *PluginCache) GetPlugins(ctx context.Context, ictx ika.InjectionContext
 			return nil, fmt.Errorf("failed to create plugin %q: %w", cfg.Name, err)
 		}
 
-		plugin.Setup(ctx, ictx, cfg.Config)
+		err = plugin.Setup(ctx, ictx, cfg.Config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to setup plugin %q: %w", cfg.Name, err)
+		}
+
 		ps.teardowner.Add(plugin.Teardown)
 
 		plugins = append(plugins, setuppedPlugin{
