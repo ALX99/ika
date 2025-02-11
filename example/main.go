@@ -108,13 +108,14 @@ func (w *tracer) HookTripper(tripper http.RoundTripper) (http.RoundTripper, erro
 }
 
 func (t *tracer) Handler(next ika.Handler) ika.Handler {
+	var err error
 	newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attr := metaDataAttrs(t.ns)(r)
 		trace.SpanFromContext(r.Context()).
 			SetAttributes(attr...)
 		labeler, _ := otelhttp.LabelerFromContext(r.Context())
 		labeler.Add(attr...)
-		next.ServeHTTP(w, r)
+		err = next.ServeHTTP(w, r)
 	})
 
 	otelHandler := otelhttp.NewHandler(newHandler, "Request",
@@ -124,7 +125,7 @@ func (t *tracer) Handler(next ika.Handler) ika.Handler {
 
 	return ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		otelHandler.ServeHTTP(w, r)
-		return nil
+		return err
 	})
 }
 
