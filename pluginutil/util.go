@@ -8,6 +8,35 @@ import (
 	"reflect"
 )
 
+// Error is a custom error type that implements interfaces for HTTP errors
+// that is used by the default ika error handler.
+type Error struct {
+	title   string
+	detail  string
+	typeURI string
+	status  int
+}
+
+// Error returns the detail of the error.
+func (e *Error) Error() string {
+	return e.detail
+}
+
+// Status returns the status code of the error.
+func (e *Error) Status() int {
+	return e.status
+}
+
+// TypeURI returns the type URI of the error.
+func (e *Error) TypeURI() string {
+	return e.typeURI
+}
+
+// Title returns the title of the error.
+func (e *Error) Title() string {
+	return e.title
+}
+
 // ToStruct unmarshals the given config map to the target struct.
 //
 // For this to work, the target struct must be a pointer to a struct
