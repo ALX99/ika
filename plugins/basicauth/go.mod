@@ -1,4 +1,4 @@
-module github.com/alx99/ika/plugins/requestid
+module github.com/alx99/ika/plugins/basicauth
 
 go 1.23.5
 
