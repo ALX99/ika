@@ -319,8 +319,11 @@ func runServer(t *testing.T) (*http.Client, string) {
 	errCh := make(chan error, 1)
 	go func() {
 		flush, err := run(ctx, newMakeTestServer(t, s), cfg, opts)
-		flush()
 		if err != nil {
+			errCh <- err
+			return
+		}
+		if err := flush(); err != nil {
 			errCh <- err
 		}
 	}()
