@@ -27,6 +27,10 @@ func (e Error) Error() string {
 	return e.detail
 }
 
+func (e Error) Detail() string {
+	return e.detail
+}
+
 // Status returns the status code of the error.
 func (e Error) Status() int {
 	return e.status
