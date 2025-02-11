@@ -54,6 +54,13 @@ namespaces:
           headers: [X-Request-ID]
     paths:
       /: {}
+      /hi:
+        middlewares:
+          - name: basic-auth
+            config:
+              incoming:
+                username: user
+                password: pass
 
   go.dozy.dev:
     mounts:
