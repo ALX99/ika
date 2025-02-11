@@ -5,9 +5,8 @@ go 1.23.5
 require (
 	github.com/alx99/ika v0.0.35
 	github.com/alx99/ika/plugins/accesslog v0.0.1
-	github.com/alx99/ika/plugins/basicauth v0.0.2
 	github.com/alx99/ika/plugins/requestid v0.1.0
-	github.com/go-chi/chi/v5 v5.2.0
+	github.com/go-chi/chi/v5 v5.2.1
 	github.com/grafana/pyroscope-go v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
