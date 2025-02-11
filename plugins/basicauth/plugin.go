@@ -45,7 +45,7 @@ func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 
 	if cfg.Outgoing != nil {
 		var err error
-		p.outUser, p.outPass, err = cfg.Incoming.credentials()
+		p.outUser, p.outPass, err = cfg.Outgoing.credentials()
 		if err != nil {
 			return err
 		}
