@@ -20,11 +20,12 @@ import (
 )
 
 type Router struct {
-	tder teardown.Teardowner
-	mux  *http.ServeMux
-	cfg  config.Config
-	opts config.Options
-	log  *slog.Logger
+	tder  teardown.Teardowner
+	mux   *http.ServeMux
+	cfg   config.Config
+	opts  config.Options
+	log   *slog.Logger
+	cache *iplugin.PluginCache
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -33,15 +34,17 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 // Shutdown shuts down the router
 func (r *Router) Shutdown(ctx context.Context) error {
+	r.tder.Add(r.cache.Teardown)
 	return r.tder.Teardown(ctx)
 }
 
 func New(cfg config.Config, opts config.Options, log *slog.Logger) (*Router, error) {
 	return &Router{
-		mux:  http.NewServeMux(),
-		cfg:  cfg,
-		opts: opts,
-		log:  log,
+		mux:   http.NewServeMux(),
+		cfg:   cfg,
+		opts:  opts,
+		log:   log,
+		cache: iplugin.NewPluginCache(opts.Plugins),
 	}, nil
 }
 
@@ -61,23 +64,18 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	log := r.log.With(slog.String("namespace", nsName))
 	var transport http.RoundTripper = makeTransport(ns.Transport)
 
-	cache := iplugin.NewPluginCache(r.opts.Plugins)
 	ictx := ika.InjectionContext{
 		Namespace: nsName,
 		Level:     ika.LevelNamespace,
 		Logger:    log,
 	}
 
-	tripperHooks, teardown, err := iplugin.UsePlugins(
-		ctx, ictx, cache, collectIters(ns.Hooks.Enabled()),
-		iplugin.MakeTripperHooks, false,
-	)
+	plugins, err := r.cache.GetPlugins(ctx, ictx, collectIters(ns.Hooks.Enabled()))
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
-	r.tder.Add(teardown)
 
-	transport, err = tripperHooks(transport)
+	transport, err = iplugin.MakeTripperHooks(plugins)(transport)
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
@@ -91,7 +89,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
 
-	nsChain, teardown, err := r.makePluginChain(ctx, ictx, cache,
+	nsChain, err := r.makePluginChain(ctx, ictx,
 		collectIters(ns.Middlewares.Enabled()),
 		collectIters(ns.ReqModifiers.Enabled()),
 		collectIters(ns.Hooks.Enabled()),
@@ -99,7 +97,6 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
-	r.tder.Add(teardown)
 
 	for _, mount := range ns.Mounts {
 		c := caramel.Wrap(r.mux).Mount(mount)
@@ -112,8 +109,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 				Logger:      log,
 			}
 
-			cache = iplugin.NewPluginCache(r.opts.Plugins)
-			pathChain, teardown, err := r.makePluginChain(ctx, ictx, cache,
+			pathChain, err := r.makePluginChain(ctx, ictx,
 				collectIters(path.Middlewares.Enabled()),
 				collectIters(path.ReqModifiers.Enabled()),
 				nil,
@@ -121,7 +117,6 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 			if err != nil {
 				return errors.Join(err, r.tder.Teardown(ctx))
 			}
-			r.tder.Add(teardown)
 
 			var patterns []string
 			if len(path.Methods) == 0 {
@@ -157,36 +152,40 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	return nil
 }
 
-func (r *Router) makePluginChain(ctx context.Context, ictx ika.InjectionContext, setupper *iplugin.PluginCache, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, teardown.TeardownFunc, error) {
-	var tder teardown.Teardowner
-
-	mwChain, teardown, err := iplugin.UsePlugins(
-		ctx, ictx, setupper, middlewares,
-		iplugin.ChainFromMiddlewares, true)
+func (r *Router) makePluginChain(ctx context.Context, ictx ika.InjectionContext, middlewares, reqModifiers, hooks config.Plugins) (chain.Chain, error) {
+	mwPlugins, err := r.cache.GetPlugins(ctx, ictx, middlewares)
 	if err != nil {
-		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
+		return chain.Chain{}, err
 	}
-	tder.Add(teardown)
 
-	reqModChain, teardown, err := iplugin.UsePlugins(
-		ctx, ictx, setupper, reqModifiers,
-		iplugin.ChainFromReqModifiers, true)
+	mwChain, err := iplugin.ChainFromMiddlewares(mwPlugins)
 	if err != nil {
-		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
+		return chain.Chain{}, err
 	}
-	tder.Add(teardown)
 
-	onReqChain, teardown, err := iplugin.UsePlugins(
-		ctx, ictx, setupper, hooks,
-		iplugin.ChainOnRequestHooks, false)
+	reqModPlugins, err := r.cache.GetPlugins(ctx, ictx, reqModifiers)
 	if err != nil {
-		return chain.Chain{}, tder.Teardown, errors.Join(err, tder.Teardown(ctx))
+		return chain.Chain{}, err
 	}
-	tder.Add(teardown)
+
+	reqModChain, err := iplugin.ChainFromReqModifiers(reqModPlugins)
+	if err != nil {
+		return chain.Chain{}, err
+	}
+
+	onReqPlugins, err := r.cache.GetPlugins(ctx, ictx, hooks)
+	if err != nil {
+		return chain.Chain{}, err
+	}
+
+	onReqChain, err := iplugin.MakeOnRequestHooks(onReqPlugins)
+	if err != nil {
+		return chain.Chain{}, err
+	}
 
 	ch := chain.New().Extend(onReqChain).Extend(reqModChain).Extend(mwChain)
 
-	return ch, teardown, nil
+	return ch, nil
 }
 
 func makeTransport(cfg config.Transport) *http.Transport {
