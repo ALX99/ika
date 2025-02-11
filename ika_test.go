@@ -92,7 +92,7 @@ func Test_defualtErrorHandler(t *testing.T) {
 			req.Header.Set("Accept", tt.acceptHeader)
 			rr := httptest.NewRecorder()
 
-			defaultErrorHandler(rr, req, tt.err)
+			DefaultErrorHandler(rr, req, tt.err)
 
 			res := rr.Result()
 			defer res.Body.Close()
