@@ -20,19 +20,19 @@ func (e *mockError) Error() string {
 	return e._detail
 }
 
-func (e *mockError) status() int {
+func (e *mockError) Status() int {
 	return e.statusCode
 }
 
-func (e *mockError) typeURI() string {
+func (e *mockError) TypeURI() string {
 	return e._typeURI
 }
 
-func (e *mockError) title() string {
+func (e *mockError) Title() string {
 	return e._title
 }
 
-func (e *mockError) detail() string {
+func (e *mockError) Detail() string {
 	return e._detail
 }
 

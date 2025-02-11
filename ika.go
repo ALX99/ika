@@ -177,20 +177,20 @@ func defaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 
 	errorResp.Status = http.StatusInternalServerError
 
-	if err, ok := err.(interface{ status() int }); ok {
-		errorResp.Status = err.status()
+	if err, ok := err.(interface{ Status() int }); ok {
+		errorResp.Status = err.Status()
 	}
 
-	if err, ok := err.(interface{ typeURI() string }); ok {
-		errorResp.Type = err.typeURI()
+	if err, ok := err.(interface{ TypeURI() string }); ok {
+		errorResp.Type = err.TypeURI()
 	}
 
-	if err, ok := err.(interface{ title() string }); ok {
-		errorResp.Title = err.title()
+	if err, ok := err.(interface{ Title() string }); ok {
+		errorResp.Title = err.Title()
 	}
 
-	if err, ok := err.(interface{ detail() string }); ok {
-		errorResp.Detail = err.detail()
+	if err, ok := err.(interface{ Detail() string }); ok {
+		errorResp.Detail = err.Detail()
 	}
 
 	errorResp.Status = cmp.Or(errorResp.Status, http.StatusInternalServerError)
