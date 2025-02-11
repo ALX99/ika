@@ -1,0 +1,61 @@
+#!/bin/bash
+
+set -euo pipefail
+
+
+# find a plugin in the plugins directory and let the user choose
+choose_plugin() {
+    local plugin
+    plugin=$(find plugins -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | fzf --prompt "Choose a plugin to release: ")
+    if [[ -z "${plugin:-}" ]]; then
+        echo "No plugin selected"
+        exit 1
+    fi
+    echo "$plugin"
+}
+
+
+gen_tag() {
+  local plugin="plugins/$1"
+  local latest_tag
+  local version
+
+
+  latest_tag="$(git tag --list "$plugin*" --sort=-version:refname | head -n 1)"
+  if [[ -z "${latest_tag:-}" ]]; then
+      echo "No tags found"
+      exit 1
+  fi
+
+  version="$(printf "major\nminor\npatch" | fzf --prompt "Choose a version to release: " --multi --exit-0)"
+
+  if [[ -z "${version:-}" ]]; then
+      echo "No version selected"
+      exit 1
+  fi
+
+  IFS='.' read -r major minor patch <<< "${latest_tag##*v}"
+
+  if [[ "${version}" == "major" ]]; then
+      major=$((major + 1))
+      minor=0
+      patch=0
+  elif [[ "${version}" == "minor" ]]; then
+      minor=$((minor + 1))
+      patch=0
+  elif [[ "${version}" == "patch" ]]; then
+      patch=$((patch + 1))
+  fi
+
+  echo "$plugin/v$major.$minor.$patch"
+}
+
+main() {
+  local plugin
+  plugin="$(choose_plugin)"
+  set -x
+  git tag "$(gen_tag "$plugin")"
+  set +x
+}
+
+main "$@"
