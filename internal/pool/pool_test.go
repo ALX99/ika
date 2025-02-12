@@ -9,7 +9,7 @@ import (
 
 func BenchmarkBufferPool(b *testing.B) {
 	var bp httputil.BufferPool = pool.NewBufferPool()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bp.Get()
 		bp.Put(buf)
 	}

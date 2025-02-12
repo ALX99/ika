@@ -33,7 +33,7 @@ func BenchmarkRewritePath(b *testing.B) {
 
 	req, _ := http.NewRequest("GET", "http://example.com/old/test", nil)
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		req.URL.Path = "/old/test"
 		err := rm.rewritePath(req)
 		is.NoErr(err)
