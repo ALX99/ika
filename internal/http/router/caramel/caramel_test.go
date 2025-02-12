@@ -2,10 +2,41 @@ package caramel
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/matryer/is"
 )
+
+func TestCaramel_patterns(t *testing.T) {
+	t.Parallel()
+
+	t.Run("longest path wins", func(t *testing.T) {
+		t.Parallel()
+		is := is.New(t)
+
+		mux := http.NewServeMux()
+		c := Wrap(mux).Mount("/api")
+
+		c.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+
+		c.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		})
+
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/abcde", nil)
+		rr := httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+		is.Equal(rr.Code, http.StatusNotFound)
+
+		req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/users", nil)
+		rr = httptest.NewRecorder()
+		mux.ServeHTTP(rr, req)
+		is.Equal(rr.Code, http.StatusOK)
+	})
+}
 
 func TestCaramel_makePattern(t *testing.T) {
 	is := is.New(t)
