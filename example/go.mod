@@ -1,6 +1,6 @@
 module github.com/alx99/ika/example
 
-go 1.23.5
+go 1.24.0
 
 require (
 	github.com/alx99/ika v0.0.39

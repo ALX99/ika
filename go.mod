@@ -1,6 +1,6 @@
 module github.com/alx99/ika
 
-go 1.23.0
+go 1.24.0
 
 require (
 	// only used when IKA_DEBUG is set
