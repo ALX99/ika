@@ -70,12 +70,12 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 		Logger:    log,
 	}
 
-	plugins, err := r.cache.GetPlugins(ctx, ictx, collectIters(ns.Hooks.Enabled()))
+	hooks, err := r.cache.GetPlugins(ctx, ictx, collectIters(ns.Hooks.Enabled()))
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
 
-	transport, err = iplugin.MakeTripperHooks(plugins)(transport)
+	transport, err = iplugin.MakeTripperHooks(hooks)(transport)
 	if err != nil {
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
@@ -89,19 +89,18 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 		return errors.Join(err, r.tder.Teardown(ctx))
 	}
 
-	nsChain, err := r.makePluginChain(ctx, ictx,
-		collectIters(ns.Middlewares.Enabled()),
-		collectIters(ns.ReqModifiers.Enabled()),
-		collectIters(ns.Hooks.Enabled()),
-	)
-	if err != nil {
-		return errors.Join(err, r.tder.Teardown(ctx))
-	}
-
 	for _, mount := range ns.Mounts {
-		c := caramel.Wrap(r.mux).Mount(mount)
-
 		for pattern, path := range ns.Paths {
+			nsChain, err := r.makePluginChain(ctx, ictx,
+				collectIters(ns.Middlewares.Enabled()),
+				collectIters(ns.ReqModifiers.Enabled()),
+				collectIters(ns.Hooks.Enabled()),
+			)
+			if err != nil {
+				return errors.Join(err, r.tder.Teardown(ctx))
+			}
+			c := caramel.Wrap(r.mux).Mount(mount)
+
 			ictx := ika.InjectionContext{
 				Namespace:   nsName,
 				PathPattern: pattern,
@@ -143,8 +142,8 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 					continue
 				}
 
-				nsChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
-				c.Handle(pattern, ika.ToHTTPHandler(nsChain, buildErrHandler(log)))
+				handlerChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
+				c.Handle(pattern, ika.ToHTTPHandler(handlerChain, buildErrHandler(log)))
 			}
 		}
 	}
