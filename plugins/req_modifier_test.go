@@ -2,7 +2,6 @@ package plugins
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"net/http"
 	"testing"
@@ -24,7 +23,7 @@ func BenchmarkRewritePath(b *testing.B) {
 	}
 	iCtx := ika.InjectionContext{
 		PathPattern: "/old/{path}",
-		Logger:      slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger:      slog.New(slog.DiscardHandler),
 	}
 	err = rm.Setup(context.Background(), iCtx, config)
 	is.NoErr(err)
