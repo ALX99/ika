@@ -4,8 +4,8 @@ github.com/alx99/ika/plugins/accesslog v0.0.1 h1:bSntV5IMVooDVgY7wnNcuE6J4tXiYrr
 github.com/alx99/ika/plugins/accesslog v0.0.1/go.mod h1:AYQwZg+sPIW1crwZVy9ASNeCCgtd1WgXBMzqxcZpJoI=
 github.com/alx99/ika/plugins/basicauth v0.0.2 h1:TnTy8AmHSVlI9LRfipdX64QBi8cXg1NkhETy/tUKUUo=
 github.com/alx99/ika/plugins/basicauth v0.0.2/go.mod h1:EvseCLy1v8xqdb3GnHLPP5Z4982lzfhmiv6WhWLZG90=
-github.com/alx99/ika/plugins/requestid v0.1.0 h1:kJTx2QLODzHoC984UAyz1uJ4qnmHXvbsL0yDI51ZbNg=
-github.com/alx99/ika/plugins/requestid v0.1.0/go.mod h1:iNIm0800kLCW5JmUVXnGIIeQ+Yqgwa9wDTQ3yz3tyYo=
+github.com/alx99/ika/plugins/requestid v1.0.0 h1:XuHjFMzkFMtAtR+ZH86sOhASODjVMh2nEYDPwrOiUCE=
+github.com/alx99/ika/plugins/requestid v1.0.0/go.mod h1:FsVW9/RnnF/lg8hqMYVBOviLXPIAsMjZa8XGIR3BFZw=
 github.com/alx99/ika/pluginutil v1.2.0 h1:un2rbrlHIESm6oEeQ8T+yKkMP8Sbd5tl5rh1JnehtrA=
 github.com/alx99/ika/pluginutil v1.2.0/go.mod h1:5VMbpWNCrpkQeuw77RQGRTyuA7GQLwc67FOBwAHEzQI=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
