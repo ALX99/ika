@@ -13,7 +13,7 @@ require (
 require (
 	github.com/gkampitakis/ciinfo v0.3.1 // indirect
 	github.com/gkampitakis/go-diff v1.3.2 // indirect
-	github.com/gkampitakis/go-snaps v0.5.9
+	github.com/gkampitakis/go-snaps v0.5.10
 	github.com/goccy/go-yaml v1.15.13 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
