@@ -4,11 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
 	"github.com/alx99/ika/pluginutil"
+	"github.com/felixge/httpsnoop"
 )
 
 type Plugin struct {
@@ -48,14 +48,17 @@ func (p *Plugin) Handler(next ika.Handler) ika.Handler {
 }
 
 func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	now := time.Now()
-	err := p.next.ServeHTTP(w, r)
-	end := time.Now()
+	var err error
+
+	metrics := httpsnoop.CaptureMetrics(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err = p.next.ServeHTTP(w, r)
+	}), w, r)
 
 	attrs := []slog.Attr{
 		slog.Group("request", p.makeReqAttrs(r)...),
 		slog.Group("response",
-			slog.Int64("duration", end.Sub(now).Milliseconds()),
+			slog.Int64("duration", metrics.Duration.Milliseconds()),
+			slog.Int("status", metrics.Code),
 		),
 		slog.Group("ika",
 			slog.String("pattern", r.Pattern),
@@ -65,7 +68,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		attrs = append(attrs, slog.String("error", err.Error()))
 	}
 
-	p.log.LogAttrs(r.Context(), slog.LevelInfo, "endpoint access", attrs...)
+	p.log.LogAttrs(r.Context(), slog.LevelInfo, "served request", attrs...)
 	return err
 }
 
