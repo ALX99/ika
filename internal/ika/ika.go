@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"runtime"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -76,9 +76,18 @@ func run(ctx context.Context,
 		return flush, fmt.Errorf("failed to start: %w", err)
 	}
 
-	log.Info("ika has started",
-		slog.String("goVersion", runtime.Version()),
-		slog.String("startupTime", time.Since(start).Round(time.Millisecond).String()))
+	attrs := []any{
+		slog.String("startupTime", time.Since(start).Round(time.Millisecond).String()),
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		attrs = append(attrs,
+			slog.String("version", info.Main.Version),
+			slog.String("goVersion", info.GoVersion),
+		)
+	}
+	log.Info("Ika has started", attrs...)
 
 	<-ctx.Done()
 	slog.Info("Caught shutdown signal, shutting down gracefully...")
