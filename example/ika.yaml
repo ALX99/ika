@@ -28,7 +28,7 @@ namespaces:
       - name: access-log
         config:
           headers: [X-Request-ID]
-    paths:
+    routes:
       /:
         middlewares:
           - name: noCache
@@ -53,7 +53,7 @@ namespaces:
       - name: access-log
         config:
           headers: [X-Request-ID]
-    paths:
+    routes:
       /: {}
       /auth:
         middlewares:
@@ -82,5 +82,5 @@ namespaces:
       - name: access-log
         config:
           headers: [X-Request-ID]
-    paths:
+    routes:
       /: {}

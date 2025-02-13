@@ -4,7 +4,7 @@ type (
 	Namespace struct {
 		Transport    Transport `json:"transport"`
 		Mounts       []string  `json:"mounts"`
-		Paths        Paths     `json:"paths"`
+		Routes       Routes    `json:"routes"`
 		Middlewares  Plugins   `json:"middlewares"`
 		ReqModifiers Plugins   `json:"reqModifiers"`
 		Hooks        Plugins   `json:"hooks"`

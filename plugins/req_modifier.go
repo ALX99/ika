@@ -55,7 +55,7 @@ func (*ReqModifier) Name() string {
 }
 
 func (rm *ReqModifier) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
-	routePattern := ictx.PathPattern
+	routePattern := ictx.RoutePattern
 
 	var toPath string
 	if _, ok := config["path"]; ok {

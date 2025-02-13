@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	// LevelPath specifies injection at a specific path level.
-	LevelPath InjectionLevel = iota
+	// LevelRoute specifies injection on a route level.
+	LevelRoute InjectionLevel = iota
 
-	// LevelNamespace specifies injection at a namespace level.
+	// LevelNamespace specifies injection on a namespace level.
 	LevelNamespace
 )
 
@@ -46,14 +46,14 @@ type PluginFactory interface {
 // InjectionContext contains information about the context in which a plugin is injected.
 type InjectionContext struct {
 	// Namespace indicates the namespace where the plugin is injected.
-	// It is empty if not injected at the namespace or path level.
+	// It is empty if not injected at the namespace or route level.
 	Namespace string
 
-	// PathPattern specifies the path pattern where the plugin is injected.
-	// It is empty if not injected at the path level.
-	PathPattern string
+	// RoutePattern specifies the route pattern where the plugin is injected.
+	// It is empty if not injected at the route level.
+	RoutePattern string
 
-	// Level indicates whether the injection is at the namespace or path level.
+	// Level indicates whether the injection is at the namespace or route level.
 	Level InjectionLevel
 
 	// Logger is the logger meant for the plugin.

@@ -90,7 +90,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 	}
 
 	for _, mount := range ns.Mounts {
-		for pattern, path := range ns.Paths {
+		for pattern, route := range ns.Routes {
 			nsChain, err := r.makePluginChain(ctx, ictx,
 				collectIters(ns.Middlewares.Enabled()),
 				collectIters(ns.ReqModifiers.Enabled()),
@@ -102,15 +102,15 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 			c := caramel.Wrap(r.mux).Mount(mount)
 
 			ictx := ika.InjectionContext{
-				Namespace:   nsName,
-				PathPattern: pattern,
-				Level:       ika.LevelPath,
-				Logger:      log,
+				Namespace:    nsName,
+				RoutePattern: pattern,
+				Level:        ika.LevelRoute,
+				Logger:       log,
 			}
 
-			pathChain, err := r.makePluginChain(ctx, ictx,
-				collectIters(path.Middlewares.Enabled()),
-				collectIters(path.ReqModifiers.Enabled()),
+			routeChain, err := r.makePluginChain(ctx, ictx,
+				collectIters(route.Middlewares.Enabled()),
+				collectIters(route.ReqModifiers.Enabled()),
 				nil,
 			)
 			if err != nil {
@@ -118,10 +118,10 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 			}
 
 			var patterns []string
-			if len(path.Methods) == 0 {
+			if len(route.Methods) == 0 {
 				patterns = append(patterns, pattern)
 			} else {
-				for _, method := range path.Methods {
+				for _, method := range route.Methods {
 					patterns = append(patterns, string(method)+" "+pattern)
 				}
 			}
@@ -142,7 +142,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 					continue
 				}
 
-				handlerChain := nsChain.Extend(pathChain).Then(p.WithPathTrim(mount))
+				handlerChain := nsChain.Extend(routeChain).Then(p.WithPathTrim(mount))
 				c.Handle(pattern, ika.ToHTTPHandler(handlerChain, buildErrHandler(log)))
 			}
 		}

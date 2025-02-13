@@ -193,7 +193,7 @@ package schema
 }
 
 #Namespace: {
-	paths: #Paths
+	routes: #Routes
 	mounts: [...string]
 	transport?:    #Transport
 	middlewares?:  #Plugins
@@ -207,13 +207,13 @@ package schema
 	config?: {...}
 }
 
-#Path: {
+#Route: {
 	methods?: [...#Method]
 	middlewares?:  #Plugins
 	reqModifiers?: #Plugins
 }
 
 #Method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS" | "CONNECT" | "TRACE"
-#Paths: [string]:      #Path
+#Routes: [string]:     #Route
 #Namespaces: [string]: #Namespace
 #Plugins: [...#Plugin]

@@ -36,7 +36,7 @@ ika: {
 servers: [{addr: ":8888"}]
 
 namespaces: "testns1": mounts: ["/testns1", "testns1.com"]
-namespaces: "testns1": paths: {
+namespaces: "testns1": routes: {
 	"/any": {}
 	"/get": {
 		reqModifiers: [
@@ -111,7 +111,7 @@ namespaces: "testns1": paths: {
 
 namespaces: "passthrough": mounts: ["/passthrough", "passthrough.com"]
 namespaces: "passthrough": {
-	paths: {
+	routes: {
 		"": {}
 		"/": {}
 	}
