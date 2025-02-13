@@ -8,6 +8,7 @@ import (
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
+	"github.com/alx99/ika/pluginutil"
 )
 
 type Plugin struct {
@@ -29,7 +30,7 @@ func (Plugin) Name() string {
 
 func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	cfg := pConfig{}
-	if err := toStruct(config, &cfg); err != nil {
+	if err := pluginutil.ToStruct(config, &cfg); err != nil {
 		return err
 	}
 

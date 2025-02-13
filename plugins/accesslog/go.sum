@@ -1,2 +1,4 @@
 github.com/alx99/ika v0.0.32 h1:QHFBKGPndoHkkeW5od1pPEt9sbs2AWBYxp1mNzF0n2E=
 github.com/alx99/ika v0.0.32/go.mod h1:2E+2ybb1BiaP8WAO8Q7YJGI9EtdEyuYXhLBXJA87sm4=
+github.com/alx99/ika/pluginutil v1.3.0 h1:RmHpWwFoJCK0LKr/Jlw32WLOuouBDpn/SKyX8yZOUmc=
+github.com/alx99/ika/pluginutil v1.3.0/go.mod h1:5VMbpWNCrpkQeuw77RQGRTyuA7GQLwc67FOBwAHEzQI=
