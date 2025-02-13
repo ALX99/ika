@@ -7,7 +7,7 @@ import (
 type (
 	Plugin struct {
 		Name    string         `json:"name"`
-		Enabled bool           `json:"enabled"`
+		Enabled *bool          `json:"enabled"`
 		Config  map[string]any `json:"config"`
 	}
 	Plugins []Plugin
@@ -17,7 +17,7 @@ type (
 func (p Plugins) Enabled() iter.Seq[Plugin] {
 	return func(yield func(Plugin) bool) {
 		for _, plugin := range p {
-			if true { // TODO: plugin.Enabled
+			if plugin.Enabled == nil || *plugin.Enabled {
 				if !yield(plugin) {
 					return
 				}
