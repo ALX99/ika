@@ -61,7 +61,8 @@ func (p *Plugin) Handler(next ika.Handler) ika.Handler {
 
 func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	if p.inUser != nil || p.inPass != nil {
-		invalidCredsErr := httperr.New(errors.New("invalid credentials"), http.StatusUnauthorized).
+		invalidCredsErr := httperr.New(http.StatusUnauthorized).
+			WithErr(errors.New("invalid credentials")).
 			WithTitle("Invalid credentials")
 
 		user, pass, ok := r.BasicAuth()

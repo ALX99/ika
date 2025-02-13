@@ -21,10 +21,9 @@ type Error struct {
 // Option represents an option for an Error.
 type Option func(*Error)
 
-// New creates a new Error.
-func New(err error, status int, opts ...Option) *Error {
+// New creates a new Error without an underlying error.
+func New(status int, opts ...Option) *Error {
 	e := &Error{
-		err:     err,
 		sStatus: status,
 	}
 	for _, opt := range opts {
@@ -54,6 +53,12 @@ func (e *Error) WithTypeURI(typeURI string) *Error {
 // WithStatus sets the status of the error.
 func (e *Error) WithStatus(status int) *Error {
 	e.sStatus = status
+	return e
+}
+
+// WithErr sets the underlying error.
+func (e *Error) WithErr(err error) *Error {
+	e.err = err
 	return e
 }
 
