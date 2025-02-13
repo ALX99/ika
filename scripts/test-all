@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+find . -type f -name go.mod -exec dirname {} \; | while read -r plugin; do
+    pushd "$plugin"
+    echo "Testing $plugin"
+    go test -coverpkg=./... -coverprofile=coverage.out -timeout 15s ./...
+    popd
+done

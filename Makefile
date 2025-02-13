@@ -38,8 +38,7 @@ run-reload:
 
 .PHONY: test
 test:
-	go test -coverpkg=./... -coverprofile=coverage.out -timeout 15s ./...
-	go tool cover -func=coverage.out | grep total
+	./scripts/test-all
 
 .PHONY: update-test
 update-test:
