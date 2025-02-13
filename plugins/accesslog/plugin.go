@@ -1,5 +1,7 @@
 package accesslog
 
+// https://pkg.go.dev/github.com/alx99/ika/plugins/accesslog
+
 import (
 	"context"
 	"log/slog"

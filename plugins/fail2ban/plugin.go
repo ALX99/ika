@@ -73,7 +73,8 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if p.isBanned(ip) {
-		return httperr.New(fmt.Errorf("ip %q is temporarily banned", ip), http.StatusTooManyRequests).
+		return httperr.New(http.StatusTooManyRequests).
+			WithErr(fmt.Errorf("ip %q is temporarily banned", ip)).
 			WithTitle("Request temporarily blocked").
 			WithDetail("This request has been temporarily blocked due to too many failed attempts. Please try again later.")
 	}

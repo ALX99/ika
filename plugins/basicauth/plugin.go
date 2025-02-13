@@ -1,5 +1,7 @@
 package basicauth
 
+// https://pkg.go.dev/github.com/alx99/ika/plugins/basicauth
+
 import (
 	"context"
 	"crypto/subtle"

@@ -25,7 +25,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 		attempts: &sync.Map{},
 		log:      slog.New(slog.DiscardHandler),
 		next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			return httperr.New(nil, http.StatusUnauthorized)
+			return httperr.New(http.StatusUnauthorized)
 		}),
 	}
 
@@ -58,7 +58,7 @@ func TestPlugin_CustomIdentifierHeader(t *testing.T) {
 		attempts: &sync.Map{},
 		log:      slog.New(slog.DiscardHandler),
 		next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			return httperr.New(nil, http.StatusUnauthorized)
+			return httperr.New(http.StatusUnauthorized)
 		}),
 	}
 
