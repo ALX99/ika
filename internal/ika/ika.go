@@ -76,7 +76,7 @@ func run(ctx context.Context,
 		return flush, fmt.Errorf("failed to start: %w", err)
 	}
 
-	slog.Info("ika has started",
+	log.Info("ika has started",
 		slog.String("goVersion", runtime.Version()),
 		slog.String("startupTime", time.Since(start).Round(time.Millisecond).String()))
 
