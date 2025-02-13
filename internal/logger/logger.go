@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/alx99/ika/internal/config"
-	"github.com/golang-cz/devslog"
+	"github.com/lmittmann/tint"
 )
 
 func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() error) {
@@ -46,7 +46,10 @@ func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() er
 
 		// DEBUG override
 		if os.Getenv("IKA_DEBUG") != "" && level == slog.LevelDebug {
-			log = slog.New(devslog.NewHandler(w, &devslog.Options{HandlerOptions: opts}))
+			log = slog.New(tint.NewHandler(w, &tint.Options{
+				Level:     opts.Level,
+				AddSource: opts.AddSource,
+			}))
 		}
 	}
 

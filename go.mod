@@ -3,9 +3,11 @@ module github.com/alx99/ika
 go 1.24.0
 
 require (
-	// only used when IKA_DEBUG is set
-	github.com/golang-cz/devslog v0.0.11
-	// For parsing YAML configuration
+	// for tests
+	github.com/gkampitakis/go-snaps v0.5.10
+	// for colorful logs (only when IKA_DEBUG is set)
+	github.com/lmittmann/tint v1.0.7
+	// for parsing YAML configuration
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -13,7 +15,6 @@ require (
 require (
 	github.com/gkampitakis/ciinfo v0.3.1 // indirect
 	github.com/gkampitakis/go-diff v1.3.2 // indirect
-	github.com/gkampitakis/go-snaps v0.5.10
 	github.com/goccy/go-yaml v1.15.13 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
