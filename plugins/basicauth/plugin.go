@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"errors"
 	"net/http"
-	"net/url"
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/pluginutil"
@@ -15,7 +14,6 @@ import (
 type Plugin struct {
 	inUser, inPass   []byte
 	outUser, outPass string
-	inEncoding       string
 	next             ika.Handler
 }
 
@@ -52,7 +50,6 @@ func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 			return err
 		}
 	}
-	p.inEncoding = cfg.Incoming.Encoding
 
 	return nil
 }
@@ -70,18 +67,6 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		user, pass, ok := r.BasicAuth()
 		if !ok {
 			return invalidCredsErr
-		}
-
-		if p.inEncoding == "urlencoding" {
-			var err error
-			user, err = url.QueryUnescape(user)
-			if err != nil {
-				return err
-			}
-			pass, err = url.QueryUnescape(pass)
-			if err != nil {
-				return err
-			}
 		}
 
 		if subtle.ConstantTimeCompare([]byte(user), []byte(p.inUser)) != 1 ||

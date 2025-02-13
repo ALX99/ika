@@ -3,7 +3,6 @@ package basicauth
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/alx99/ika"
@@ -13,11 +12,10 @@ import (
 func Test_plugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
 	type fields struct {
-		inUser     []byte
-		inPass     []byte
-		outUser    string
-		outPass    string
-		inEncoding string
+		inUser  []byte
+		inPass  []byte
+		outUser string
+		outPass string
 	}
 	type args struct {
 		w http.ResponseWriter
@@ -82,27 +80,6 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 			wantOutPass: "outPass",
 		},
 		{
-			name: "valid incoming credentials with urlencoding",
-			fields: fields{
-				inUser:     []byte("user:colon"),
-				inPass:     []byte("pass:colon"),
-				outUser:    "outUser",
-				outPass:    "outPass",
-				inEncoding: "urlencoding",
-			},
-			args: args{
-				w: httptest.NewRecorder(),
-				r: func() *http.Request {
-					req := httptest.NewRequest("GET", "/", nil)
-					req.SetBasicAuth(url.QueryEscape("user:colon"), url.QueryEscape("pass:colon"))
-					return req
-				}(),
-			},
-			wantErr:     false,
-			wantOutUser: "outUser",
-			wantOutPass: "outPass",
-		},
-		{
 			name: "invalid incoming credentials",
 			fields: fields{
 				inUser:  []byte("user"),
@@ -124,11 +101,10 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &Plugin{
-				inUser:     tt.fields.inUser,
-				inPass:     tt.fields.inPass,
-				outUser:    tt.fields.outUser,
-				outPass:    tt.fields.outPass,
-				inEncoding: tt.fields.inEncoding,
+				inUser:  tt.fields.inUser,
+				inPass:  tt.fields.inPass,
+				outUser: tt.fields.outUser,
+				outPass: tt.fields.outPass,
 				next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 					return nil
 				}),

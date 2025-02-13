@@ -13,7 +13,6 @@ func Test_basicAuthConfig_validate(t *testing.T) {
 	t.Setenv("PASS_ENV", "pass")
 	type fields struct {
 		Type     string
-		Encoding string
 		Username string
 		Password string
 	}
@@ -83,31 +82,11 @@ func Test_basicAuthConfig_validate(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{
-			name: "invalid encoding",
-			fields: fields{
-				Type:     "static",
-				Username: "user",
-				Password: "pass",
-				Encoding: "invalid",
-			},
-			wantErr: true,
-		},
-		{
-			name: "username contains colon without encoding",
-			fields: fields{
-				Type:     "static",
-				Username: "user:colon",
-				Password: "pass",
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &basicAuthConfig{
 				Type:     tt.fields.Type,
-				Encoding: tt.fields.Encoding,
 				Username: tt.fields.Username,
 				Password: tt.fields.Password,
 			}
@@ -129,7 +108,6 @@ func Test_basicAuthConfig_credentials(t *testing.T) {
 
 	type fields struct {
 		Type     string
-		Encoding string
 		Username string
 		Password string
 	}
@@ -163,18 +141,6 @@ func Test_basicAuthConfig_credentials(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name: "env credentials with urlencoding",
-			fields: fields{
-				Type:     "env",
-				Username: "ENCODED_USER_ENV",
-				Password: "ENCODED_PASS_ENV",
-				Encoding: "urlencoding",
-			},
-			wantUser: "user:colon",
-			wantPass: "pass:colon",
-			wantErr:  false,
-		},
-		{
 			name: "missing env username",
 			fields: fields{
 				Type:     "env",
@@ -196,36 +162,11 @@ func Test_basicAuthConfig_credentials(t *testing.T) {
 			wantPass: "",
 			wantErr:  true,
 		},
-		{
-			name: "failed to unescape username",
-			fields: fields{
-				Type:     "env",
-				Username: "INVALID_ENCODED_USER_ENV",
-				Password: "PASS_ENV",
-				Encoding: "urlencoding",
-			},
-			wantUser: "",
-			wantPass: "",
-			wantErr:  true,
-		},
-		{
-			name: "failed to unescape password",
-			fields: fields{
-				Type:     "env",
-				Username: "USER_ENV",
-				Password: "INVALID_ENCODED_PASS_ENV",
-				Encoding: "urlencoding",
-			},
-			wantUser: "",
-			wantPass: "",
-			wantErr:  true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &basicAuthConfig{
 				Type:     tt.fields.Type,
-				Encoding: tt.fields.Encoding,
 				Username: tt.fields.Username,
 				Password: tt.fields.Password,
 			}

@@ -6,18 +6,17 @@ import (
 )
 
 type config struct {
-	// Header is the header to populate with the request ID.
+	// Header is the header to populate with the request ID
 	Header string `json:"header"`
 
-	// Override if true, will override the request id header if it already exists.
+	// Variant is the ID generation algorithm: UUIDv4, UUIDv7, KSUID
+	Variant string `json:"variant"`
+
+	// Override the existing header value if present
 	Override bool `json:"override"`
 
-	// Append if true, will append the request id header if it already exists.
+	// Append to the existing header value if present
 	Append bool `json:"append"`
-
-	// Variant is the request id variant to generate.
-	// The following variants are supported: UUIDv4, UUIDv7, KSUID
-	Variant string `json:"variant"`
 }
 
 const (

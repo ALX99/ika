@@ -2,10 +2,8 @@ package basicauth
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"slices"
-	"strings"
 )
 
 type pConfig struct {
@@ -21,13 +19,6 @@ type basicAuthConfig struct {
 	// The following types are supported: env
 	// If omitted, username and password are used as-is.
 	Type string `json:"type"`
-
-	// Encoding is the encoding that is used for the username and password.
-	// For outgoing requests, the encoding is used to encode the username and password.
-	// For incoming requests, the encoding is used to decode the username and password.
-	// The following encodings are supported: urlencoding
-	// If omitted, no encoding is used.
-	Encoding string `json:"encoding"`
 
 	// Username is the username to use for basic auth.
 	Username string `json:"username"`
@@ -72,12 +63,6 @@ func (c *basicAuthConfig) validate() error {
 			return fmt.Errorf("password environment variable not set")
 		}
 	}
-	if c.Encoding != "" && !slices.Contains([]string{"urlencoding"}, c.Encoding) {
-		return fmt.Errorf("encoding must be one of: urlencoding")
-	}
-	if c.Encoding == "" && strings.Contains(c.Username, ":") {
-		return fmt.Errorf("username contains a colon, encoding must be set")
-	}
 	return nil
 }
 
@@ -92,16 +77,6 @@ func (c *basicAuthConfig) credentials() (user, pass string, err error) {
 	pass, ok = os.LookupEnv(c.Password)
 	if !ok {
 		return "", "", fmt.Errorf("password environment variable not set")
-	}
-	if c.Encoding == "urlencoding" {
-		user, err = url.QueryUnescape(user)
-		if err != nil {
-			return "", "", fmt.Errorf("failed to unescape username: %w", err)
-		}
-		pass, err = url.QueryUnescape(pass)
-		if err != nil {
-			return "", "", fmt.Errorf("failed to unescape password: %w", err)
-		}
 	}
 	return user, pass, nil
 }
