@@ -52,9 +52,8 @@ func (p *Plugin) Handler(next ika.Handler) ika.Handler {
 func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var err error
 
-	metrics := httpsnoop.CaptureMetrics(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err = p.next.ServeHTTP(w, r)
-	}), w, r)
+	metrics := httpsnoop.CaptureMetricsFn(w,
+		func(w http.ResponseWriter) { err = p.next.ServeHTTP(w, r) })
 
 	attrs := []slog.Attr{
 		slog.Group("request", p.makeReqAttrs(r)...),
