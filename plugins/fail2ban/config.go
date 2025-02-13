@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type config struct {
+type pConfig struct {
 	// MaxAttempts is the number of failed attempts before banning
 	MaxAttempts uint64 `json:"maxAttempts"`
 
@@ -21,7 +21,7 @@ type config struct {
 	IDHeader string `json:"idHeader"`
 }
 
-func (c *config) validate() error {
+func (c *pConfig) validate() error {
 	if c.Window <= 0 {
 		return errors.New("window must be greater than 0")
 	}

@@ -82,7 +82,7 @@ func (p *Plugin) makeReqAttrs(r *http.Request) []any {
 		slog.String("pattern", r.Pattern),
 	}
 
-	if p.cfg.IncludeRemoteAddr {
+	if p.cfg.RemoteAddr {
 		requestAttrs = append(requestAttrs, slog.String("remoteAddr", r.RemoteAddr))
 	}
 

@@ -15,7 +15,7 @@ import (
 
 type Plugin struct {
 	next  ika.Handler
-	cfg   config
+	cfg   pConfig
 	genID func() (string, error)
 }
 

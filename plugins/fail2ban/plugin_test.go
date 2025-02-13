@@ -17,7 +17,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
 
 	p := &Plugin{
-		cfg: config{
+		cfg: pConfig{
 			MaxAttempts: 3,
 			Window:      time.Minute,
 			BanDuration: time.Minute,
@@ -49,7 +49,7 @@ func TestPlugin_CustomIdentifierHeader(t *testing.T) {
 	is := is.New(t)
 
 	p := &Plugin{
-		cfg: config{
+		cfg: pConfig{
 			MaxAttempts: 3,
 			Window:      time.Minute,
 			BanDuration: time.Minute,

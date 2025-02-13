@@ -34,23 +34,23 @@ type MiddlewareHook interface {
 	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
 }
 
-// PluginFactory is responsible for creating plugin instances.
+// PluginFactory creates new instances of a plugin.
 type PluginFactory interface {
 	// Name returns the name of the plugin created by this factory.
 	Name() string
 
-	// New creates and returns a new instance of the plugin.
+	// New creates a new instance of the plugin.
 	New(ctx context.Context, ictx InjectionContext) (Plugin, error)
 }
 
-// InjectionContext provides details about the context in which a plugin is injected.
+// InjectionContext contains information about the context in which a plugin is injected.
 type InjectionContext struct {
 	// Namespace indicates the namespace where the plugin is injected.
-	// Empty if not injected at the namespace or path level.
+	// It is empty if not injected at the namespace or path level.
 	Namespace string
 
 	// PathPattern specifies the path pattern where the plugin is injected.
-	// Empty if not injected at the path level.
+	// It is empty if not injected at the path level.
 	PathPattern string
 
 	// Level indicates whether the injection is at the namespace or path level.
@@ -60,12 +60,11 @@ type InjectionContext struct {
 	Logger *slog.Logger
 }
 
-// Plugin defines the common interface for all plugins in Ika.
+// Plugin is the common interface for all plugins in Ika.
 type Plugin interface {
 	// Setup initializes the plugin with the given configuration and context.
 	//
 	// If injected multiple times at the same level, Setup will be called multiple times.
-	// If injected at a level where the plugin can not operate, an error should be returned.
 	Setup(ctx context.Context, ictx InjectionContext, config map[string]any) error
 
 	// Teardown cleans up potential resources used by the plugin.

@@ -23,7 +23,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		{
 			name: "no override header",
 			p: Plugin{
-				cfg: config{
+				cfg: pConfig{
 					Header: "X-Request-Id",
 				},
 				genID: genID,
@@ -39,7 +39,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		{
 			name: "override header",
 			p: Plugin{
-				cfg: config{
+				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: true,
 					Variant:  vUUIDv4,
@@ -57,7 +57,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		{
 			name: "append header",
 			p: Plugin{
-				cfg: config{
+				cfg: pConfig{
 					Header:  "X-Request-Id",
 					Append:  true,
 					Variant: vUUIDv4,

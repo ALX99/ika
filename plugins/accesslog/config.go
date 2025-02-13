@@ -1,9 +1,9 @@
 package accesslog
 
 type pConfig struct {
-	// Headers contains the list of headers to log.
+	// Headers is a list of headers to include in the log.
 	Headers []string `json:"headers"`
 
-	// IncludeRemoteAddr controls whether the remote address is included in the log.
-	IncludeRemoteAddr bool `json:"logRemoteAddr"`
+	// RemoteAddr controls whether the remote address is included in the log.
+	RemoteAddr bool `json:"remoteAddr"`
 }

@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-type config struct {
+type pConfig struct {
 	// Header is the header to populate with the request ID
 	Header string `json:"header"`
 
@@ -25,7 +25,7 @@ const (
 	vKSUID  = "KSUID"
 )
 
-func (c *config) validate() error {
+func (c *pConfig) validate() error {
 	if c.Header == "" {
 		return errors.New("header is required")
 	}

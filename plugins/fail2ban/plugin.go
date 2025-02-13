@@ -17,7 +17,7 @@ import (
 )
 
 type Plugin struct {
-	cfg config
+	cfg pConfig
 
 	// tracks failed attempts by IP
 	attempts *sync.Map // map[string]*ipAttempts
