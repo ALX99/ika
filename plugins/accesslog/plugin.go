@@ -60,6 +60,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		slog.Group("response",
 			slog.Int64("duration", metrics.Duration.Milliseconds()),
 			slog.Int("status", metrics.Code),
+			slog.Int64("bytesWritten", metrics.Written),
 		),
 		slog.Group("ika",
 			slog.String("pattern", r.Pattern),
@@ -69,7 +70,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		attrs = append(attrs, slog.String("error", err.Error()))
 	}
 
-	p.log.LogAttrs(r.Context(), slog.LevelInfo, "served request", attrs...)
+	p.log.LogAttrs(r.Context(), slog.LevelInfo, "access", attrs...)
 	return err
 }
 
