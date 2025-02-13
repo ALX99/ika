@@ -22,6 +22,9 @@ type pConfig struct {
 }
 
 func (c *pConfig) validate() error {
+	if c.MaxAttempts <= 0 {
+		return errors.New("maxAttempts must be greater than 0")
+	}
 	if c.Window <= 0 {
 		return errors.New("window must be greater than 0")
 	}
