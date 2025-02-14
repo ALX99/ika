@@ -7,7 +7,7 @@ set -euo pipefail
 dirs=(
   "."
   "example"
-  "plugins"
+  "pluginutil"
 )
 
 for dir in "plugins"/*; do
