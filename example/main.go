@@ -35,7 +35,6 @@ import (
 var (
 	version                     = "unknown"
 	_       ika.TripperHooker   = &tracer{}
-	_       ika.MiddlewareHook  = &tracer{}
 	_       ika.OnRequestHooker = &tracer{}
 )
 

@@ -28,12 +28,6 @@ type (
 // ErrorHandler is a function that handles errors that occur during request processing.
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, err error)
 
-// TODO
-type MiddlewareHook interface {
-	// HookMiddleware wraps the provided HTTP handler with custom middleware logic.
-	HookMiddleware(ctx context.Context, name string, next http.Handler) (http.Handler, error)
-}
-
 // PluginFactory creates new instances of a plugin.
 type PluginFactory interface {
 	// Name returns the name of the plugin created by this factory.
