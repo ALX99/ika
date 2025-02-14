@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 	"testing"
@@ -12,7 +11,7 @@ import (
 
 func BenchmarkRewritePath(b *testing.B) {
 	is := is.New(b)
-	p, err := (&ReqModifier{}).New(context.Background(), ika.InjectionContext{})
+	p, err := (&ReqModifier{}).New(b.Context(), ika.InjectionContext{})
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -25,7 +24,7 @@ func BenchmarkRewritePath(b *testing.B) {
 		Route:  "/old/{path}",
 		Logger: slog.New(slog.DiscardHandler),
 	}
-	err = rm.Setup(context.Background(), iCtx, config)
+	err = rm.Setup(b.Context(), iCtx, config)
 	is.NoErr(err)
 
 	rm.setupPathRewrite(iCtx.Route)

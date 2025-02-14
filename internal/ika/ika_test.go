@@ -300,7 +300,7 @@ func runServer(t *testing.T) (*http.Client, string) {
 	t.Helper()
 	is := is.New(t)
 	s := newTestServer(t, httptest.NewUnstartedServer(nil))
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	t.Cleanup(cancel)
 	go func() {
 		time.Sleep(10 * time.Second)
