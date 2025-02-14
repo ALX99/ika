@@ -97,3 +97,7 @@ release:
 .PHONY: tidy
 tidy:
 	./scripts/tidy
+
+.PHONY: clean
+clean:
+	find . -name "coverage.out" -type f -delete
