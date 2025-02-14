@@ -64,6 +64,7 @@ vet:
 .PHONY: fmt
 fmt:
 	cue fmt ./...
+	gofmt -l -w .
 
 cfg: cfg-local
 
