@@ -62,13 +62,25 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	if *p.cfg.Override {
+	existingID := r.Header.Get(p.cfg.Header)
+
+	switch {
+	case *p.cfg.Override:
 		r.Header.Set(p.cfg.Header, reqID)
-	} else if p.cfg.Append {
+	case p.cfg.Append:
 		r.Header.Add(p.cfg.Header, reqID)
-	} else {
-		if r.Header.Get(p.cfg.Header) == "" {
-			r.Header.Add(p.cfg.Header, reqID)
+	case existingID == "":
+		r.Header.Add(p.cfg.Header, reqID)
+	}
+
+	if *p.cfg.Expose {
+		switch {
+		case existingID == "" || *p.cfg.Override:
+			w.Header().Set(p.cfg.Header, reqID)
+		case p.cfg.Append:
+			w.Header().Add(p.cfg.Header, r.Header.Get(p.cfg.Header))
+		default:
+			w.Header().Set(p.cfg.Header, existingID)
 		}
 	}
 

@@ -25,6 +25,17 @@ type pConfig struct {
 
 	// Append to the existing header value if present
 	Append bool `json:"append"`
+
+	// Expose controls whether to include the request ID in the response headers.
+	// When enabled, the plugin will copy the final request ID to the response headers.
+	//
+	// The response header value follows these rules:
+	// 1. If override=true: Uses the newly generated ID
+	// 2. If append=true: Uses all request IDs (original and newly generated)
+	// 3. If neither override nor append: Uses the existing ID if present, otherwise the new ID
+	//
+	// Defaults to true
+	Expose *bool `json:"expose"`
 }
 
 const (
@@ -38,6 +49,7 @@ func (c *pConfig) SetDefaults() {
 	c.Header = cmp.Or(c.Header, "X-Request-ID")
 	c.Variant = cmp.Or(c.Variant, vXID)
 	c.Override = cmp.Or(c.Override, &[]bool{true}[0])
+	c.Expose = cmp.Or(c.Expose, &[]bool{true}[0])
 }
 
 func (c *pConfig) Validate() error {
