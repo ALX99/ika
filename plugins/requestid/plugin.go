@@ -30,11 +30,7 @@ func (*Plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
 }
 
 func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
-	if err := pluginutil.ToStruct(config, &p.cfg); err != nil {
-		return err
-	}
-
-	if err := p.cfg.validate(); err != nil {
+	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
 		return err
 	}
 
@@ -54,7 +50,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	if p.cfg.Override {
+	if *p.cfg.Override {
 		r.Header.Set(p.cfg.Header, reqID)
 	} else if p.cfg.Append {
 		r.Header.Add(p.cfg.Header, reqID)

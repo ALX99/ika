@@ -29,11 +29,7 @@ func (*Plugin) Name() string {
 
 func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
 	cfg := pConfig{}
-	if err := pluginutil.ToStruct(config, &cfg); err != nil {
-		return err
-	}
-
-	if err := cfg.validate(); err != nil {
+	if err := pluginutil.UnmarshalCfg(config, &cfg); err != nil {
 		return err
 	}
 

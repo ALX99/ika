@@ -46,12 +46,7 @@ func (*Plugin) New(_ context.Context, ictx ika.InjectionContext) (ika.Plugin, er
 }
 
 func (p *Plugin) Setup(ctx context.Context, _ ika.InjectionContext, config map[string]any) error {
-	if err := pluginutil.ToStruct(config, &p.cfg); err != nil {
-		return err
-	}
-
-	err := p.cfg.validate()
-	if err != nil {
+	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
 		return err
 	}
 

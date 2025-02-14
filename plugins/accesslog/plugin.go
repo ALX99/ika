@@ -32,11 +32,11 @@ func (Plugin) Name() string {
 
 func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	cfg := pConfig{}
-	if err := pluginutil.ToStruct(config, &cfg); err != nil {
+	if err := pluginutil.UnmarshalCfg(config, &cfg); err != nil {
 		return err
 	}
 
-	p.ikaPattern = ictx.PathPattern
+	p.ikaPattern = ictx.RoutePattern
 	p.log = ictx.Logger
 	p.cfg = cfg
 	p.includeHeaders = len(cfg.Headers) > 0
