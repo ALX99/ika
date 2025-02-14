@@ -3,7 +3,7 @@ module github.com/alx99/ika/example
 go 1.24.0
 
 require (
-	github.com/alx99/ika v0.0.39
+	github.com/alx99/ika v0.0.40
 	github.com/alx99/ika/plugins/accesslog v0.0.1
 	github.com/alx99/ika/plugins/basicauth v0.0.3
 	github.com/alx99/ika/plugins/requestid v0.1.0
