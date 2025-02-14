@@ -121,7 +121,7 @@ func (p *Plugin) isBanned(ip string) bool {
 		return false
 	}
 
-	return att.fails >= p.cfg.MaxAttempts
+	return att.fails >= p.cfg.MaxRetries
 }
 
 func (p *Plugin) recordFailedAttempt(ctx context.Context, ip string) {
@@ -140,7 +140,7 @@ func (p *Plugin) recordFailedAttempt(ctx context.Context, ip string) {
 	att.fails++
 	att.lastTry = now
 
-	if att.fails >= p.cfg.MaxAttempts {
+	if att.fails >= p.cfg.MaxRetries {
 		att.banUntil = now.Add(p.cfg.BanDuration)
 		p.log.LogAttrs(ctx, slog.LevelInfo, "IP banned", slog.Any("ip", ip), slog.Time("until", att.banUntil))
 	}
