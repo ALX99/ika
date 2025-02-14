@@ -308,3 +308,31 @@ func TestPlugin_Integration(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkIDGeneration(b *testing.B) {
+	tests := []struct {
+		name    string
+		variant string
+	}{
+		{"UUIDv4", vUUIDv4},
+		{"UUIDv7", vUUIDv7},
+		{"KSUID", vKSUID},
+		{"XID", vXID},
+	}
+
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			genFn, err := makeRandFun(tt.variant)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			for b.Loop() {
+				_, err := genFn()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
