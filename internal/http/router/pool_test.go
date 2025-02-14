@@ -1,14 +1,12 @@
-package pool_test
+package router
 
 import (
 	"net/http/httputil"
 	"testing"
-
-	"github.com/alx99/ika/internal/pool"
 )
 
 func BenchmarkBufferPool(b *testing.B) {
-	var bp httputil.BufferPool = pool.NewBufferPool()
+	var bp httputil.BufferPool = newBufferPool()
 	for b.Loop() {
 		buf := bp.Get()
 		bp.Put(buf)

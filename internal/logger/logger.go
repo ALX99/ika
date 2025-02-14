@@ -11,7 +11,7 @@ import (
 )
 
 func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() error) {
-	cfg.ApplyDefaults()
+	cfg.SetDefaults()
 	w := newBufferedWriter(os.Stdout)
 	var log *slog.Logger
 	var level slog.Level

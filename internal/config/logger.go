@@ -14,7 +14,7 @@ type Logger struct {
 	AddSource     bool     `json:"addSource"`
 }
 
-func (l *Logger) ApplyDefaults() {
+func (l *Logger) SetDefaults() {
 	l.Level = strings.ToLower(cmp.Or(l.Level, "info"))
 	l.Format = strings.ToLower(cmp.Or(l.Format, "json"))
 	l.FlushInterval = cmp.Or(l.FlushInterval, Duration(time.Second))
