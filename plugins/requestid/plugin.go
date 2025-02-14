@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/alx99/ika"
@@ -22,13 +23,16 @@ type Plugin struct {
 	next  ika.Handler
 	cfg   pConfig
 	genID func() (string, error)
+
+	// once is used to ensure that printing of the xid info is only done once
+	once sync.Once
 }
 
 func (*Plugin) Name() string {
 	return "request-id"
 }
 
-func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+func (f *Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
 	p := &Plugin{}
 
 	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
@@ -42,8 +46,10 @@ func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 	}
 
 	if p.cfg.Variant == vXID {
-		guid := xid.New()
-		ictx.Logger.Log(ctx, slog.LevelInfo, "xid info", "pid", guid.Pid(), "machine", guid.Machine())
+		f.once.Do(func() {
+			guid := xid.New()
+			ictx.Logger.Log(ctx, slog.LevelInfo, "xid info", "pid", guid.Pid(), "machine", guid.Machine())
+		})
 	}
 
 	return p, nil
