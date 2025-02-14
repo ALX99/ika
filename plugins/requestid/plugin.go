@@ -28,19 +28,17 @@ func (*Plugin) Name() string {
 	return "request-id"
 }
 
-func (*Plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
-	return &Plugin{}, nil
-}
+func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &Plugin{}
 
-func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
-		return err
+		return nil, err
 	}
 
 	var err error
 	p.genID, err = makeRandFun(p.cfg.Variant)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if p.cfg.Variant == vXID {
@@ -48,7 +46,7 @@ func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config ma
 		ictx.Logger.Log(ctx, slog.LevelInfo, "xid info", "pid", guid.Pid(), "machine", guid.Machine())
 	}
 
-	return nil
+	return p, nil
 }
 
 func (p *Plugin) Handler(next ika.Handler) ika.Handler {

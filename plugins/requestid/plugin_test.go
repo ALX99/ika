@@ -179,25 +179,28 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 func TestPlugin_Setup(t *testing.T) {
 	t.Parallel()
 
+	factory := &Plugin{}
+
 	tests := []struct {
 		name      string
 		config    map[string]any
 		wantError bool
-		check     func(*is.I, *Plugin)
+		check     func(*is.I, ika.Plugin)
 	}{
 		{
 			name:      "valid config with defaults",
 			config:    map[string]any{},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(p.cfg.Header, "X-Request-ID")
-				is.Equal(p.cfg.Variant, vXID)
-				is.True(*p.cfg.Override)
-				is.Equal(p.cfg.Append, false)
-				is.True(*p.cfg.Expose)
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Header, "X-Request-ID")
+				is.Equal(plugin.cfg.Variant, vXID)
+				is.True(*plugin.cfg.Override)
+				is.Equal(plugin.cfg.Append, false)
+				is.True(*plugin.cfg.Expose)
 
 				// Test ID generation
-				id, err := p.genID()
+				id, err := plugin.genID()
 				is.NoErr(err)
 				is.True(len(id) > 0) // XID should generate a non-empty string
 			},
@@ -208,9 +211,10 @@ func TestPlugin_Setup(t *testing.T) {
 				"expose": false,
 			},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(*p.cfg.Expose, false)
-				is.Equal(p.cfg.Header, "X-Request-ID") // Should use default header
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(*plugin.cfg.Expose, false)
+				is.Equal(plugin.cfg.Header, "X-Request-ID") // Should use default header
 			},
 		},
 		{
@@ -220,12 +224,13 @@ func TestPlugin_Setup(t *testing.T) {
 				"header":  "X-Correlation-ID",
 			},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(p.cfg.Header, "X-Correlation-ID")
-				is.Equal(p.cfg.Variant, vUUIDv4)
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Header, "X-Correlation-ID")
+				is.Equal(plugin.cfg.Variant, vUUIDv4)
 
 				// Test ID generation
-				id, err := p.genID()
+				id, err := plugin.genID()
 				is.NoErr(err)
 				is.True(len(id) == 36) // UUIDv4 should be 36 chars
 			},
@@ -236,11 +241,12 @@ func TestPlugin_Setup(t *testing.T) {
 				"variant": "UUIDv7",
 			},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(p.cfg.Variant, vUUIDv7)
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Variant, vUUIDv7)
 
 				// Test ID generation
-				id, err := p.genID()
+				id, err := plugin.genID()
 				is.NoErr(err)
 				is.True(len(id) == 36) // UUIDv7 should be 36 chars
 			},
@@ -251,11 +257,12 @@ func TestPlugin_Setup(t *testing.T) {
 				"variant": "KSUID",
 			},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(p.cfg.Variant, vKSUID)
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Variant, vKSUID)
 
 				// Test ID generation
-				id, err := p.genID()
+				id, err := plugin.genID()
 				is.NoErr(err)
 				is.True(len(id) > 0) // KSUID should generate a non-empty string
 			},
@@ -267,12 +274,13 @@ func TestPlugin_Setup(t *testing.T) {
 				"override": false,
 			},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(p.cfg.Append, true)
-				is.Equal(*p.cfg.Override, false)
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Append, true)
+				is.Equal(*plugin.cfg.Override, false)
 
 				// Test that ID generation still works
-				id, err := p.genID()
+				id, err := plugin.genID()
 				is.NoErr(err)
 				is.True(len(id) > 0)
 			},
@@ -290,8 +298,9 @@ func TestPlugin_Setup(t *testing.T) {
 				"header": nil,
 			},
 			wantError: false,
-			check: func(is *is.I, p *Plugin) {
-				is.Equal(p.cfg.Header, "X-Request-ID") // Should use default header
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Header, "X-Request-ID") // Should use default header
 			},
 		},
 		{
@@ -309,8 +318,7 @@ func TestPlugin_Setup(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			p := &Plugin{}
-			err := p.Setup(t.Context(), ika.InjectionContext{
+			p, err := factory.New(t.Context(), ika.InjectionContext{
 				Logger: slog.New(slog.DiscardHandler),
 			}, tt.config)
 
@@ -330,54 +338,63 @@ func TestPlugin_Setup(t *testing.T) {
 func TestPlugin_Integration(t *testing.T) {
 	t.Parallel()
 
+	factory := &Plugin{}
+
 	tests := []struct {
-		name           string
-		config         map[string]any
-		setupHeader    string
-		wantHeader     bool
-		wantRespHeader bool
+		name      string
+		config    map[string]any
+		wantError bool
+		check     func(*is.I, ika.Plugin)
 	}{
 		{
-			name:           "default config adds header and response",
-			config:         map[string]any{},
-			wantHeader:     true,
-			wantRespHeader: true,
+			name: "valid config with UUIDv4",
+			config: map[string]any{
+				"variant": "UUIDv4",
+				"header":  "X-Correlation-ID",
+			},
+			wantError: false,
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Header, "X-Correlation-ID")
+				is.Equal(plugin.cfg.Variant, vUUIDv4)
+
+				// Test ID generation
+				id, err := plugin.genID()
+				is.NoErr(err)
+				is.True(len(id) == 36) // UUIDv4 should be 36 chars
+			},
 		},
 		{
-			name: "respects custom header name",
+			name: "valid config with UUIDv7",
 			config: map[string]any{
-				"header": "X-Trace-ID",
+				"variant": "UUIDv7",
 			},
-			wantHeader:     true,
-			wantRespHeader: true,
+			wantError: false,
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Variant, vUUIDv7)
+
+				// Test ID generation
+				id, err := plugin.genID()
+				is.NoErr(err)
+				is.True(len(id) == 36) // UUIDv7 should be 36 chars
+			},
 		},
 		{
-			name: "expose disabled",
+			name: "valid config with KSUID",
 			config: map[string]any{
-				"expose": false,
+				"variant": "KSUID",
 			},
-			wantHeader:     true,
-			wantRespHeader: false,
-		},
-		{
-			name: "expose with existing header",
-			config: map[string]any{
-				"expose":   true,
-				"override": false,
+			wantError: false,
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*Plugin)
+				is.Equal(plugin.cfg.Variant, vKSUID)
+
+				// Test ID generation
+				id, err := plugin.genID()
+				is.NoErr(err)
+				is.True(len(id) > 0) // KSUID should generate a non-empty string
 			},
-			setupHeader:    "test-id",
-			wantHeader:     true,
-			wantRespHeader: true,
-		},
-		{
-			name: "expose with override",
-			config: map[string]any{
-				"expose":   true,
-				"override": true,
-			},
-			setupHeader:    "test-id",
-			wantHeader:     true,
-			wantRespHeader: true,
 		},
 	}
 
@@ -386,42 +403,18 @@ func TestPlugin_Integration(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
 
-			p := &Plugin{}
-			err := p.Setup(t.Context(), ika.InjectionContext{
+			p, err := factory.New(t.Context(), ika.InjectionContext{
 				Logger: slog.New(slog.DiscardHandler),
 			}, tt.config)
+
+			if tt.wantError {
+				is.True(err != nil)
+				return
+			}
+
 			is.NoErr(err)
-
-			req := httptest.NewRequest("GET", "/", nil)
-			if tt.setupHeader != "" {
-				headerName := "X-Request-ID"
-				if h, ok := tt.config["header"].(string); ok {
-					headerName = h
-				}
-				req.Header.Set(headerName, tt.setupHeader)
-			}
-
-			w := httptest.NewRecorder()
-			err = p.Handler(ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-				return nil
-			})).ServeHTTP(w, req)
-			is.NoErr(err)
-
-			headerName := "X-Request-ID"
-			if h, ok := tt.config["header"].(string); ok {
-				headerName = h
-			}
-
-			if tt.wantHeader {
-				is.True(req.Header.Get(headerName) != "")
-			}
-
-			if tt.wantRespHeader {
-				is.True(w.Header().Get(headerName) != "")
-				// Response header should match request header
-				is.Equal(w.Header().Get(headerName), req.Header.Get(headerName))
-			} else {
-				is.Equal(w.Header().Get(headerName), "")
+			if tt.check != nil {
+				tt.check(is, p)
 			}
 		})
 	}

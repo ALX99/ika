@@ -42,16 +42,12 @@ var _ ika.Middleware = &noCache{}
 
 type noCache struct{}
 
-func (w *noCache) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
+func (w *noCache) New(context.Context, ika.InjectionContext, map[string]any) (ika.Plugin, error) {
 	return &noCache{}, nil
 }
 
 func (w *noCache) Name() string {
 	return "noCache"
-}
-
-func (w *noCache) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
-	return nil
 }
 
 func (w *noCache) Teardown(context.Context) error {
@@ -83,13 +79,8 @@ type tracer struct {
 
 var _ ika.TripperHooker = &tracer{}
 
-func (w *tracer) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
-	return &tracer{}, nil
-}
-
-func (w *tracer) Setup(_ context.Context, ictx ika.InjectionContext, config map[string]any) error {
-	w.ns = ictx.Namespace
-	return nil
+func (w *tracer) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	return &tracer{ns: ictx.Namespace}, nil
 }
 
 func (w *tracer) Name() string {

@@ -19,24 +19,18 @@ type Plugin struct {
 	next             ika.Handler
 }
 
-func (*Plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
-	return &Plugin{}, nil
-}
+func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &Plugin{}
 
-func (*Plugin) Name() string {
-	return "basic-auth"
-}
-
-func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
 	cfg := pConfig{}
 	if err := pluginutil.UnmarshalCfg(config, &cfg); err != nil {
-		return err
+		return nil, err
 	}
 
 	if cfg.Incoming != nil {
 		inUser, inPass, err := cfg.Incoming.credentials()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		p.inUser, p.inPass = []byte(inUser), []byte(inPass)
 	}
@@ -45,11 +39,15 @@ func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[str
 		var err error
 		p.outUser, p.outPass, err = cfg.Outgoing.credentials()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return p, nil
+}
+
+func (*Plugin) Name() string {
+	return "basic-auth"
 }
 
 func (p *Plugin) Handler(next ika.Handler) ika.Handler {

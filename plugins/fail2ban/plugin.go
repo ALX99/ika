@@ -38,22 +38,21 @@ func (*Plugin) Name() string {
 	return "fail2ban"
 }
 
-func (*Plugin) New(_ context.Context, ictx ika.InjectionContext) (ika.Plugin, error) {
-	return &Plugin{
+func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &Plugin{
 		attempts: &sync.Map{},
 		log:      ictx.Logger,
-	}, nil
-}
+	}
 
-func (p *Plugin) Setup(ctx context.Context, _ ika.InjectionContext, config map[string]any) error {
 	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
-		return err
+		return nil, err
 	}
 
 	p.once.Do(func() {
 		go p.cleanupLoop(ctx)
 	})
-	return nil
+
+	return p, nil
 }
 
 func (p *Plugin) Handler(next ika.Handler) ika.Handler {

@@ -11,12 +11,6 @@ import (
 
 func BenchmarkRewritePath(b *testing.B) {
 	is := is.New(b)
-	p, err := (&ReqModifier{}).New(b.Context(), ika.InjectionContext{})
-	if err != nil {
-		b.Fatal(err)
-	}
-	rm := p.(*ReqModifier)
-
 	config := map[string]any{
 		"path": "/new/{path}",
 	}
@@ -24,8 +18,11 @@ func BenchmarkRewritePath(b *testing.B) {
 		Route:  "/old/{path}",
 		Logger: slog.New(slog.DiscardHandler),
 	}
-	err = rm.Setup(b.Context(), iCtx, config)
-	is.NoErr(err)
+	p, err := (&ReqModifier{}).New(b.Context(), iCtx, config)
+	if err != nil {
+		b.Fatal(err)
+	}
+	rm := p.(*ReqModifier)
 
 	rm.setupPathRewrite(iCtx.Route)
 

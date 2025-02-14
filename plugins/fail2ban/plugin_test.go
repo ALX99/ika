@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 
 func TestPlugin_Setup(t *testing.T) {
 	t.Parallel()
+
+	factory := &Plugin{}
 
 	tests := []struct {
 		name      string
@@ -68,11 +69,11 @@ func TestPlugin_Setup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
-			p := &Plugin{
-				attempts: &sync.Map{},
-				log:      slog.New(slog.DiscardHandler),
-			}
-			err := p.Setup(t.Context(), ika.InjectionContext{}, tt.config)
+
+			_, err := factory.New(t.Context(), ika.InjectionContext{
+				Logger: slog.New(slog.DiscardHandler),
+			}, tt.config)
+
 			if tt.wantError {
 				is.True(err != nil)
 			} else {
@@ -84,6 +85,7 @@ func TestPlugin_Setup(t *testing.T) {
 
 func TestPlugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
+	factory := &Plugin{}
 
 	tests := []struct {
 		name           string
@@ -150,19 +152,20 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Plugin{
-				cfg: pConfig{
-					MaxRetries:  tt.maxRetries,
-					Window:      tt.window,
-					BanDuration: tt.banDuration,
-					IDHeader:    tt.idHeader,
-				},
-				attempts: &sync.Map{},
-				log:      slog.New(slog.DiscardHandler),
-				next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-					return httperr.New(http.StatusUnauthorized)
-				}),
-			}
+			p, err := factory.New(t.Context(), ika.InjectionContext{
+				Logger: slog.New(slog.DiscardHandler),
+			}, map[string]any{
+				"maxRetries":  tt.maxRetries,
+				"window":      tt.window.String(),
+				"banDuration": tt.banDuration.String(),
+				"idHeader":    tt.idHeader,
+			})
+			is.NoErr(err)
+
+			plugin := p.(*Plugin)
+			plugin.next = ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+				return httperr.New(http.StatusUnauthorized)
+			})
 
 			// Run the sequence of requests
 			for _, req := range tt.requests {
@@ -173,7 +176,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 				}
 				w := httptest.NewRecorder()
 
-				err := p.ServeHTTP(w, r)
+				err := plugin.ServeHTTP(w, r)
 				is.True(err != nil)
 
 				var httpErr *httperr.Error
@@ -190,7 +193,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 
-			err := p.ServeHTTP(w, r)
+			err = plugin.ServeHTTP(w, r)
 			is.True(err != nil)
 
 			var httpErr *httperr.Error
@@ -204,31 +207,33 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 func TestPlugin_Cleanup(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
+	factory := &Plugin{}
 
-	p := &Plugin{
-		cfg: pConfig{
-			MaxRetries:  2,
-			Window:      50 * time.Millisecond,
-			BanDuration: 50 * time.Millisecond,
-		},
-		attempts: &sync.Map{},
-		log:      slog.New(slog.DiscardHandler),
-		next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-			return httperr.New(http.StatusUnauthorized)
-		}),
-	}
+	p, err := factory.New(t.Context(), ika.InjectionContext{
+		Logger: slog.New(slog.DiscardHandler),
+	}, map[string]any{
+		"maxRetries":  uint64(2),
+		"window":      "50ms",
+		"banDuration": "50ms",
+	})
+	is.NoErr(err)
+
+	plugin := p.(*Plugin)
+	plugin.next = ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
+		return httperr.New(http.StatusUnauthorized)
+	})
 
 	// Make requests to get banned
 	r := httptest.NewRequest("GET", "/", nil)
 	r.RemoteAddr = "192.0.2.1:1234"
 
 	for i := 0; i < 2; i++ {
-		err := p.ServeHTTP(httptest.NewRecorder(), r)
+		err := plugin.ServeHTTP(httptest.NewRecorder(), r)
 		is.True(err != nil)
 	}
 
 	// Verify banned
-	err := p.ServeHTTP(httptest.NewRecorder(), r)
+	err = plugin.ServeHTTP(httptest.NewRecorder(), r)
 	is.True(err != nil)
 	var httpErr *httperr.Error
 	is.True(errors.As(err, &httpErr))
@@ -238,7 +243,7 @@ func TestPlugin_Cleanup(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Should be unbanned
-	err = p.ServeHTTP(httptest.NewRecorder(), r)
+	err = plugin.ServeHTTP(httptest.NewRecorder(), r)
 	is.True(err != nil)
 	is.True(errors.As(err, &httpErr))
 	is.Equal(httpErr.Status(), http.StatusUnauthorized)

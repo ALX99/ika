@@ -46,15 +46,12 @@ type ReqModifier struct {
 	once sync.Once
 }
 
-func (*ReqModifier) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
-	return &ReqModifier{}, nil
-}
-
 func (*ReqModifier) Name() string {
-	return "basic-modifier"
+	return "req-modifier"
 }
 
-func (rm *ReqModifier) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
+func (*ReqModifier) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	rm := &ReqModifier{}
 	routePattern := ictx.Route
 
 	var toPath string
@@ -73,7 +70,7 @@ func (rm *ReqModifier) Setup(ctx context.Context, ictx ika.InjectionContext, con
 
 	if toPath != "" {
 		if routePattern == "" {
-			return fmt.Errorf("path pattern is required")
+			return nil, fmt.Errorf("path pattern is required")
 		}
 		rm.pathRewriteEnabled = true
 		rm.toPath = toPath
@@ -82,12 +79,12 @@ func (rm *ReqModifier) Setup(ctx context.Context, ictx ika.InjectionContext, con
 	if host != "" {
 		rm.hostRewriteEnabled = true
 		if err := rm.setupHostRewrite(host); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	rm.log = ictx.Logger
-	return nil
+	return rm, nil
 }
 
 func (rm *ReqModifier) ModifyRequest(r *http.Request) error {
@@ -138,6 +135,7 @@ func (rm *ReqModifier) rewritePath(r *http.Request) error {
 		slog.String("from", path), slog.String("to", r.URL.RawPath))
 	return nil
 }
+
 func (*ReqModifier) Teardown(context.Context) error { return nil }
 
 func (rm *ReqModifier) rewriteHost(r *http.Request) {

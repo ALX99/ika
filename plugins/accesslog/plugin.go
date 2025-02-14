@@ -22,18 +22,16 @@ type Plugin struct {
 	log            *slog.Logger
 }
 
-func (Plugin) New(_ context.Context, _ ika.InjectionContext) (ika.Plugin, error) {
-	return &Plugin{}, nil
-}
-
 func (Plugin) Name() string {
 	return "access-log"
 }
 
-func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
+func (Plugin) New(_ context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &Plugin{}
+
 	cfg := pConfig{}
 	if err := pluginutil.UnmarshalCfg(config, &cfg); err != nil {
-		return err
+		return nil, err
 	}
 
 	p.ikaPattern = ictx.Route
@@ -41,7 +39,7 @@ func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config ma
 	p.cfg = cfg
 	p.includeHeaders = len(cfg.Headers) > 0
 
-	return nil
+	return p, nil
 }
 
 func (p *Plugin) Handler(next ika.Handler) ika.Handler {

@@ -11,11 +11,13 @@ func TestPlugin_Setup(t *testing.T) {
 	t.Setenv("USER_ENV", "user")
 	t.Setenv("PASS_ENV", "pass")
 
+	factory := &Plugin{}
+
 	tests := []struct {
 		name    string
 		config  map[string]any
 		wantErr bool
-		check   func(*is.I, *Plugin)
+		check   func(*is.I, ika.Plugin)
 	}{
 		{
 			name: "valid static config with incoming",
@@ -137,12 +139,13 @@ func TestPlugin_Setup(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			check: func(is *is.I, p *Plugin) {
-				// Check that credentials were set correctly, which means the default type "static" was used
-				is.Equal(string(p.inUser), "user")
-				is.Equal(string(p.inPass), "pass")
-				is.Equal(p.outUser, "user")
-				is.Equal(p.outPass, "pass")
+			check: func(is *is.I, p ika.Plugin) {
+				// We need to type assert here since we're checking internal state
+				plugin := p.(*Plugin)
+				is.Equal(string(plugin.inUser), "user")
+				is.Equal(string(plugin.inPass), "pass")
+				is.Equal(plugin.outUser, "user")
+				is.Equal(plugin.outPass, "pass")
 			},
 		},
 	}
@@ -151,8 +154,8 @@ func TestPlugin_Setup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
-			p := &Plugin{}
-			err := p.Setup(t.Context(), ika.InjectionContext{}, tt.config)
+
+			p, err := factory.New(t.Context(), ika.InjectionContext{}, tt.config)
 
 			if tt.wantErr {
 				is.True(err != nil)
