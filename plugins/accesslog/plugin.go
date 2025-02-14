@@ -36,7 +36,7 @@ func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config ma
 		return err
 	}
 
-	p.ikaPattern = ictx.RoutePattern
+	p.ikaPattern = ictx.Route
 	p.log = ictx.Logger
 	p.cfg = cfg
 	p.includeHeaders = len(cfg.Headers) > 0

@@ -22,13 +22,13 @@ func BenchmarkRewritePath(b *testing.B) {
 		"path": "/new/{path}",
 	}
 	iCtx := ika.InjectionContext{
-		RoutePattern: "/old/{path}",
-		Logger:       slog.New(slog.DiscardHandler),
+		Route:  "/old/{path}",
+		Logger: slog.New(slog.DiscardHandler),
 	}
 	err = rm.Setup(context.Background(), iCtx, config)
 	is.NoErr(err)
 
-	rm.setupPathRewrite(iCtx.RoutePattern)
+	rm.setupPathRewrite(iCtx.Route)
 
 	req, _ := http.NewRequest("GET", "http://example.com/old/test", nil)
 

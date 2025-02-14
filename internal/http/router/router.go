@@ -102,10 +102,10 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 			c := caramel.Wrap(r.mux).Mount(mount)
 
 			ictx := ika.InjectionContext{
-				Namespace:    nsName,
-				RoutePattern: pattern,
-				Level:        ika.LevelRoute,
-				Logger:       log,
+				Namespace: nsName,
+				Route:     pattern,
+				Level:     ika.LevelRoute,
+				Logger:    log,
 			}
 
 			routeChain, err := r.makePluginChain(ctx, ictx,

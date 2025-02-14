@@ -49,9 +49,9 @@ type InjectionContext struct {
 	// It is empty if not injected at the namespace or route level.
 	Namespace string
 
-	// RoutePattern specifies the route pattern where the plugin is injected.
+	// Route specifies the route where the plugin is injected.
 	// It is empty if not injected at the route level.
-	RoutePattern string
+	Route string
 
 	// Level indicates whether the injection is at the namespace or route level.
 	Level InjectionLevel
