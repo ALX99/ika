@@ -133,6 +133,6 @@ func makeRandFun(variant string) (func() (string, error), error) {
 }
 
 var (
-	_ ika.OnRequestHooker = &Plugin{}
-	_ ika.PluginFactory   = &Plugin{}
+	_ ika.OnRequestHook = &Plugin{}
+	_ ika.PluginFactory = &Plugin{}
 )

@@ -100,7 +100,7 @@ func ChainFromReqModifiers(reqModifiers []setuppedPlugin) (chain.Chain, error) {
 func MakeTripperHooks(hooks []setuppedPlugin) func(http.RoundTripper) (http.RoundTripper, error) {
 	return func(tripper http.RoundTripper) (http.RoundTripper, error) {
 		for _, hook := range hooks {
-			hooker, ok := hook.plugin.(ika.TripperHooker)
+			hooker, ok := hook.plugin.(ika.TripperHook)
 			if !ok {
 				continue // hooks does not have to implement every interface
 			}
@@ -117,7 +117,7 @@ func MakeTripperHooks(hooks []setuppedPlugin) func(http.RoundTripper) (http.Roun
 func MakeOnRequestHooks(hooks []setuppedPlugin) (chain.Chain, error) {
 	cons := make([]chain.Constructor, len(hooks))
 	for i, hook := range hooks {
-		hooker, ok := hook.plugin.(ika.OnRequestHooker)
+		hooker, ok := hook.plugin.(ika.OnRequestHook)
 		if !ok {
 			continue // hooks does not have to implement every interface
 		}

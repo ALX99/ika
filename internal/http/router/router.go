@@ -66,7 +66,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 
 	ictx := ika.InjectionContext{
 		Namespace: nsName,
-		Level:     ika.LevelNamespace,
+		Scope:     ika.ScopeNamespace,
 		Logger:    log,
 	}
 
@@ -104,7 +104,7 @@ func (r *Router) buildNamespace(ctx context.Context, nsName string, ns config.Na
 			ictx := ika.InjectionContext{
 				Namespace: nsName,
 				Route:     pattern,
-				Level:     ika.LevelRoute,
+				Scope:     ika.ScopeRoute,
 				Logger:    log,
 			}
 

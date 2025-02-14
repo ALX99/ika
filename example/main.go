@@ -33,9 +33,9 @@ import (
 )
 
 var (
-	version                     = "unknown"
-	_       ika.TripperHooker   = &tracer{}
-	_       ika.OnRequestHooker = &tracer{}
+	version                   = "unknown"
+	_       ika.TripperHook   = &tracer{}
+	_       ika.OnRequestHook = &tracer{}
 )
 
 var _ ika.Middleware = &noCache{}
@@ -77,7 +77,7 @@ type tracer struct {
 	ns string
 }
 
-var _ ika.TripperHooker = &tracer{}
+var _ ika.TripperHook = &tracer{}
 
 func (w *tracer) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
 	return &tracer{ns: ictx.Namespace}, nil
