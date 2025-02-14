@@ -1,6 +1,7 @@
 package requestid
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -105,14 +106,14 @@ func TestPlugin_Setup(t *testing.T) {
 			wantError: false,
 			check: func(is *is.I, p *Plugin) {
 				is.Equal(p.cfg.Header, "X-Request-ID")
-				is.Equal(p.cfg.Variant, vKSUID)
+				is.Equal(p.cfg.Variant, vXID)
 				is.True(*p.cfg.Override)
 				is.Equal(p.cfg.Append, false)
 
 				// Test ID generation
 				id, err := p.genID()
 				is.NoErr(err)
-				is.True(len(id) > 0) // KSUID should generate a non-empty string
+				is.True(len(id) > 0) // XID should generate a non-empty string
 			},
 		},
 		{
@@ -212,7 +213,9 @@ func TestPlugin_Setup(t *testing.T) {
 			is := is.New(t)
 
 			p := &Plugin{}
-			err := p.Setup(t.Context(), ika.InjectionContext{}, tt.config)
+			err := p.Setup(t.Context(), ika.InjectionContext{
+				Logger: slog.New(slog.DiscardHandler),
+			}, tt.config)
 
 			if tt.wantError {
 				is.True(err != nil)
@@ -266,7 +269,9 @@ func TestPlugin_Integration(t *testing.T) {
 
 			// Setup plugin
 			p := &Plugin{}
-			err := p.Setup(t.Context(), ika.InjectionContext{}, tt.config)
+			err := p.Setup(t.Context(), ika.InjectionContext{
+				Logger: slog.New(slog.DiscardHandler),
+			}, tt.config)
 			is.NoErr(err)
 
 			// Set up next handler

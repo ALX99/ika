@@ -13,9 +13,9 @@ type pConfig struct {
 	// Defaults to "X-Request-ID"
 	Header string `json:"header"`
 
-	// Variant is the ID generation algorithm: UUIDv4, UUIDv7, KSUID
+	// Variant is the ID generation algorithm: UUIDv4, UUIDv7, KSUID, XID
 	//
-	// Defaults to "KSUID"
+	// Defaults to "XID"
 	Variant string `json:"variant"`
 
 	// Override the existing header value if present
@@ -31,11 +31,12 @@ const (
 	vUUIDv4 = "UUIDv4"
 	vUUIDv7 = "UUIDv7"
 	vKSUID  = "KSUID"
+	vXID    = "XID"
 )
 
 func (c *pConfig) SetDefaults() {
 	c.Header = cmp.Or(c.Header, "X-Request-ID")
-	c.Variant = cmp.Or(c.Variant, vKSUID)
+	c.Variant = cmp.Or(c.Variant, vXID)
 	c.Override = cmp.Or(c.Override, &[]bool{true}[0])
 }
 
@@ -48,6 +49,7 @@ func (c *pConfig) Validate() error {
 		vUUIDv4,
 		vUUIDv7,
 		vKSUID,
+		vXID,
 	}, c.Variant) {
 		return fmt.Errorf("invalid variant: %s", c.Variant)
 	}

@@ -6,12 +6,15 @@ import (
 	"context"
 	cryptoRand "crypto/rand"
 	"errors"
+	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"time"
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/pluginutil"
 	"github.com/google/uuid"
+	"github.com/rs/xid"
 	"github.com/segmentio/ksuid"
 )
 
@@ -29,14 +32,23 @@ func (*Plugin) New(context.Context, ika.InjectionContext) (ika.Plugin, error) {
 	return &Plugin{}, nil
 }
 
-func (p *Plugin) Setup(_ context.Context, _ ika.InjectionContext, config map[string]any) error {
+func (p *Plugin) Setup(ctx context.Context, ictx ika.InjectionContext, config map[string]any) error {
 	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
 		return err
 	}
 
 	var err error
 	p.genID, err = makeRandFun(p.cfg.Variant)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if p.cfg.Variant == vXID {
+		guid := xid.New()
+		ictx.Logger.Log(ctx, slog.LevelInfo, "xid info", "pid", guid.Pid(), "machine", guid.Machine())
+	}
+
+	return nil
 }
 
 func (p *Plugin) Handler(next ika.Handler) ika.Handler {
@@ -99,8 +111,12 @@ func makeRandFun(variant string) (func() (string, error), error) {
 	case vKSUID:
 		ksuid.SetRand(chacha)
 		return func() (string, error) {
-			ksuid, err := ksuid.NewRandom()
+			ksuid, err := ksuid.NewRandomWithTime(time.Now())
 			return ksuid.String(), err
+		}, nil
+	case vXID:
+		return func() (string, error) {
+			return xid.NewWithTime(time.Now()).String(), nil
 		}, nil
 	}
 	return nil, errors.New("unknown variant")
