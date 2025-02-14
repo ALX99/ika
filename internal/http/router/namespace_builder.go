@@ -24,18 +24,22 @@ type nsBuilder struct {
 	name       string
 	namespace  config.Namespace
 	log        *slog.Logger
+	proxy      *proxy.Proxy
+	transport  http.RoundTripper
 	factories  map[string]ika.PluginFactory
 	teardowner teardown.Teardowner
 }
 
-func newNSBuilder(name string, ns config.Namespace, log *slog.Logger, factories map[string]ika.PluginFactory, mux *http.ServeMux) *nsBuilder {
-	return &nsBuilder{
+func newNSBuilder(ctx context.Context, name string, ns config.Namespace, log *slog.Logger, factories map[string]ika.PluginFactory) (*nsBuilder, error) {
+	b := nsBuilder{
 		name:       name,
 		namespace:  ns,
 		log:        log.With(slog.String("namespace", name)),
 		factories:  factories,
 		teardowner: make(teardown.Teardowner, 0),
 	}
+
+	return &b, nil
 }
 
 func (b *nsBuilder) build(ctx context.Context, mux *http.ServeMux) error {
@@ -47,10 +51,13 @@ func (b *nsBuilder) build(ctx context.Context, mux *http.ServeMux) error {
 		Logger:    b.log,
 	}
 
-	transport, err := b.setupTransport(ctx, ictx, transport)
+	var err error
+	transport, err = b.setupTransport(ctx, ictx, transport)
 	if err != nil {
 		return errors.Join(err, b.teardowner.Teardown(ctx))
 	}
+
+	b.transport = transport
 
 	p, err := proxy.NewProxy(b.log, proxy.Config{
 		Transport:  transport,
@@ -61,17 +68,19 @@ func (b *nsBuilder) build(ctx context.Context, mux *http.ServeMux) error {
 		return errors.Join(err, b.teardowner.Teardown(ctx))
 	}
 
-	if err := b.buildRoutes(ctx, mux, p); err != nil {
+	b.proxy = p
+
+	if err := b.buildRoutes(ctx, mux); err != nil {
 		return errors.Join(err, b.teardowner.Teardown(ctx))
 	}
 
 	return nil
 }
 
-func (b *nsBuilder) buildRoutes(ctx context.Context, mux *http.ServeMux, p *proxy.Proxy) error {
+func (b *nsBuilder) buildRoutes(ctx context.Context, mux *http.ServeMux) error {
 	for _, mount := range b.namespace.Mounts {
 		for pattern, route := range b.namespace.Routes {
-			if err := b.buildRoute(ctx, mux, mount, pattern, route, p); err != nil {
+			if err := b.buildRoute(ctx, mux, mount, pattern, route); err != nil {
 				return err
 			}
 		}
@@ -79,7 +88,7 @@ func (b *nsBuilder) buildRoutes(ctx context.Context, mux *http.ServeMux, p *prox
 	return nil
 }
 
-func (b *nsBuilder) buildRoute(ctx context.Context, mux *http.ServeMux, mount, pattern string, route config.Route, p *proxy.Proxy) error {
+func (b *nsBuilder) buildRoute(ctx context.Context, mux *http.ServeMux, mount, pattern string, route config.Route) error {
 	nsCtx := ika.InjectionContext{
 		Namespace: b.name,
 		Scope:     ika.ScopeNamespace,
@@ -116,7 +125,7 @@ func (b *nsBuilder) buildRoute(ctx context.Context, mux *http.ServeMux, mount, p
 			continue
 		}
 
-		handlerChain := nsChain.Extend(routeChain).Then(p.WithPathTrim(mount))
+		handlerChain := nsChain.Extend(routeChain).Then(b.proxy.WithPathTrim(mount))
 		c.Handle(pattern, ika.ToHTTPHandler(handlerChain, buildErrHandler(b.log)))
 	}
 

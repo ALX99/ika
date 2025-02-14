@@ -46,6 +46,8 @@ type InjectionContext struct {
 	// It is empty when the plugin is not injected on a route level.
 	Route string
 
+	// TODO: provide mux pattern
+
 	// Scope indicates the injection level at which the plugin is applied.
 	// It can be either ScopeRoute or ScopeNamespace.
 	Scope InjectionLevel
