@@ -7,6 +7,7 @@ The Access Log plugin provides detailed HTTP access logging with configurable ou
 - Structured logging using slog
 - Request and response metrics
 - Configurable header logging
+- Selective query parameter logging
 - Response timing information
 - Pattern matching details
 
@@ -22,13 +23,23 @@ hooks:
         - User-Agent
         - Referer
         - X-Request-ID
+      # Optional: Include remote address in logs
+      remoteAddr: true
+      # Optional: List of query parameters to include in logs
+      # If not specified, no query parameters will be logged
+      queryParams:
+        - page
+        - limit
+        - sort
 ```
 
 ### Configuration Options
 
-| Option    | Type       | Description                        | Default            |
-| --------- | ---------- | ---------------------------------- | ------------------ |
-| `headers` | `string[]` | List of headers to include in logs | `["X-Request-ID"]` |
+| Option        | Type       | Description                         | Required | Default            |
+| ------------- | ---------- | ----------------------------------- | -------- | ------------------ |
+| `headers`     | `string[]` | List of headers to include in logs  | No       | `["X-Request-ID"]` |
+| `remoteAddr`  | `boolean`  | Include remote address in logs      | No       | `false`            |
+| `queryParams` | `string[]` | List of query parameters to include | No       | `[]`               |
 
 ## Log Output
 
@@ -41,6 +52,10 @@ The plugin logs the following information for each request:
     "path": "/api/users",
     "headers": {
       "User-Agent": "curl/7.88.1"
+    },
+    "query": {
+      "page": "1",
+      "limit": "10"
     }
   },
   "response": {
@@ -61,6 +76,7 @@ The plugin logs the following information for each request:
 - `method`: HTTP method used
 - `path`: Request path
 - `headers`: Selected request headers (if configured)
+- `query`: Selected query parameters (if configured)
 
 #### Response
 
@@ -75,6 +91,7 @@ The plugin logs the following information for each request:
 ## Best Practices
 
 1. **Header Selection**: Only log headers that provide value for debugging or monitoring
-2. **Performance**: Be mindful of logging volume in high-traffic environments
-3. **Security**: Avoid logging sensitive headers like Authorization tokens
-4. **Storage**: Consider log rotation and storage requirements
+2. **Query Parameter Selection**: Only log query parameters needed for debugging or analytics
+3. **Performance**: Be mindful of logging volume in high-traffic environments
+4. **Security**: Avoid logging sensitive headers or query parameters
+5. **Storage**: Consider log rotation and storage requirements

@@ -6,6 +6,10 @@ type pConfig struct {
 
 	// RemoteAddr controls whether the remote address is included in the log.
 	RemoteAddr bool `json:"remoteAddr"`
+
+	// QueryParams is a list of query parameters to include in the log.
+	// If empty, no query parameters will be logged.
+	QueryParams []string `json:"queryParams"`
 }
 
 func (c *pConfig) SetDefaults() {
