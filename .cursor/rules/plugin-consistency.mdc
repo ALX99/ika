@@ -1,0 +1,8 @@
+---
+description: Ensure plugin consistency
+globs: plugins/**/*.go
+---
+- Ensure as much consistency as possible between plugin code
+- Code, tests and documentation must be ordered similarly and look similar
+
+All plugins live inside the [plugin.go](mdc:plugins/) directory
