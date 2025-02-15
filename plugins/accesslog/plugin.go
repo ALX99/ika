@@ -6,6 +6,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
@@ -16,10 +18,12 @@ import (
 type plugin struct {
 	cfg pConfig
 
-	ikaPattern     string
-	includeHeaders bool
-	next           ika.Handler
-	log            *slog.Logger
+	ikaPattern         string
+	includeHeaders     bool
+	includeQueryParams bool
+	queryParams        map[string]bool
+	next               ika.Handler
+	log                *slog.Logger
 }
 
 func Factory() ika.PluginFactory {
@@ -37,9 +41,15 @@ func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 		return nil, err
 	}
 
+	p.queryParams = make(map[string]bool, len(p.cfg.QueryParams))
+	for _, param := range p.cfg.QueryParams {
+		p.queryParams[param] = true
+	}
+
 	p.ikaPattern = ictx.Route
 	p.log = ictx.Logger
 	p.includeHeaders = len(p.cfg.Headers) > 0
+	p.includeQueryParams = len(p.cfg.QueryParams) > 0
 
 	return p, nil
 }
@@ -98,7 +108,55 @@ func (p *plugin) makeReqAttrs(r *http.Request) []any {
 		requestAttrs = append(requestAttrs, slog.Group("headers", attrs...))
 	}
 
+	if p.includeQueryParams {
+		query := p.getQueryVals(r)
+		if len(query) == 0 {
+			return requestAttrs
+		}
+
+		attrs := make([]any, 0, len(query))
+		for key, values := range query {
+			if len(values) == 1 {
+				attrs = append(attrs, slog.String(key, values[0]))
+				continue
+			}
+			attrs = append(attrs, slog.Any(key, values))
+		}
+		requestAttrs = append(requestAttrs, slog.Group("query", attrs...))
+	}
+
 	return requestAttrs
+}
+
+// getQueryVals returns the query values for the keys in p.queryParams
+// https://github.com/golang/go/issues/50034
+func (p *plugin) getQueryVals(r *http.Request) url.Values {
+	query := r.URL.RawQuery
+	m := make(url.Values, len(p.queryParams))
+	var key string
+	var err error
+	for query != "" {
+		key, query, _ = strings.Cut(query, "&")
+		if key == "" {
+			continue
+		}
+
+		key, value, _ := strings.Cut(key, "=")
+		if !p.queryParams[key] {
+			// try to unescape the key
+			key, err = url.QueryUnescape(key)
+			if err != nil {
+				continue
+			}
+		}
+
+		if !p.queryParams[key] {
+			continue
+		}
+
+		m[key] = append(m[key], value)
+	}
+	return m
 }
 
 var (

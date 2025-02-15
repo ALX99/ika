@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -90,11 +91,10 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name           string
-		config         map[string]any
-		request        *http.Request
-		responseStatus int
-		wantLogFields  []string
+		name          string
+		config        map[string]any
+		request       *http.Request
+		wantLogFields map[string]any
 	}{
 		{
 			name:   "basic request",
@@ -104,16 +104,15 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 				req.Pattern = "/test"
 				return req
 			}(),
-			responseStatus: http.StatusOK,
-			wantLogFields: []string{
-				"request.method",
-				"request.path",
-				"request.host",
-				"request.pattern",
-				"response.duration",
-				"response.status",
-				"response.bytesWritten",
-				"ika.pattern",
+			wantLogFields: map[string]any{
+				"request.method":        "GET",
+				"request.path":          "/test",
+				"request.host":          "example.com",
+				"request.pattern":       "/test",
+				"response.duration":     float64(0),
+				"response.status":       float64(200),
+				"response.bytesWritten": float64(0),
+				"ika.pattern":           "/test",
 			},
 		},
 		{
@@ -128,10 +127,9 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 				req.Header.Set("User-Agent", "test-agent")
 				return req
 			}(),
-			responseStatus: http.StatusOK,
-			wantLogFields: []string{
-				"request.headers.X-Request-ID",
-				"request.headers.User-Agent",
+			wantLogFields: map[string]any{
+				"request.headers.X-Request-ID": "123",
+				"request.headers.User-Agent":   "test-agent",
 			},
 		},
 		{
@@ -145,9 +143,58 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 				req.RemoteAddr = "127.0.0.1:1234"
 				return req
 			}(),
-			responseStatus: http.StatusOK,
-			wantLogFields: []string{
-				"request.remoteAddr",
+			wantLogFields: map[string]any{
+				"request.remoteAddr": "127.0.0.1:1234",
+			},
+		},
+		{
+			name: "with selected query parameters",
+			config: map[string]any{
+				"queryParams": []string{"foo", "multi"},
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("GET", "/test?foo=bar&baz=qux&multi=1&multi=2", nil)
+				req.Pattern = "/test"
+				return req
+			}(),
+			wantLogFields: map[string]any{
+				"request.query.foo":   "bar",
+				"request.query.multi": []any{"1", "2"},
+			},
+		},
+		{
+			name: "with query parameters not present",
+			config: map[string]any{
+				"queryParams": []string{"notfound"},
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("GET", "/test?foo=bar", nil)
+				req.Pattern = "/test"
+				return req
+			}(),
+			wantLogFields: map[string]any{
+				"request.method":        "GET",
+				"request.path":          "/test",
+				"request.host":          "example.com",
+				"request.pattern":       "/test",
+				"response.duration":     float64(0),
+				"response.status":       float64(200),
+				"response.bytesWritten": float64(0),
+				"ika.pattern":           "/test",
+			},
+		},
+		{
+			name: "with encoded query parameter",
+			config: map[string]any{
+				"queryParams": []string{"あ"},
+			},
+			request: func() *http.Request {
+				req := httptest.NewRequest("GET", "/test?%e3%81%82=hi%20there", nil)
+				req.Pattern = "/test"
+				return req
+			}(),
+			wantLogFields: map[string]any{
+				"request.query.あ": "hi%20there",
 			},
 		},
 	}
@@ -169,39 +216,141 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 
 			plugin := p.(*plugin)
 			plugin.next = ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
-				w.WriteHeader(tt.responseStatus)
+				w.WriteHeader(200)
 				return nil
 			})
 
 			err = plugin.ServeHTTP(httptest.NewRecorder(), tt.request)
 			is.NoErr(err)
 
-			// Verify log output
-			var logEntry map[string]any
-			err = json.Unmarshal(buf.Bytes(), &logEntry)
-			is.NoErr(err)
+			// Split log entries (there might be multiple JSON objects)
+			logEntries := make([]map[string]any, 0)
+			for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+				if line == "" {
+					continue
+				}
+				var entry map[string]any
+				err = json.Unmarshal([]byte(line), &entry)
+				is.NoErr(err)
+				logEntries = append(logEntries, entry)
+			}
 
-			for _, field := range tt.wantLogFields {
-				is.True(hasField(logEntry, field)) // field should exist in log output
+			// The last entry should be the access log
+			accessLog := logEntries[len(logEntries)-1]
+			for field, want := range tt.wantLogFields {
+				got := getField(accessLog, field)
+				is.Equal(got, want) // field value should match expected
 			}
 		})
 	}
 }
 
-// hasField checks if a nested field exists in a map using dot notation
-func hasField(m map[string]any, field string) bool {
+func TestPlugin_getQueryVals(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		queryParams []string
+		rawQuery    string
+		want        url.Values
+	}{
+		{
+			name:        "empty query",
+			queryParams: []string{"foo"},
+			rawQuery:    "",
+			want:        url.Values{},
+		},
+		{
+			name:        "simple key-value",
+			queryParams: []string{"foo"},
+			rawQuery:    "foo=bar",
+			want:        url.Values{"foo": []string{"bar"}},
+		},
+		{
+			name:        "multiple key-value pairs",
+			queryParams: []string{"foo", "baz"},
+			rawQuery:    "foo=bar&baz=qux",
+			want:        url.Values{"foo": []string{"bar"}, "baz": []string{"qux"}},
+		},
+		{
+			name:        "multiple values for same key",
+			queryParams: []string{"foo"},
+			rawQuery:    "foo=bar&foo=baz",
+			want:        url.Values{"foo": []string{"bar", "baz"}},
+		},
+		{
+			name:        "empty value",
+			queryParams: []string{"foo"},
+			rawQuery:    "foo=",
+			want:        url.Values{"foo": []string{""}},
+		},
+		{
+			name:        "no value",
+			queryParams: []string{"foo"},
+			rawQuery:    "foo",
+			want:        url.Values{"foo": []string{""}},
+		},
+		{
+			name:        "encoded query",
+			queryParams: []string{"あ"},
+			rawQuery:    "%e3%81%82=hi%20there",
+			want:        url.Values{"あ": []string{"hi%20there"}},
+		},
+		{
+			name:        "ignore non-configured params",
+			queryParams: []string{"foo"},
+			rawQuery:    "foo=bar&baz=qux",
+			want:        url.Values{"foo": []string{"bar"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			is := is.New(t)
+
+			var buf bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&buf, nil))
+
+			p := &plugin{
+				log:         logger,
+				queryParams: make(map[string]bool),
+			}
+			for _, param := range tt.queryParams {
+				p.queryParams[param] = true
+			}
+
+			r := httptest.NewRequest("GET", "/?"+tt.rawQuery, nil)
+
+			got := p.getQueryVals(r)
+			is.Equal(got, tt.want)
+		})
+	}
+}
+
+// getField gets a nested field value from a map using dot notation
+func getField(m map[string]any, field string) any {
 	var current any = m
-	for _, part := range strings.Split(field, ".") {
+	parts := strings.Split(field, ".")
+	for i, part := range parts {
 		switch v := current.(type) {
 		case map[string]any:
 			var ok bool
 			current, ok = v[part]
 			if !ok {
-				return false
+				return nil
 			}
+			if i == len(parts)-1 {
+				return current
+			}
+		case map[string][]any:
+			if val, ok := v[part]; ok && i == len(parts)-1 {
+				return val
+			}
+			return nil
 		default:
-			return false
+			return nil
 		}
 	}
-	return true
+	return current
 }
