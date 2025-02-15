@@ -14,9 +14,14 @@ import (
 )
 
 type plugin struct {
-	inUser, inPass   []byte
+	inCreds          []credential
 	outUser, outPass string
 	next             ika.Handler
+}
+
+type credential struct {
+	user []byte
+	pass []byte
 }
 
 func Factory() ika.PluginFactory {
@@ -36,11 +41,17 @@ func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 	}
 
 	if cfg.Incoming != nil {
-		inUser, inPass, err := cfg.Incoming.credentials()
-		if err != nil {
-			return nil, err
+		p.inCreds = make([]credential, len(cfg.Incoming.Credentials))
+		for i, cred := range cfg.Incoming.Credentials {
+			user, pass, err := cred.credentials()
+			if err != nil {
+				return nil, err
+			}
+			p.inCreds[i] = credential{
+				user: []byte(user),
+				pass: []byte(pass),
+			}
 		}
-		p.inUser, p.inPass = []byte(inUser), []byte(inPass)
 	}
 
 	if cfg.Outgoing != nil {
@@ -60,7 +71,7 @@ func (p *plugin) Handler(next ika.Handler) ika.Handler {
 }
 
 func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	if p.inUser != nil || p.inPass != nil {
+	if len(p.inCreds) > 0 {
 		invalidCredsErr := httperr.New(http.StatusUnauthorized).
 			WithErr(errors.New("invalid credentials")).
 			WithTitle("Invalid credentials")
@@ -70,12 +81,19 @@ func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 			return invalidCredsErr
 		}
 
-		if subtle.ConstantTimeCompare([]byte(user), []byte(p.inUser)) != 1 ||
-			subtle.ConstantTimeCompare([]byte(pass), []byte(p.inPass)) != 1 {
-			return invalidCredsErr
-		}
-	}
+		userBytes := []byte(user)
+		passBytes := []byte(pass)
 
+		for _, cred := range p.inCreds {
+			if subtle.ConstantTimeCompare(userBytes, cred.user) == 1 &&
+				subtle.ConstantTimeCompare(passBytes, cred.pass) == 1 {
+				// Found valid credentials
+				goto authorized
+			}
+		}
+		return invalidCredsErr
+	}
+authorized:
 	if p.outUser != "" || p.outPass != "" {
 		r.SetBasicAuth(p.outUser, p.outPass)
 	}
