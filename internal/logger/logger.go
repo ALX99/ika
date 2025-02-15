@@ -8,6 +8,7 @@ import (
 
 	"github.com/alx99/ika/internal/config"
 	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 )
 
 func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() error) {
@@ -42,15 +43,11 @@ func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() er
 	case "json":
 		log = slog.New(slog.NewJSONHandler(w, opts))
 	case "text":
-		log = slog.New(slog.NewTextHandler(w, opts))
-
-		// DEBUG override
-		if os.Getenv("IKA_DEBUG") != "" && level == slog.LevelDebug {
-			log = slog.New(tint.NewHandler(w, &tint.Options{
-				Level:     opts.Level,
-				AddSource: opts.AddSource,
-			}))
-		}
+		log = slog.New(tint.NewHandler(w, &tint.Options{
+			NoColor:   !isatty.IsTerminal(os.Stdout.Fd()),
+			Level:     opts.Level,
+			AddSource: opts.AddSource,
+		}))
 	}
 
 	log.Info("Logger initialized", "config", cfg)
