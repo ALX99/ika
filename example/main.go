@@ -67,9 +67,9 @@ func main() {
 		gateway.WithPlugin(requestid.Factory()),
 		gateway.WithPlugin(basicauth.Factory()),
 		gateway.WithPlugin(accesslog.Factory()),
+		gateway.WithPlugin(reqmodifier.Factory()),
 		gateway.WithPlugin(&noCache{}),
 		gateway.WithPlugin(&tracer{}),
-		gateway.WithPlugin(&reqmodifier.Plugin{}),
 	)
 }
 

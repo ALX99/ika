@@ -13,16 +13,15 @@ import (
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/internal/http/request"
+	"github.com/alx99/ika/pluginutil"
 )
 
 // regular expression to match segments in the rewrite path
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
-var _ ika.RequestModifier = &Plugin{}
+type plugin struct {
+	cfg pConfig
 
-// Plugin is a RequestModifier that accurately rewrites the request path and host.
-// This includes preserving the original path even if some parts have been encoded.
-type Plugin struct {
 	// A map of segment index (in the route pattern)
 	// to the segment name
 	//
@@ -34,75 +33,62 @@ type Plugin struct {
 	// where %s should be replaced with the corresponding segment
 	replaceFormat string
 
-	// settings
-	host               string
-	scheme             string
-	toPath             string
-	pathRewriteEnabled bool
-	hostRewriteEnabled bool
-	retainHostHeader   bool
+	// host and scheme for host rewriting
+	host   string
+	scheme string
 
 	log  *slog.Logger
 	once sync.Once
 }
 
-func (*Plugin) Name() string {
+func Factory() ika.PluginFactory {
+	return &plugin{}
+}
+
+func (*plugin) Name() string {
 	return "req-modifier"
 }
 
-func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
-	p := &Plugin{}
-	routePattern := ictx.Route
-
-	var toPath string
-	if _, ok := config["path"]; ok {
-		toPath = config["path"].(string)
+func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &plugin{
+		log: ictx.Logger,
 	}
 
-	var host string
-	if _, ok := config["host"]; ok {
-		host = config["host"].(string)
+	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
+		return nil, err
 	}
 
-	if _, ok := config["retainHostHeader"]; ok {
-		p.retainHostHeader = config["retainHostHeader"].(bool)
-	}
-
-	if toPath != "" {
-		if routePattern == "" {
+	if p.cfg.Path != "" {
+		if ictx.Route == "" {
 			return nil, fmt.Errorf("path pattern is required")
 		}
-		p.pathRewriteEnabled = true
-		p.toPath = toPath
 	}
 
-	if host != "" {
-		p.hostRewriteEnabled = true
-		if err := p.setupHostRewrite(host); err != nil {
+	if p.cfg.Host != "" {
+		if err := p.setupHostRewrite(p.cfg.Host); err != nil {
 			return nil, err
 		}
 	}
 
-	p.log = ictx.Logger
 	return p, nil
 }
 
-func (p *Plugin) ModifyRequest(r *http.Request) error {
-	if p.pathRewriteEnabled {
+func (p *plugin) ModifyRequest(r *http.Request) error {
+	if p.cfg.Path != "" {
 		p.once.Do(func() { p.setupPathRewrite(r.Pattern) })
 		if err := p.rewritePath(r); err != nil {
 			return err
 		}
 	}
 
-	if p.hostRewriteEnabled {
+	if p.cfg.Host != "" {
 		p.rewriteHost(r)
 	}
 
 	return nil
 }
 
-func (p *Plugin) rewritePath(r *http.Request) error {
+func (p *plugin) rewritePath(r *http.Request) error {
 	var err error
 	path := request.GetPath(r)
 	args := make([]any, 0, 64)
@@ -136,10 +122,10 @@ func (p *Plugin) rewritePath(r *http.Request) error {
 	return nil
 }
 
-func (*Plugin) Teardown(context.Context) error { return nil }
+func (*plugin) Teardown(context.Context) error { return nil }
 
-func (p *Plugin) rewriteHost(r *http.Request) {
-	if !p.retainHostHeader {
+func (p *plugin) rewriteHost(r *http.Request) {
+	if !p.cfg.RetainHostHeader {
 		r.Host = p.host // this overrides the Host header
 	}
 	r.URL.Host = p.host
@@ -147,15 +133,15 @@ func (p *Plugin) rewriteHost(r *http.Request) {
 }
 
 // setupPathRewrite sets up the path rewrite
-func (p *Plugin) setupPathRewrite(routePattern string) {
+func (p *plugin) setupPathRewrite(routePattern string) {
 	_, _, path := decomposePattern(routePattern)
 	// first element is always empty due to leading slash
 	routeSplit := strings.Split(path, "/")[1:]
 
 	p.segments = make(map[int]string)
-	p.replaceFormat = segmentRe.ReplaceAllString(p.toPath, "%s")
+	p.replaceFormat = segmentRe.ReplaceAllString(p.cfg.Path, "%s")
 
-	matches := segmentRe.FindAllStringSubmatch(p.toPath, -1)
+	matches := segmentRe.FindAllStringSubmatch(p.cfg.Path, -1)
 	for _, match := range matches {
 		if match[1] == "$" {
 			continue // special token, not a segment
@@ -170,7 +156,7 @@ func (p *Plugin) setupPathRewrite(routePattern string) {
 }
 
 // setupHostRewrite sets up the host rewrite
-func (p *Plugin) setupHostRewrite(host string) error {
+func (p *plugin) setupHostRewrite(host string) error {
 	u, err := url.Parse(host)
 	if err != nil {
 		return err
@@ -194,3 +180,8 @@ func decomposePattern(pattern string) (method, host, path string) {
 	}
 	return matches[1], matches[2], matches[3]
 }
+
+var (
+	_ ika.RequestModifier = &plugin{}
+	_ ika.PluginFactory   = &plugin{}
+)
