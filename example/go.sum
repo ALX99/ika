@@ -6,8 +6,8 @@ github.com/alx99/ika/plugins/basicauth v0.0.3 h1:4+MORktk1UuMSXprQYludkYLoHI23Ye
 github.com/alx99/ika/plugins/basicauth v0.0.3/go.mod h1:3UlIROW7YPubRgolTQPBXYa1A9alDHhIE+OUs8cLd10=
 github.com/alx99/ika/plugins/reqmodifier v0.0.1 h1:w7wdBYNiw2DJkbBMQgZyFlc6ZvrgUU2zIF2TvW3/P7E=
 github.com/alx99/ika/plugins/reqmodifier v0.0.1/go.mod h1:lryp8h/5CaUEBEXt+W1rY10RzT+FKeLkvZjDIWbxV6g=
-github.com/alx99/ika/plugins/requestid v0.1.0 h1:kJTx2QLODzHoC984UAyz1uJ4qnmHXvbsL0yDI51ZbNg=
-github.com/alx99/ika/plugins/requestid v0.1.0/go.mod h1:iNIm0800kLCW5JmUVXnGIIeQ+Yqgwa9wDTQ3yz3tyYo=
+github.com/alx99/ika/plugins/requestid v1.0.0 h1:XuHjFMzkFMtAtR+ZH86sOhASODjVMh2nEYDPwrOiUCE=
+github.com/alx99/ika/plugins/requestid v1.0.0/go.mod h1:FsVW9/RnnF/lg8hqMYVBOviLXPIAsMjZa8XGIR3BFZw=
 github.com/alx99/ika/pluginutil v1.3.0 h1:RmHpWwFoJCK0LKr/Jlw32WLOuouBDpn/SKyX8yZOUmc=
 github.com/alx99/ika/pluginutil v1.3.0/go.mod h1:5VMbpWNCrpkQeuw77RQGRTyuA7GQLwc67FOBwAHEzQI=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=

@@ -7,7 +7,7 @@ require (
 	github.com/alx99/ika/plugins/accesslog v0.0.1
 	github.com/alx99/ika/plugins/basicauth v0.0.3
 	github.com/alx99/ika/plugins/reqmodifier v0.0.1
-	github.com/alx99/ika/plugins/requestid v0.1.0
+	github.com/alx99/ika/plugins/requestid v1.0.0
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/grafana/pyroscope-go v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.59.0
