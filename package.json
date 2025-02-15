@@ -1,0 +1,19 @@
+{
+  "name": "ika-docs",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "fmt": "prettier --write ./docs/**/*.md"
+  },
+  "keywords": [],
+  "author": "alx99",
+  "license": "MPL-2.0",
+  "devDependencies": {
+    "prettier": "^3.5.1",
+    "vitepress": "^1.6.3"
+  }
+}

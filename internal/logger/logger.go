@@ -59,9 +59,12 @@ func Initialize(ctx context.Context, cfg config.Logger) (*slog.Logger, func() er
 		log.LogAttrs(ctx, slog.LevelWarn, warning)
 	}
 
-	if cfg.FlushInterval.Dur().Milliseconds() <= 10 {
+	if cfg.FlushInterval.Dur() <= 0 {
 		w.SetBuffered(false)
-		log.LogAttrs(ctx, slog.LevelDebug, "Log buffering disabled. Flush interval too low")
+		if err := w.Flush(); err != nil {
+			log.Error("Failed to flush logs", "error", err)
+		}
+		log.LogAttrs(ctx, slog.LevelDebug, "Log buffering disabled")
 		return log, func() error { return nil }
 	}
 

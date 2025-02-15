@@ -65,6 +65,7 @@ vet:
 fmt:
 	cue fmt ./...
 	gofmt -l -w .
+	pnpm run fmt
 
 cfg: cfg-local
 

@@ -6,3 +6,8 @@ coverage.out
 go.work*
 tests/ika.yaml
 internal/ika/ika.yaml
+
+# Docs
+docs/.vitepress/dist
+docs/.vitepress/cache
+node_modules

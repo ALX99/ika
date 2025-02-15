@@ -1,0 +1,20 @@
+# Configuration for the core of Ika
+ika:
+  logger:
+    level: debug
+    format: text
+
+# Configuration for the HTTP servers that will be started
+servers:
+  - addr: 127.0.0.1:8888
+
+# Configuration for the namespaces
+namespaces:
+  # A namespaced named "myFirstNamespace"
+  myFirstNamespace:
+    # List of mountpoints for the routes inside the namespace
+    mounts: [""]
+
+    # List of routes inside the namespace
+    routes:
+      /: {}
