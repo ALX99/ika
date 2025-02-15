@@ -31,8 +31,10 @@ func TestPlugin_Setup(t *testing.T) {
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
 				plugin := p.(*plugin)
-				is.Equal(len(plugin.cfg.Headers), 0)
+				is.Equal(len(plugin.cfg.Headers), 1)
+				is.Equal(plugin.cfg.Headers[0], "X-Request-ID")
 				is.Equal(plugin.cfg.RemoteAddr, false)
+				is.Equal(plugin.includeHeaders, true)
 			},
 		},
 		{
