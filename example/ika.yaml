@@ -18,14 +18,13 @@ namespaces:
     hooks:
       - name: tracer
       - name: request-id
+      - name: access-log
+        config:
+          headers: [X-Request-ID]
     reqModifiers:
       - name: req-modifier
         config:
           host: https://httpbun.com
-    middlewares:
-      - name: access-log
-        config:
-          headers: [X-Request-ID]
     routes:
       /: {}
       /auth:
@@ -43,14 +42,12 @@ namespaces:
     hooks:
       - name: tracer
       - name: request-id
+      - name: access-log
         config:
+          headers: [X-Request-ID]
     reqModifiers:
       - name: req-modifier
         config:
           host: https://go.dev
-    middlewares:
-      - name: access-log
-        config:
-          headers: [X-Request-ID]
     routes:
       /: {}

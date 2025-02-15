@@ -102,6 +102,6 @@ func (p *plugin) makeReqAttrs(r *http.Request) []any {
 }
 
 var (
-	_ ika.Middleware    = &plugin{}
+	_ ika.OnRequestHook = &plugin{}
 	_ ika.PluginFactory = &plugin{}
 )
