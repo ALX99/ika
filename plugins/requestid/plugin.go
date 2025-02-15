@@ -19,7 +19,7 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-type Plugin struct {
+type plugin struct {
 	next  ika.Handler
 	cfg   pConfig
 	genID func() (string, error)
@@ -28,12 +28,16 @@ type Plugin struct {
 	once sync.Once
 }
 
-func (*Plugin) Name() string {
+func Factory() ika.PluginFactory {
+	return &plugin{}
+}
+
+func (*plugin) Name() string {
 	return "request-id"
 }
 
-func (f *Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
-	p := &Plugin{}
+func (f *plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &plugin{}
 
 	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
 		return nil, err
@@ -55,12 +59,12 @@ func (f *Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[
 	return p, nil
 }
 
-func (p *Plugin) Handler(next ika.Handler) ika.Handler {
+func (p *plugin) Handler(next ika.Handler) ika.Handler {
 	p.next = next
 	return p
 }
 
-func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	reqID, err := p.genID()
 	if err != nil {
 		return err
@@ -91,7 +95,7 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return p.next.ServeHTTP(w, r)
 }
 
-func (*Plugin) Teardown(context.Context) error {
+func (*plugin) Teardown(context.Context) error {
 	return nil
 }
 
@@ -139,6 +143,6 @@ func makeRandFun(variant string) (func() (string, error), error) {
 }
 
 var (
-	_ ika.OnRequestHook = &Plugin{}
-	_ ika.PluginFactory = &Plugin{}
+	_ ika.OnRequestHook = &plugin{}
+	_ ika.PluginFactory = &plugin{}
 )

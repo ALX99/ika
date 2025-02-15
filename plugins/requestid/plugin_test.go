@@ -16,7 +16,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 	next := ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error { return nil })
 	tests := []struct {
 		name string
-		p    Plugin
+		p    plugin
 		// Named input parameters for target function.
 		r              *http.Request
 		wantHeader     http.Header
@@ -24,7 +24,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 	}{
 		{
 			name: "no override header",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -43,7 +43,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "override header",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{true}[0],
@@ -63,7 +63,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "append header",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Append:   true,
@@ -84,7 +84,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose disabled",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -102,7 +102,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose header with no existing ID",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -119,7 +119,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose header with existing ID",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -138,7 +138,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose header with override",
-			p: Plugin{
+			p: plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{true}[0],
@@ -179,7 +179,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 func TestPlugin_Setup(t *testing.T) {
 	t.Parallel()
 
-	factory := &Plugin{}
+	factory := Factory()
 
 	tests := []struct {
 		name      string
@@ -192,7 +192,7 @@ func TestPlugin_Setup(t *testing.T) {
 			config:    map[string]any{},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Header, "X-Request-ID")
 				is.Equal(plugin.cfg.Variant, vXID)
 				is.True(*plugin.cfg.Override)
@@ -212,7 +212,7 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(*plugin.cfg.Expose, false)
 				is.Equal(plugin.cfg.Header, "X-Request-ID") // Should use default header
 			},
@@ -225,7 +225,7 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Header, "X-Correlation-ID")
 				is.Equal(plugin.cfg.Variant, vUUIDv4)
 
@@ -242,7 +242,7 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Variant, vUUIDv7)
 
 				// Test ID generation
@@ -258,7 +258,7 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Variant, vKSUID)
 
 				// Test ID generation
@@ -275,7 +275,7 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Append, true)
 				is.Equal(*plugin.cfg.Override, false)
 
@@ -299,7 +299,7 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Header, "X-Request-ID") // Should use default header
 			},
 		},
@@ -338,7 +338,7 @@ func TestPlugin_Setup(t *testing.T) {
 func TestPlugin_Integration(t *testing.T) {
 	t.Parallel()
 
-	factory := &Plugin{}
+	factory := Factory()
 
 	tests := []struct {
 		name      string
@@ -354,7 +354,7 @@ func TestPlugin_Integration(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Header, "X-Correlation-ID")
 				is.Equal(plugin.cfg.Variant, vUUIDv4)
 
@@ -371,7 +371,7 @@ func TestPlugin_Integration(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Variant, vUUIDv7)
 
 				// Test ID generation
@@ -387,7 +387,7 @@ func TestPlugin_Integration(t *testing.T) {
 			},
 			wantError: false,
 			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(plugin.cfg.Variant, vKSUID)
 
 				// Test ID generation

@@ -64,11 +64,11 @@ func (w *noCache) Handler(next ika.Handler) ika.Handler {
 func main() {
 	defer setupMonitoring()()
 	gateway.Run(
-		gateway.WithPlugin(&requestid.Plugin{}),
-		gateway.WithPlugin(&basicauth.Plugin{}),
+		gateway.WithPlugin(requestid.Factory()),
+		gateway.WithPlugin(basicauth.Factory()),
+		gateway.WithPlugin(accesslog.Factory()),
 		gateway.WithPlugin(&noCache{}),
 		gateway.WithPlugin(&tracer{}),
-		gateway.WithPlugin(&accesslog.Plugin{}),
 		gateway.WithPlugin(&plugins.ReqModifier{}),
 	)
 }

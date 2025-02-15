@@ -13,7 +13,7 @@ import (
 	"github.com/felixge/httpsnoop"
 )
 
-type Plugin struct {
+type plugin struct {
 	cfg pConfig
 
 	ikaPattern     string
@@ -22,32 +22,34 @@ type Plugin struct {
 	log            *slog.Logger
 }
 
-func (Plugin) Name() string {
+func Factory() ika.PluginFactory {
+	return &plugin{}
+}
+
+func (*plugin) Name() string {
 	return "access-log"
 }
 
-func (Plugin) New(_ context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
-	p := &Plugin{}
+func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &plugin{}
 
-	cfg := pConfig{}
-	if err := pluginutil.UnmarshalCfg(config, &cfg); err != nil {
+	if err := pluginutil.UnmarshalCfg(config, &p.cfg); err != nil {
 		return nil, err
 	}
 
 	p.ikaPattern = ictx.Route
 	p.log = ictx.Logger
-	p.cfg = cfg
-	p.includeHeaders = len(cfg.Headers) > 0
+	p.includeHeaders = len(p.cfg.Headers) > 0
 
 	return p, nil
 }
 
-func (p *Plugin) Handler(next ika.Handler) ika.Handler {
+func (p *plugin) Handler(next ika.Handler) ika.Handler {
 	p.next = next
 	return p
 }
 
-func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	var err error
 
 	metrics := httpsnoop.CaptureMetricsFn(w,
@@ -72,9 +74,9 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return err
 }
 
-func (Plugin) Teardown(context.Context) error { return nil }
+func (*plugin) Teardown(context.Context) error { return nil }
 
-func (p *Plugin) makeReqAttrs(r *http.Request) []any {
+func (p *plugin) makeReqAttrs(r *http.Request) []any {
 	requestAttrs := []any{
 		slog.String("method", r.Method),
 		slog.String("path", request.GetPath(r)),
@@ -100,6 +102,6 @@ func (p *Plugin) makeReqAttrs(r *http.Request) []any {
 }
 
 var (
-	_ ika.Middleware    = &Plugin{}
-	_ ika.PluginFactory = &Plugin{}
+	_ ika.Middleware    = &plugin{}
+	_ ika.PluginFactory = &plugin{}
 )

@@ -16,7 +16,7 @@ import (
 	"github.com/felixge/httpsnoop"
 )
 
-type Plugin struct {
+type plugin struct {
 	cfg pConfig
 
 	// tracks failed attempts by IP
@@ -34,12 +34,16 @@ type ipAttempts struct {
 	sync.Mutex
 }
 
-func (*Plugin) Name() string {
+func Plugin() ika.PluginFactory {
+	return &plugin{}
+}
+
+func (*plugin) Name() string {
 	return "fail2ban"
 }
 
-func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
-	p := &Plugin{
+func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &plugin{
 		attempts: &sync.Map{},
 		log:      ictx.Logger,
 	}
@@ -55,12 +59,12 @@ func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 	return p, nil
 }
 
-func (p *Plugin) Handler(next ika.Handler) ika.Handler {
+func (p *plugin) Handler(next ika.Handler) ika.Handler {
 	p.next = next
 	return p
 }
 
-func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	ip, err := p.getIP(r)
 	if err != nil {
 		return err
@@ -86,12 +90,12 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return err // propagate original error
 }
 
-func (p *Plugin) Teardown(context.Context) error {
+func (p *plugin) Teardown(context.Context) error {
 	p.attempts.Clear()
 	return nil
 }
 
-func (p *Plugin) getIP(r *http.Request) (string, error) {
+func (p *plugin) getIP(r *http.Request) (string, error) {
 	// If identifier header is set, use that
 	if p.cfg.IDHeader != "" {
 		if id := r.Header.Get(p.cfg.IDHeader); id != "" {
@@ -104,7 +108,7 @@ func (p *Plugin) getIP(r *http.Request) (string, error) {
 	return ip, err
 }
 
-func (p *Plugin) isBanned(ip string) bool {
+func (p *plugin) isBanned(ip string) bool {
 	attempts, ok := p.attempts.Load(ip)
 	if !ok {
 		return false
@@ -123,7 +127,7 @@ func (p *Plugin) isBanned(ip string) bool {
 	return att.fails >= p.cfg.MaxRetries
 }
 
-func (p *Plugin) recordFailedAttempt(ctx context.Context, ip string) {
+func (p *plugin) recordFailedAttempt(ctx context.Context, ip string) {
 	now := time.Now()
 
 	val, _ := p.attempts.LoadOrStore(ip, &ipAttempts{})
@@ -147,7 +151,7 @@ func (p *Plugin) recordFailedAttempt(ctx context.Context, ip string) {
 }
 
 // cleanupLoop cleans up expired attempts
-func (p *Plugin) cleanupLoop(ctx context.Context) {
+func (p *plugin) cleanupLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -171,6 +175,6 @@ func (p *Plugin) cleanupLoop(ctx context.Context) {
 }
 
 var (
-	_ ika.Middleware    = &Plugin{}
-	_ ika.PluginFactory = &Plugin{}
+	_ ika.Middleware    = &plugin{}
+	_ ika.PluginFactory = &plugin{}
 )

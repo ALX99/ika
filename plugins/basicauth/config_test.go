@@ -11,7 +11,7 @@ func TestPlugin_Setup(t *testing.T) {
 	t.Setenv("USER_ENV", "user")
 	t.Setenv("PASS_ENV", "pass")
 
-	factory := &Plugin{}
+	factory := Factory()
 
 	tests := []struct {
 		name    string
@@ -141,7 +141,7 @@ func TestPlugin_Setup(t *testing.T) {
 			wantErr: false,
 			check: func(is *is.I, p ika.Plugin) {
 				// We need to type assert here since we're checking internal state
-				plugin := p.(*Plugin)
+				plugin := p.(*plugin)
 				is.Equal(string(plugin.inUser), "user")
 				is.Equal(string(plugin.inPass), "pass")
 				is.Equal(plugin.outUser, "user")

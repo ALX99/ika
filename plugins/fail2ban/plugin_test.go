@@ -16,7 +16,7 @@ import (
 func TestPlugin_Setup(t *testing.T) {
 	t.Parallel()
 
-	factory := &Plugin{}
+	factory := Plugin()
 
 	tests := []struct {
 		name      string
@@ -85,7 +85,7 @@ func TestPlugin_Setup(t *testing.T) {
 
 func TestPlugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
-	factory := &Plugin{}
+	factory := Plugin()
 
 	tests := []struct {
 		name           string
@@ -152,6 +152,8 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p, err := factory.New(t.Context(), ika.InjectionContext{
 				Logger: slog.New(slog.DiscardHandler),
 			}, map[string]any{
@@ -162,27 +164,24 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 			})
 			is.NoErr(err)
 
-			plugin := p.(*Plugin)
+			plugin := p.(*plugin)
 			plugin.next = ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 				return httperr.New(http.StatusUnauthorized)
 			})
 
-			// Run the sequence of requests
+			// Run requests
 			for _, req := range tt.requests {
 				r := httptest.NewRequest("GET", "/", nil)
 				r.RemoteAddr = req.ip
 				for k, v := range req.headers {
 					r.Header.Set(k, v)
 				}
-				w := httptest.NewRecorder()
 
-				err := plugin.ServeHTTP(w, r)
+				err := plugin.ServeHTTP(httptest.NewRecorder(), r)
 				is.True(err != nil)
-
 				var httpErr *httperr.Error
-				if errors.As(err, &httpErr) {
-					is.Equal(httpErr.Status(), req.wantStatus)
-				}
+				is.True(errors.As(err, &httpErr))
+				is.Equal(httpErr.Status(), req.wantStatus)
 			}
 
 			// Verify final state
@@ -191,15 +190,11 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 			if tt.idHeader != "" {
 				r.Header.Set(tt.idHeader, tt.requests[len(tt.requests)-1].headers[tt.idHeader])
 			}
-			w := httptest.NewRecorder()
-
-			err = plugin.ServeHTTP(w, r)
+			err = plugin.ServeHTTP(httptest.NewRecorder(), r)
 			is.True(err != nil)
-
 			var httpErr *httperr.Error
-			if errors.As(err, &httpErr) {
-				is.Equal(httpErr.Status(), tt.wantStatusCode)
-			}
+			is.True(errors.As(err, &httpErr))
+			is.Equal(httpErr.Status(), tt.wantStatusCode)
 		})
 	}
 }
@@ -207,7 +202,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 func TestPlugin_Cleanup(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
-	factory := &Plugin{}
+	factory := Plugin()
 
 	p, err := factory.New(t.Context(), ika.InjectionContext{
 		Logger: slog.New(slog.DiscardHandler),
@@ -218,7 +213,7 @@ func TestPlugin_Cleanup(t *testing.T) {
 	})
 	is.NoErr(err)
 
-	plugin := p.(*Plugin)
+	plugin := p.(*plugin)
 	plugin.next = ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
 		return httperr.New(http.StatusUnauthorized)
 	})

@@ -100,7 +100,7 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Plugin{
+			p := &plugin{
 				inUser:  tt.fields.inUser,
 				inPass:  tt.fields.inPass,
 				outUser: tt.fields.outUser,

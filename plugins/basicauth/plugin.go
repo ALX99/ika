@@ -13,14 +13,22 @@ import (
 	"github.com/alx99/ika/pluginutil/httperr"
 )
 
-type Plugin struct {
+type plugin struct {
 	inUser, inPass   []byte
 	outUser, outPass string
 	next             ika.Handler
 }
 
-func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
-	p := &Plugin{}
+func Factory() ika.PluginFactory {
+	return &plugin{}
+}
+
+func (*plugin) Name() string {
+	return "basic-auth"
+}
+
+func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &plugin{}
 
 	cfg := pConfig{}
 	if err := pluginutil.UnmarshalCfg(config, &cfg); err != nil {
@@ -46,16 +54,12 @@ func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 	return p, nil
 }
 
-func (*Plugin) Name() string {
-	return "basic-auth"
-}
-
-func (p *Plugin) Handler(next ika.Handler) ika.Handler {
+func (p *plugin) Handler(next ika.Handler) ika.Handler {
 	p.next = next
 	return p
 }
 
-func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	if p.inUser != nil || p.inPass != nil {
 		invalidCredsErr := httperr.New(http.StatusUnauthorized).
 			WithErr(errors.New("invalid credentials")).
@@ -79,11 +83,11 @@ func (p *Plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	return p.next.ServeHTTP(w, r)
 }
 
-func (*Plugin) Teardown(context.Context) error {
+func (*plugin) Teardown(context.Context) error {
 	return nil
 }
 
 var (
-	_ ika.Middleware    = &Plugin{}
-	_ ika.PluginFactory = &Plugin{}
+	_ ika.Middleware    = &plugin{}
+	_ ika.PluginFactory = &plugin{}
 )
