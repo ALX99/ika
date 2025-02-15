@@ -12,8 +12,7 @@ import (
 func Test_plugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
 	type fields struct {
-		inUser  []byte
-		inPass  []byte
+		inCreds []credential
 		outUser string
 		outPass string
 	}
@@ -32,8 +31,7 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 		{
 			name: "no incoming credentials",
 			fields: fields{
-				inUser:  nil,
-				inPass:  nil,
+				inCreds: nil,
 				outUser: "outUser",
 				outPass: "outPass",
 			},
@@ -48,8 +46,12 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 		{
 			name: "invalid incoming credentials",
 			fields: fields{
-				inUser:  []byte("user"),
-				inPass:  []byte("pass"),
+				inCreds: []credential{
+					{
+						user: []byte("user"),
+						pass: []byte("pass"),
+					},
+				},
 				outUser: "",
 				outPass: "",
 			},
@@ -62,8 +64,12 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 		{
 			name: "valid incoming credentials",
 			fields: fields{
-				inUser:  []byte("user"),
-				inPass:  []byte("pass"),
+				inCreds: []credential{
+					{
+						user: []byte("user"),
+						pass: []byte("pass"),
+					},
+				},
 				outUser: "outUser",
 				outPass: "outPass",
 			},
@@ -82,8 +88,12 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 		{
 			name: "invalid incoming credentials",
 			fields: fields{
-				inUser:  []byte("user"),
-				inPass:  []byte("pass"),
+				inCreds: []credential{
+					{
+						user: []byte("user"),
+						pass: []byte("pass"),
+					},
+				},
 				outUser: "",
 				outPass: "",
 			},
@@ -97,12 +107,67 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "multiple valid credentials - first matches",
+			fields: fields{
+				inCreds: []credential{
+					{
+						user: []byte("admin"),
+						pass: []byte("adminpass"),
+					},
+					{
+						user: []byte("user"),
+						pass: []byte("userpass"),
+					},
+				},
+				outUser: "outUser",
+				outPass: "outPass",
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: func() *http.Request {
+					req := httptest.NewRequest("GET", "/", nil)
+					req.SetBasicAuth("admin", "adminpass")
+					return req
+				}(),
+			},
+			wantErr:     false,
+			wantOutUser: "outUser",
+			wantOutPass: "outPass",
+		},
+		{
+			name: "multiple valid credentials - second matches",
+			fields: fields{
+				inCreds: []credential{
+					{
+						user: []byte("admin"),
+						pass: []byte("adminpass"),
+					},
+					{
+						user: []byte("user"),
+						pass: []byte("userpass"),
+					},
+				},
+				outUser: "outUser",
+				outPass: "outPass",
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: func() *http.Request {
+					req := httptest.NewRequest("GET", "/", nil)
+					req.SetBasicAuth("user", "userpass")
+					return req
+				}(),
+			},
+			wantErr:     false,
+			wantOutUser: "outUser",
+			wantOutPass: "outPass",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &plugin{
-				inUser:  tt.fields.inUser,
-				inPass:  tt.fields.inPass,
+				inCreds: tt.fields.inCreds,
 				outUser: tt.fields.outUser,
 				outPass: tt.fields.outPass,
 				next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {

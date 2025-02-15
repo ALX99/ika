@@ -32,9 +32,10 @@ namespaces:
           - name: basic-auth
             config:
               incoming:
-                type: static
-                username: user
-                password: pass
+                credentials:
+                  - name: demo-user
+                    username: user
+                    password: pass
 
   go.dozy.dev:
     mounts:
