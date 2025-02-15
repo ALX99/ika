@@ -10,9 +10,9 @@ import (
 
 	"github.com/alx99/ika"
 	"github.com/alx99/ika/gateway"
-	"github.com/alx99/ika/plugins"
 	"github.com/alx99/ika/plugins/accesslog"
 	"github.com/alx99/ika/plugins/basicauth"
+	"github.com/alx99/ika/plugins/reqmodifier"
 	"github.com/alx99/ika/plugins/requestid"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/contrib/instrumentation/host"
@@ -69,7 +69,7 @@ func main() {
 		gateway.WithPlugin(accesslog.Factory()),
 		gateway.WithPlugin(&noCache{}),
 		gateway.WithPlugin(&tracer{}),
-		gateway.WithPlugin(&plugins.ReqModifier{}),
+		gateway.WithPlugin(&reqmodifier.Plugin{}),
 	)
 }
 

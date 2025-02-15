@@ -1,5 +1,5 @@
-// Package plugins contains built-in plugins for the ika API Gateway.
-package plugins
+// Package reqmodifier contains a plugin for modifying HTTP requests in the ika API Gateway.
+package reqmodifier
 
 import (
 	"context"
@@ -18,11 +18,11 @@ import (
 // regular expression to match segments in the rewrite path
 var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
-var _ ika.RequestModifier = &ReqModifier{}
+var _ ika.RequestModifier = &Plugin{}
 
-// ReqModifier is a ReqModifier that 100% accurately rewrite the request path.
-// This includes totally preserving the original path even if some parts have been encoded.
-type ReqModifier struct {
+// Plugin is a RequestModifier that accurately rewrites the request path and host.
+// This includes preserving the original path even if some parts have been encoded.
+type Plugin struct {
 	// A map of segment index (in the route pattern)
 	// to the segment name
 	//
@@ -46,12 +46,12 @@ type ReqModifier struct {
 	once sync.Once
 }
 
-func (*ReqModifier) Name() string {
+func (*Plugin) Name() string {
 	return "req-modifier"
 }
 
-func (*ReqModifier) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
-	rm := &ReqModifier{}
+func (*Plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[string]any) (ika.Plugin, error) {
+	p := &Plugin{}
 	routePattern := ictx.Route
 
 	var toPath string
@@ -65,44 +65,44 @@ func (*ReqModifier) New(ctx context.Context, ictx ika.InjectionContext, config m
 	}
 
 	if _, ok := config["retainHostHeader"]; ok {
-		rm.retainHostHeader = config["retainHostHeader"].(bool)
+		p.retainHostHeader = config["retainHostHeader"].(bool)
 	}
 
 	if toPath != "" {
 		if routePattern == "" {
 			return nil, fmt.Errorf("path pattern is required")
 		}
-		rm.pathRewriteEnabled = true
-		rm.toPath = toPath
+		p.pathRewriteEnabled = true
+		p.toPath = toPath
 	}
 
 	if host != "" {
-		rm.hostRewriteEnabled = true
-		if err := rm.setupHostRewrite(host); err != nil {
+		p.hostRewriteEnabled = true
+		if err := p.setupHostRewrite(host); err != nil {
 			return nil, err
 		}
 	}
 
-	rm.log = ictx.Logger
-	return rm, nil
+	p.log = ictx.Logger
+	return p, nil
 }
 
-func (rm *ReqModifier) ModifyRequest(r *http.Request) error {
-	if rm.pathRewriteEnabled {
-		rm.once.Do(func() { rm.setupPathRewrite(r.Pattern) })
-		if err := rm.rewritePath(r); err != nil {
+func (p *Plugin) ModifyRequest(r *http.Request) error {
+	if p.pathRewriteEnabled {
+		p.once.Do(func() { p.setupPathRewrite(r.Pattern) })
+		if err := p.rewritePath(r); err != nil {
 			return err
 		}
 	}
 
-	if rm.hostRewriteEnabled {
-		rm.rewriteHost(r)
+	if p.hostRewriteEnabled {
+		p.rewriteHost(r)
 	}
 
 	return nil
 }
 
-func (rm *ReqModifier) rewritePath(r *http.Request) error {
+func (p *Plugin) rewritePath(r *http.Request) error {
 	var err error
 	path := request.GetPath(r)
 	args := make([]any, 0, 64)
@@ -111,7 +111,7 @@ func (rm *ReqModifier) rewritePath(r *http.Request) error {
 	reqPathLen := len(splitPath)
 
 	for i, segment := range splitPath[:reqPathLen] {
-		repl, ok := rm.segments[i]
+		repl, ok := p.segments[i]
 		if !ok {
 			continue
 		}
@@ -123,7 +123,7 @@ func (rm *ReqModifier) rewritePath(r *http.Request) error {
 		args = append(args, segment)
 	}
 
-	newPath := fmt.Sprintf(rm.replaceFormat, args...)
+	newPath := fmt.Sprintf(p.replaceFormat, args...)
 
 	r.URL.RawPath = newPath
 	r.URL.Path, err = url.PathUnescape(newPath)
@@ -131,31 +131,31 @@ func (rm *ReqModifier) rewritePath(r *http.Request) error {
 		return err
 	}
 
-	rm.log.LogAttrs(r.Context(), slog.LevelDebug, "Path rewritten",
+	p.log.LogAttrs(r.Context(), slog.LevelDebug, "Path rewritten",
 		slog.String("from", path), slog.String("to", r.URL.RawPath))
 	return nil
 }
 
-func (*ReqModifier) Teardown(context.Context) error { return nil }
+func (*Plugin) Teardown(context.Context) error { return nil }
 
-func (rm *ReqModifier) rewriteHost(r *http.Request) {
-	if !rm.retainHostHeader {
-		r.Host = rm.host // this overrides the Host header
+func (p *Plugin) rewriteHost(r *http.Request) {
+	if !p.retainHostHeader {
+		r.Host = p.host // this overrides the Host header
 	}
-	r.URL.Host = rm.host
-	r.URL.Scheme = rm.scheme
+	r.URL.Host = p.host
+	r.URL.Scheme = p.scheme
 }
 
 // setupPathRewrite sets up the path rewrite
-func (rm *ReqModifier) setupPathRewrite(routePattern string) {
+func (p *Plugin) setupPathRewrite(routePattern string) {
 	_, _, path := decomposePattern(routePattern)
 	// first element is always empty due to leading slash
 	routeSplit := strings.Split(path, "/")[1:]
 
-	rm.segments = make(map[int]string)
-	rm.replaceFormat = segmentRe.ReplaceAllString(rm.toPath, "%s")
+	p.segments = make(map[int]string)
+	p.replaceFormat = segmentRe.ReplaceAllString(p.toPath, "%s")
 
-	matches := segmentRe.FindAllStringSubmatch(rm.toPath, -1)
+	matches := segmentRe.FindAllStringSubmatch(p.toPath, -1)
 	for _, match := range matches {
 		if match[1] == "$" {
 			continue // special token, not a segment
@@ -163,21 +163,21 @@ func (rm *ReqModifier) setupPathRewrite(routePattern string) {
 
 		for i, v := range routeSplit {
 			if v == match[0] {
-				rm.segments[i] = match[0]
+				p.segments[i] = match[0]
 			}
 		}
 	}
 }
 
 // setupHostRewrite sets up the host rewrite
-func (rm *ReqModifier) setupHostRewrite(host string) error {
+func (p *Plugin) setupHostRewrite(host string) error {
 	u, err := url.Parse(host)
 	if err != nil {
 		return err
 	}
 
-	rm.host = u.Host
-	rm.scheme = u.Scheme
+	p.host = u.Host
+	p.scheme = u.Scheme
 	return nil
 }
 
