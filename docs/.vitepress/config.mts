@@ -10,14 +10,16 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: "Introduction", link: "/guide/why-ika" },
+      { text: "Guide", link: "/guide/why-ika" },
       { text: "Plugins", link: "/plugins/" },
+      { text: "Roadmap", link: "/roadmap" },
     ],
 
     sidebar: {
       "/guide/": [
         {
           text: "Introduction",
+          collapsed: false,
           items: [
             { text: "Why Ika", link: "/guide/why-ika" },
             { text: "Motivation", link: "/guide/motivation" },
@@ -35,6 +37,14 @@ export default defineConfig({
             { text: "Request ID", link: "/plugins/request-id" },
             { text: "Request Modifier", link: "/plugins/request-modifier" },
             { text: "Fail2Ban", link: "/plugins/fail2ban" },
+          ],
+        },
+      ],
+      "/roadmap": [
+        {
+          text: "Project Roadmap",
+          items: [
+            { text: "Overview", link: "/roadmap" },
           ],
         },
       ],
