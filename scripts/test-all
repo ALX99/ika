@@ -1,9 +1,60 @@
 #!/bin/bash
 set -euo pipefail
 
-find . -type f -name go.mod -exec dirname {} \; | while read -r plugin; do
-    pushd "$plugin"
-    echo "Testing $plugin"
-    go test -race -shuffle=on -count=5 -coverpkg=./... -coverprofile=coverage.out -timeout 15s ./...
-    popd
+# Default flags
+run_unit=true
+run_config=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            echo "Usage: $0 [options]"
+            echo "Options:"
+            echo "  -h, --help     Show this help message"
+            echo "  --all          Run all tests (unit tests and config validation)"
+            echo "  --unit         Run only unit tests (default)"
+            echo "  --config       Run only config validation"
+            exit 0
+            ;;
+        --all)
+            run_unit=true
+            run_config=true
+            shift
+            ;;
+        --unit)
+            run_unit=true
+            run_config=false
+            shift
+            ;;
+        --config)
+            run_unit=false
+            run_config=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
 done
+
+# Run unit tests if enabled
+if [[ "$run_unit" == true ]]; then
+    echo "Running unit tests..."
+    find . -type f -name go.mod -exec dirname {} \; | while read -r plugin; do
+        pushd "$plugin"
+        echo "Testing $plugin"
+        go test -race -shuffle=on -count=5 -coverpkg=./... -coverprofile=coverage.out -timeout 15s ./...
+        popd
+    done
+fi
+
+# Run config validation if enabled
+if [[ "$run_config" == true ]]; then
+    echo "Validating example configs..."
+    for example in docs/example/configs/*.yaml; do
+        echo "Validating $example"
+        go run ./example/main.go -config "$example" -validate
+    done
+fi

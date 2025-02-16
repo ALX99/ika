@@ -4,7 +4,7 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "Ika Gateway",
   description:
-    "Documentation for the worlds-most minimal, flexible, and performant API Gateway, Ika",
+    "High-performance API Gateway with Go plugins. Zero bloat, sub-millisecond routing, and enterprise-grade reliability for modern microservices.",
   ignoreDeadLinks: [/^https?:\/\/localhost/, (url) => url.includes("TODO")],
   cleanUrls: true,
   themeConfig: {
@@ -24,6 +24,7 @@ export default defineConfig({
             { text: "Why Ika", link: "/guide/why-ika" },
             { text: "Motivation", link: "/guide/motivation" },
             { text: "Getting Started", link: "/guide/getting-started" },
+            { text: "Showcase", link: "/guide/showcase" },
           ],
         },
       ],
@@ -43,14 +44,19 @@ export default defineConfig({
       "/roadmap": [
         {
           text: "Project Roadmap",
-          items: [
-            { text: "Overview", link: "/roadmap" },
-          ],
+          items: [{ text: "Overview", link: "/roadmap" }],
         },
       ],
     },
 
+    search: {
+      provider: "local",
+    },
+
     socialLinks: [{ icon: "github", link: "https://github.com/alx99/ika" }],
+
+    siteTitle: "Ika Gateway",
+    logo: { light: "/logo.png", dark: "/logo.png" },
   },
   sitemap: {
     hostname: "https://ika.dozy.dev",

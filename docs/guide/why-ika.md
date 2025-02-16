@@ -2,7 +2,7 @@
 
 Ika is a minimalist, plugin-driven API Gateway that puts you in control. It starts with a lean core focused purely on routing, allowing you to add only the features you need through plugins.
 
-## The Ika Philosophy
+## Philosophy
 
 > Start minimal, extend purposefully.
 
@@ -12,6 +12,7 @@ Unlike traditional API Gateways that come loaded with features you may never use
 - **Plugin-Driven**: Add exactly what you need, nothing more
 - **Developer-First**: Same powerful plugin API for both core maintainers and users
 - **Future-Proof**: Extremely few dependencies ensure long-term stability
+- **Zero-Error Tolerance**: API Gateway failures are unacceptable - reliability is non-negotiable
 
 ## Why Choose Ika?
 

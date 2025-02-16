@@ -1,0 +1,110 @@
+# Configuration for the core of Ika
+ika:
+  gracefulShutdownTimeout: 30s
+  logger:
+    level: debug
+    format: text
+
+# HTTP server configuration
+servers:
+  - addr: 127.0.0.1:8080
+
+# Namespace configurations
+namespaces:
+  # Public API namespace with versioning
+  public-api:
+    mounts: ["api.example.com"]
+    routes:
+      # Current API version
+      /v2/{rest...}:
+        reqModifiers:
+          - name: req-modifier
+            config:
+              host: "https://api-v2.internal"
+              retainHostHeader: false
+        hooks:
+          - name: request-id
+            config:
+              header: X-Request-ID
+          - name: access-log
+            config:
+              headers: ["X-Request-ID", "User-Agent"]
+              remoteAddr: true
+
+      # Legacy version with rewrite
+      /v1/{rest...}:
+        reqModifiers:
+          - name: req-modifier
+            config:
+              host: "https://legacy-api.internal"
+              path: /api/{rest...}
+        hooks:
+          - name: request-id
+            config:
+              header: X-Request-ID
+              variant: UUIDv4
+              expose: false
+
+  # Admin dashboard with multiple mounts
+  admin-dashboard:
+    mounts: ["admin.example.com", "dashboard.example.com"]
+    routes:
+      # Protected admin routes
+      /admin/{rest...}:
+        middlewares:
+          - name: basic-auth
+            config:
+              incoming:
+                credentials:
+                  - name: admin
+                    type: env
+                    username: ADMIN_USER
+                    password: ADMIN_PASS
+        reqModifiers:
+          - name: req-modifier
+            config:
+              host: "https://admin-panel.internal"
+        hooks:
+          - name: access-log
+            config:
+              headers: ["X-Request-ID", "User-Agent", "X-Real-IP"]
+              remoteAddr: true
+
+      # Public dashboard routes
+      /public/{rest...}:
+        reqModifiers:
+          - name: req-modifier
+            config:
+              host: "https://public-dashboard.internal"
+        hooks:
+          - name: access-log
+            config:
+              headers: ["X-Real-IP"]
+              remoteAddr: true
+
+  # Internal services with dynamic routing
+  internal-services:
+    mounts: ["internal.example.com"]
+    routes:
+      # Service-specific routes with rate limiting
+      /{service}/{version}/{rest...}:
+        reqModifiers:
+          - name: req-modifier
+            config:
+              host: "https://{service}-{version}.internal"
+        hooks:
+          - name: request-id
+            config:
+              header: X-Trace-ID
+              variant: XID
+          - name: access-log
+            config:
+              headers: ["X-Trace-ID", "X-Service-Name"]
+              queryParams: ["tenant", "region"]
+        middlewares:
+          - name: fail2ban
+            config:
+              maxRetries: 5
+              window: 10m
+              banDuration: 30m
+              idHeader: X-Trace-ID

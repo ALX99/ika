@@ -19,7 +19,7 @@ jobs:
       - name: Run tests
         run: |
           touch ./example/.env
-          make cfg deps-up test
+          make cfg deps-up test ARGS="--all"
       - name: Print Docker Compose logs
         if: failure()
         run: docker compose logs

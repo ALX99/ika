@@ -2,15 +2,20 @@
 
 This page outlines the planned features and improvements for Ika Gateway. The roadmap items are organized in no particular order, with a focus on maintaining Ika's core principles of minimalism, flexibility, and performance.
 
-## Core Improvements
+## Core
 
 ::: info Configuration
 
 - Configuration validation <Badge type="tip">Complete</Badge>
 - Configuration variable support <Badge type="info">Idea</Badge>
 - Remote configuration reference <Badge type="info">Idea</Badge>
+- Live configuration reloading <Badge type="danger">Planned</Badge>
 - Configuration templating <Badge type="info">Idea</Badge>
-- Error response customization <Badge type="danger">Planned</Badge>
+- Error response customization <Badge type="warning">Ongoing</Badge>
+- TLS support <Badge type="danger">Planned</Badge>
+- H2C support <Badge type="danger">Planned</Badge>
+- Global plugins <Badge type="danger">Planned</Badge>
+- Configuration policy support <Badge type="info">Idea</Badge>
 
 :::
 
@@ -35,6 +40,11 @@ This page outlines the planned features and improvements for Ika Gateway. The ro
 - Security <Badge type="info">Idea</Badge>
     - CORS <Badge type="info">Idea</Badge>
     - CSP <Badge type="info">Idea</Badge>
+- Static file server <Badge type="danger">Planned</Badge>
+- Whitelist (IP/CIDR) <Badge type="info">Idea</Badge>
+- Query allowlist <Badge type="info">Idea</Badge>
+- Load balancer <Badge type="danger">Planned</Badge>
+
 :::
 
 ## Plugin System
@@ -57,6 +67,8 @@ This page outlines the planned features and improvements for Ika Gateway. The ro
 - API reference documentation <Badge type="danger">Planned</Badge>
 
 :::
+
+---
 
 ::: tip Contributing
 This roadmap evolves based on community feedback and changing requirements. Feel free to suggest new features or improvements through our [GitHub repository](https://github.com/alx99/ika)!

@@ -3,9 +3,11 @@
 layout: home
 
 hero:
-  name: "Ika Gateway ><>"
-  text: "A lean, plugin-driven API Gateway"
-  tagline: Start minimal, extend purposefully
+  name: "Ika ><>"
+  text: "Simple core,\nendless possibilities"
+  tagline: The API Gateway that scales with you
+  image: /logo.png
+  alt: Ika Gateway logo
   actions:
     - theme: brand
       text: Why Ika?
@@ -15,10 +17,11 @@ hero:
       link: /guide/getting-started
 
 features:
-  - title: Blazing Fast
-    details: Zero bloat means lightning-quick startup and request processing
-  - title: Plugin-Driven
-    details: Add exactly what you need through a powerful plugin system
-  - title: Future-Proof
-    details: Minimal dependencies ensure long-term stability and maintainability
+  - title: ⚡ Lightning-Fast Performance
+    details: Sub-millisecond routing with instant startup. Zero bloat, pure speed.
+  - title: 🔌 True Plugin Power
+    details: Write custom Go plugins with full request lifecycle access. Infinite possibilities.
+  - title: 🚀 Built for Production
+    details: Rock-solid reliability with minimal dependencies and comprehensive testing.
 ---
+

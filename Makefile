@@ -38,7 +38,7 @@ run-reload:
 
 .PHONY: test
 test:
-	./scripts/test-all
+	./scripts/test-all $(ARGS)
 
 .PHONY: update-test
 update-test:

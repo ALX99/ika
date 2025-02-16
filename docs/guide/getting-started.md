@@ -27,7 +27,7 @@ docker run -it --rm ghcr.io/alx99/ika:latest -help
 ```bash [📦 Binary]
 # Download and extract
 VERSION="v0.0.6"
-URL="https://github.com/ALX99/ika/releases/download/$VERSION/ika_Linux_$(uname -m).tar.gz"
+URL="https://github.com/alx99/ika/releases/download/$VERSION/ika_Linux_$(uname -m).tar.gz"
 curl -Lo- "$URL" | tar -xz --wildcards 'ika'
 
 # Verify
@@ -40,7 +40,7 @@ curl -Lo- "$URL" | tar -xz --wildcards 'ika'
 
 Create a file named `ika.yaml` with this minimal configuration:
 
-<<<@/examples/configs/basic.yaml
+<<<@/example/configs/basic.yaml
 
 ### Understanding Namespaces
 
@@ -102,11 +102,12 @@ curl --connect-to "localhost:8888:$HOST:443" "https://$HOST/get"
 
 :::
 
-## Adding Real Functionality
+This is just the beginning of what Ika can do. Want to see it in action? Our [Showcase](/guide/showcase) demonstrates how Ika handles complex real-world scenarios:
 
-Let's make our gateway more useful by adding some basic features:
-
-TODO
+- Route traffic across multiple services and domains
+- Secure your APIs with authentication and rate limiting
+- Track requests with structured logging and tracing
+- Transform and adapt requests on the fly
 
 ## Next Steps
 

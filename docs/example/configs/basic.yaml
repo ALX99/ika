@@ -1,5 +1,6 @@
 # Configuration for the core of Ika
 ika:
+  gracefulShutdownTimeout: 5s
   logger:
     level: debug
     format: text
