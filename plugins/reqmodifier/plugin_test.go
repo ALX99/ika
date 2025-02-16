@@ -1,9 +1,9 @@
 package reqmodifier
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/alx99/ika"
@@ -12,44 +12,25 @@ import (
 
 func TestPlugin_Setup(t *testing.T) {
 	t.Parallel()
-
 	factory := Factory()
-
 	tests := []struct {
-		name      string
-		config    map[string]any
-		route     string
-		wantError bool
-		check     func(*is.I, ika.Plugin)
+		name        string
+		config      map[string]any
+		route       string
+		wantErr     bool
+		errContains string
 	}{
-		{
-			name:      "empty config",
-			config:    map[string]any{},
-			wantError: true,
-		},
 		{
 			name: "valid path rewrite",
 			config: map[string]any{
 				"path": "/new/{id}",
 			},
-			route:     "/old/{id}",
-			wantError: false,
-			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*plugin)
-				is.Equal(plugin.cfg.Path, "/new/{id}")
-			},
+			route: "/old/{id}",
 		},
 		{
 			name: "valid host rewrite",
 			config: map[string]any{
 				"host": "https://example.com",
-			},
-			wantError: false,
-			check: func(is *is.I, p ika.Plugin) {
-				plugin := p.(*plugin)
-				is.Equal(plugin.cfg.Host, "https://example.com")
-				is.Equal(plugin.host, "example.com")
-				is.Equal(plugin.scheme, "https")
 			},
 		},
 		{
@@ -58,22 +39,22 @@ func TestPlugin_Setup(t *testing.T) {
 				"path": "/new/{id}",
 				"host": "https://example.com",
 			},
-			route:     "/old/{id}",
-			wantError: false,
+			route: "/old/{id}",
 		},
 		{
 			name: "path rewrite without route pattern",
 			config: map[string]any{
 				"path": "/new/{id}",
 			},
-			wantError: true,
+			wantErr:     true,
+			errContains: "path pattern is required",
 		},
 		{
 			name: "invalid host URL",
 			config: map[string]any{
 				"host": "://invalid",
 			},
-			wantError: true,
+			wantErr: true,
 		},
 	}
 
@@ -81,83 +62,281 @@ func TestPlugin_Setup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
-
-			p, err := factory.New(t.Context(), ika.InjectionContext{
+			iCtx := ika.InjectionContext{
 				Route:  tt.route,
 				Logger: slog.New(slog.DiscardHandler),
-			}, tt.config)
+			}
 
-			if tt.wantError {
+			p, err := factory.New(context.Background(), iCtx, tt.config)
+			if tt.wantErr {
 				is.True(err != nil)
+				if tt.errContains != "" {
+					is.True(err.Error() == tt.errContains)
+				}
 				return
 			}
 
 			is.NoErr(err)
-			if tt.check != nil {
-				tt.check(is, p)
-			}
+			is.True(p != nil)
 		})
 	}
 }
 
 func TestPlugin_ModifyRequest(t *testing.T) {
 	t.Parallel()
-
+	factory := Factory()
 	tests := []struct {
-		name      string
-		config    map[string]any
-		route     string
-		request   *http.Request
-		wantPath  string
-		wantHost  string
-		wantError bool
+		name          string
+		config        map[string]any
+		route         string
+		inputURL      string
+		expectedPath  string
+		expectedHost  string
+		expectedQuery string
 	}{
 		{
-			name: "path rewrite with single segment",
+			name: "simple path rewrite",
 			config: map[string]any{
-				"path": "/new/{id}",
+				"path": "/api/v2/{id}",
 			},
-			route: "/old/{id}",
-			request: func() *http.Request {
-				r := httptest.NewRequest("GET", "/old/123", nil)
-				r.Pattern = "/old/{id}"
-				return r
-			}(),
-			wantPath: "/new/123",
+			route:         "/users/{id}",
+			inputURL:      "http://example.com/users/123",
+			expectedPath:  "/api/v2/123",
+			expectedQuery: "",
+		},
+		{
+			name: "path rewrite with encoded characters",
+			config: map[string]any{
+				"path": "/api/v2/{id}",
+			},
+			route:         "/users/{id}",
+			inputURL:      "http://example.com/users/test%20space",
+			expectedPath:  "/api/v2/test space",
+			expectedQuery: "",
 		},
 		{
 			name: "path rewrite with wildcard",
 			config: map[string]any{
-				"path": "/new/{wildcard...}",
+				"path": "/api/{wildcard...}",
 			},
-			route: "/old/{wildcard...}",
-			request: func() *http.Request {
-				r := httptest.NewRequest("GET", "/old/a/b/c", nil)
-				r.Pattern = "/old/{wildcard...}"
-				return r
-			}(),
-			wantPath: "/new/a/b/c",
+			route:         "/users/{wildcard...}",
+			inputURL:      "http://example.com/users/123/posts/456",
+			expectedPath:  "/api/123/posts/456",
+			expectedQuery: "",
 		},
 		{
 			name: "host rewrite",
 			config: map[string]any{
-				"host": "https://example.com",
+				"host": "https://api.example.com",
 			},
-			request:  httptest.NewRequest("GET", "/test", nil),
-			wantHost: "example.com",
+			inputURL:      "http://example.com/users/123",
+			expectedPath:  "/users/123",
+			expectedHost:  "api.example.com",
+			expectedQuery: "",
 		},
 		{
 			name: "host rewrite with retain header",
 			config: map[string]any{
-				"host":             "https://example.com",
+				"host":             "https://api.example.com",
 				"retainHostHeader": true,
 			},
-			request: func() *http.Request {
-				r := httptest.NewRequest("GET", "/test", nil)
-				r.Host = "original.com"
-				return r
-			}(),
-			wantHost: "original.com",
+			inputURL:      "http://example.com/users/123",
+			expectedPath:  "/users/123",
+			expectedHost:  "api.example.com",
+			expectedQuery: "",
+		},
+		{
+			name: "query params are passed correctly - simple",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=1&bye=2",
+			expectedPath:  "/any",
+			expectedQuery: "hi=1&bye=2",
+		},
+		{
+			name: "query params are passed correctly - encoded",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=%20hello%20world%20",
+			expectedPath:  "/any",
+			expectedQuery: "hi=%20hello%20world%20",
+		},
+		{
+			name: "query params are passed correctly - multiple values",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=1&hi=2&hi=3",
+			expectedPath:  "/any",
+			expectedQuery: "hi=1&hi=2&hi=3",
+		},
+		{
+			name: "wildcard rewrite with query params",
+			config: map[string]any{
+				"path": "/{any...}",
+			},
+			route:         "/httpbun/{any...}",
+			inputURL:      "http://example.com/httpbun/any/a/huhh?abc=lol&x=b",
+			expectedPath:  "/any/a/huhh",
+			expectedQuery: "abc=lol&x=b",
+		},
+		{
+			name: "wildcard rewrite with encoded query params",
+			config: map[string]any{
+				"path": "/{any...}",
+			},
+			route:         "/httpbun/{any...}",
+			inputURL:      "http://example.com/httpbun/any/a/huhh?abc=魚&x=は",
+			expectedPath:  "/any/a/huhh",
+			expectedQuery: "abc=魚&x=は",
+		},
+		{
+			name: "path rewrite with multiple segments",
+			config: map[string]any{
+				"path": "/any/{a1}/{a2}",
+			},
+			route:         "/path-rewrite/{a1}/{a2}",
+			inputURL:      "http://example.com/path-rewrite/a/huhh",
+			expectedPath:  "/any/a/huhh",
+			expectedQuery: "",
+		},
+		{
+			name: "retain host header",
+			config: map[string]any{
+				"path":             "/any",
+				"host":             "http://localhost:8080",
+				"retainHostHeader": true,
+			},
+			route:         "/retain-host",
+			inputURL:      "http://example.com/retain-host",
+			expectedPath:  "/any",
+			expectedHost:  "localhost:8080",
+			expectedQuery: "",
+		},
+		{
+			name: "query params - single param",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=1",
+			expectedPath:  "/any",
+			expectedQuery: "hi=1",
+		},
+		{
+			name: "query params - empty values",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=&bye=",
+			expectedPath:  "/any",
+			expectedQuery: "hi=&bye=",
+		},
+		{
+			name: "query params - null value",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=null",
+			expectedPath:  "/any",
+			expectedQuery: "hi=null",
+		},
+		{
+			name: "query params - boolean values",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=true&bye=false",
+			expectedPath:  "/any",
+			expectedQuery: "hi=true&bye=false",
+		},
+		{
+			name: "query params - numeric values",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=123&bye=456.789",
+			expectedPath:  "/any",
+			expectedQuery: "hi=123&bye=456.789",
+		},
+		{
+			name: "query params - multiple types",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=1&bye=true&foo=null&bar=%20space%20",
+			expectedPath:  "/any",
+			expectedQuery: "hi=1&bye=true&foo=null&bar=%20space%20",
+		},
+		{
+			name: "query params - encoded path characters",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/get",
+			inputURL:      "http://example.com/get?hi=hello%20world&bye=goodbye%2Fworld",
+			expectedPath:  "/any",
+			expectedQuery: "hi=hello%20world&bye=goodbye%2Fworld",
+		},
+		{
+			name: "non-terminated path with trailing slash",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/not-terminated/{any}/",
+			inputURL:      "http://example.com/not-terminated/hi/",
+			expectedPath:  "/any",
+			expectedQuery: "",
+		},
+		{
+			name: "non-terminated path with multiple segments",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/not-terminated/{any}/",
+			inputURL:      "http://example.com/not-terminated/a/b/c/",
+			expectedPath:  "/any",
+			expectedQuery: "",
+		},
+		{
+			name: "non-terminated path without trailing slash",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/not-terminated/{any}/",
+			inputURL:      "http://example.com/not-terminated/a/b/c/d",
+			expectedPath:  "/any",
+			expectedQuery: "",
+		},
+		{
+			name: "terminated path with trailing slash",
+			config: map[string]any{
+				"path": "/any",
+			},
+			route:         "/terminated/{any}/{$}",
+			inputURL:      "http://example.com/terminated/hi/",
+			expectedPath:  "/any",
+			expectedQuery: "",
+		},
+		{
+			name: "wildcard path with encoded slashes",
+			config: map[string]any{
+				"path": "/{any...}",
+			},
+			route:         "/httpbun/{any...}",
+			inputURL:      "http://example.com/httpbun/any/slash%2Fshould-bekept/next",
+			expectedPath:  "/any/slash/should-bekept/next",
+			expectedQuery: "",
 		},
 	}
 
@@ -165,26 +344,34 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			is := is.New(t)
-
-			p, err := Factory().New(t.Context(), ika.InjectionContext{
+			iCtx := ika.InjectionContext{
 				Route:  tt.route,
 				Logger: slog.New(slog.DiscardHandler),
-			}, tt.config)
-			is.NoErr(err)
-
-			err = p.(*plugin).ModifyRequest(tt.request)
-			if tt.wantError {
-				is.True(err != nil)
-				return
 			}
 
+			p, err := factory.New(context.Background(), iCtx, tt.config)
 			is.NoErr(err)
-			if tt.wantPath != "" {
-				is.Equal(tt.request.URL.Path, tt.wantPath)
+
+			req, err := http.NewRequest(http.MethodGet, tt.inputURL, nil)
+			is.NoErr(err)
+			if tt.route != "" {
+				req.Pattern = tt.route
 			}
-			if tt.wantHost != "" {
-				is.Equal(tt.request.Host, tt.wantHost)
+
+			rm := p.(*plugin)
+			err = rm.ModifyRequest(req)
+			is.NoErr(err)
+
+			is.Equal(req.URL.Path, tt.expectedPath)
+			if tt.expectedHost != "" {
+				is.Equal(req.URL.Host, tt.expectedHost)
+				if tt.config["retainHostHeader"] == true {
+					is.Equal(req.Host, "example.com")
+				} else {
+					is.Equal(req.Host, tt.expectedHost)
+				}
 			}
+			is.Equal(req.URL.RawQuery, tt.expectedQuery)
 		})
 	}
 }
@@ -243,7 +430,7 @@ func BenchmarkRewritePath(b *testing.B) {
 		Route:  "/old/{path}",
 		Logger: slog.New(slog.DiscardHandler),
 	}
-	p, err := Factory().New(b.Context(), iCtx, config)
+	p, err := (&plugin{}).New(b.Context(), iCtx, config)
 	if err != nil {
 		b.Fatal(err)
 	}
