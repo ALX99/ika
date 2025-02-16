@@ -28,21 +28,56 @@ type nsBuilder struct {
 	transport  http.RoundTripper
 	factories  map[string]ika.PluginFactory
 	teardowner teardown.Teardowner
+	mux        *http.ServeMux
+
+	// Route registration channels
+	registrationCh chan routeRegistration
+	done           chan struct{}
 }
 
-func newNSBuilder(ctx context.Context, name string, ns config.Namespace, log *slog.Logger, factories map[string]ika.PluginFactory) (*nsBuilder, error) {
+type routeRegistration struct {
+	pattern string
+	handler http.Handler
+	mount   string
+	err     chan error
+}
+
+func newNSBuilder(ctx context.Context, mux *http.ServeMux, name string, ns config.Namespace, log *slog.Logger, factories map[string]ika.PluginFactory) (*nsBuilder, error) {
+	registrationCh := make(chan routeRegistration)
+	done := make(chan struct{})
+
 	b := nsBuilder{
-		name:       name,
-		namespace:  ns,
-		log:        log.With(slog.String("namespace", name)),
-		factories:  factories,
-		teardowner: make(teardown.Teardowner, 0),
+		name:           name,
+		namespace:      ns,
+		log:            log.With(slog.String("namespace", name)),
+		factories:      factories,
+		teardowner:     make(teardown.Teardowner, 0),
+		mux:            mux,
+		registrationCh: registrationCh,
+		done:           done,
 	}
+
+	// Start the registration goroutine
+	go func() {
+		defer close(done)
+		for reg := range registrationCh {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						reg.err <- fmt.Errorf("failed to register route %q: %v", reg.pattern, r)
+						return
+					}
+					reg.err <- nil
+				}()
+				caramel.Wrap(mux).Mount(reg.mount).Handle(reg.pattern, reg.handler)
+			}()
+		}
+	}()
 
 	return &b, nil
 }
 
-func (b *nsBuilder) build(ctx context.Context, mux *http.ServeMux) error {
+func (b *nsBuilder) build(ctx context.Context) error {
 	var transport http.RoundTripper = makeTransport(b.namespace.Transport)
 
 	ictx := ika.InjectionContext{
@@ -70,17 +105,17 @@ func (b *nsBuilder) build(ctx context.Context, mux *http.ServeMux) error {
 
 	b.proxy = p
 
-	if err := b.buildRoutes(ctx, mux); err != nil {
+	if err := b.buildRoutes(ctx); err != nil {
 		return errors.Join(err, b.teardowner.Teardown(ctx))
 	}
 
 	return nil
 }
 
-func (b *nsBuilder) buildRoutes(ctx context.Context, mux *http.ServeMux) error {
+func (b *nsBuilder) buildRoutes(ctx context.Context) error {
 	for _, mount := range b.namespace.Mounts {
 		for pattern, route := range b.namespace.Routes {
-			if err := b.buildRoute(ctx, mux, mount, pattern, route); err != nil {
+			if err := b.buildRoute(ctx, mount, pattern, route); err != nil {
 				return err
 			}
 		}
@@ -88,7 +123,7 @@ func (b *nsBuilder) buildRoutes(ctx context.Context, mux *http.ServeMux) error {
 	return nil
 }
 
-func (b *nsBuilder) buildRoute(ctx context.Context, mux *http.ServeMux, mount, pattern string, route config.Route) error {
+func (b *nsBuilder) buildRoute(ctx context.Context, mount, pattern string, route config.Route) error {
 	nsCtx := ika.InjectionContext{
 		Namespace: b.name,
 		Scope:     ika.ScopeNamespace,
@@ -117,16 +152,27 @@ func (b *nsBuilder) buildRoute(ctx context.Context, mux *http.ServeMux, mount, p
 		return err
 	}
 
-	c := caramel.Wrap(mux).Mount(mount)
 	patterns := b.generatePatterns(pattern, route.Methods)
 
+	// Register all patterns
 	for _, pattern := range patterns {
 		if b.shouldSkipPattern(pattern, mount) {
 			continue
 		}
 
 		handlerChain := nsChain.Extend(routeChain).Then(b.proxy.WithPathTrim(mount))
-		c.Handle(pattern, ika.ToHTTPHandler(handlerChain, buildErrHandler(b.log)))
+		errCh := make(chan error, 1)
+
+		b.registrationCh <- routeRegistration{
+			pattern: pattern,
+			handler: ika.ToHTTPHandler(handlerChain, buildErrHandler(b.log)),
+			mount:   mount,
+			err:     errCh,
+		}
+
+		if err := <-errCh; err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -266,6 +312,8 @@ func (b *nsBuilder) makeChain(ctx context.Context, ictx ika.InjectionContext, mi
 }
 
 func (b *nsBuilder) teardown(ctx context.Context) error {
+	close(b.registrationCh)
+	<-b.done // Wait for registration goroutine to finish
 	return b.teardowner.Teardown(ctx)
 }
 

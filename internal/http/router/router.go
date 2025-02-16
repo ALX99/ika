@@ -33,12 +33,12 @@ func (r *Router) Build(ctx context.Context) error {
 
 	for nsName, ns := range r.cfg.Namespaces {
 		now := time.Now()
-		builder, err := newNSBuilder(ctx, nsName, ns, r.log, r.opts.Plugins)
+		builder, err := newNSBuilder(ctx, r.mux, nsName, ns, r.log, r.opts.Plugins)
 		if err != nil {
 			return err
 		}
 
-		if err := builder.build(ctx, r.mux); err != nil {
+		if err := builder.build(ctx); err != nil {
 			return err
 		}
 		r.tder.Add(builder.teardown)
