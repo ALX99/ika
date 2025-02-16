@@ -91,22 +91,25 @@ func (p *plugin) ModifyRequest(r *http.Request) error {
 func (p *plugin) rewritePath(r *http.Request) error {
 	var err error
 	path := request.GetPath(r)
-	args := make([]any, 0, 64)
-	// first element is always empty due to leading slash
-	splitPath := strings.Split(path, "/")[1:]
-	reqPathLen := len(splitPath)
+	args := make([]any, 0, 8) // tiny buffer to avoid more allocs
 
-	for i, segment := range splitPath[:reqPathLen] {
-		repl, ok := p.segments[i]
-		if !ok {
-			continue
+	start := 1 // skip first character which is always '/'
+	segmentIdx := 0
+	for i := 1; i <= len(path); i++ {
+		if i == len(path) || path[i] == '/' {
+			if i > start {
+				if repl, ok := p.segments[segmentIdx]; ok {
+					if isWildcard(repl) {
+						// For wildcards, use the rest of the path
+						args = append(args, path[start:])
+						break
+					}
+					args = append(args, path[start:i])
+				}
+				segmentIdx++
+			}
+			start = i + 1
 		}
-
-		if isWildcard(repl) {
-			args = append(args, strings.Join(splitPath[i:], "/"))
-			break // bail, wildcard must always be the last segment
-		}
-		args = append(args, segment)
 	}
 
 	newPath := fmt.Sprintf(p.replaceFormat, args...)

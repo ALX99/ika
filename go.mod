@@ -9,4 +9,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // for reading yaml files
 )
 
-require golang.org/x/sys v0.6.0 // indirect
+require golang.org/x/sys v0.30.0 // indirect
