@@ -3,7 +3,7 @@ vendor/
 dist/
 **/.env
 coverage.out
-go.work*
+#go.work*
 tests/ika.yaml
 internal/ika/ika.yaml
 

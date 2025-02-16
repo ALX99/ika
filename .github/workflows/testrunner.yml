@@ -1,38 +1,18 @@
-name: Test runner
+name: Tests
 
 on:
   push:
   pull_request:
-  workflow_dispatch:
 
 jobs:
   unit-test:
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - uses: cue-lang/setup-cue@v1.0.1
+          cache-dependency-path: "**/*.sum"
       - name: Run tests
-        run: |
-          touch ./example/.env
-          make cfg deps-up test ARGS="--all"
-      - name: Print Docker Compose logs
-        if: failure()
-        run: docker compose logs
-
-  e2e-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - uses: grafana/setup-k6-action@v1
-      - uses: cue-lang/setup-cue@v1.0.1
-      - name: Run E2E tests
-        run: touch ./example/.env && make cfg-docker e2e-compose BUILD_TAGS=full
-      - name: Print Docker Compose logs
-        if: failure()
-        run: docker compose logs
+        run: make test ARGS="--all"

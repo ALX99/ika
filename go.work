@@ -1,0 +1,12 @@
+go 1.24.0
+
+use (
+	.
+	./cmd/ika-full
+	./pluginutil
+	./plugins/reqmodifier
+	./plugins/basicauth
+	./plugins/requestid
+	./plugins/accesslog
+	./plugins/fail2ban
+)

@@ -3,23 +3,8 @@
 
 set -euo pipefail
 
-
-dirs=(
-  "."
-  "example"
-  "pluginutil"
-)
-
-for dir in "plugins"/*; do
-  if [[ -d "$dir" ]]; then
-    dirs+=("$dir")
-  fi
+find . -type f -name go.mod -exec dirname {} \; | while read -r dir; do
+    pushd "$dir"
+    go mod tidy
+    popd
 done
-
-for dir in "${dirs[@]}"; do
-  echo "Tidying up $dir..."
-  pushd "$dir"
-  go mod tidy
-  popd
-done
-

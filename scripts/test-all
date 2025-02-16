@@ -55,6 +55,6 @@ if [[ "$run_config" == true ]]; then
     echo "Validating example configs..."
     for example in docs/example/configs/*.yaml; do
         echo "Validating $example"
-        go run ./example/main.go -config "$example" -validate
+        go run ./cmd/ika-full/main.go -config "$example" -validate
     done
 fi

@@ -4,18 +4,15 @@ ARG BUILD_TAGS
 
 RUN apk add --no-cache ca-certificates
 
-COPY go.* ./
-RUN go mod download
-
 COPY . .
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -tags "$BUILD_TAGS" -o /bin/ika ./cmd/ika
+    CGO_ENABLED=0 go build -tags "$BUILD_TAGS" -ldflags '-w -s' -o /bin/ika ./cmd/ika-full/main.go
 
 FROM scratch
 COPY --from=build \
   /etc/ssl/certs/ca-certificates.crt \
   /etc/ssl/certs/ca-certificates.crt
-COPY --from=build /bin/ika /ika
+COPY --from=build /bin/ika /usr/bin/ika
 
-CMD ["/ika"]
+ENTRYPOINT ["/usr/bin/ika"]
