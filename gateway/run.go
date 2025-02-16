@@ -14,6 +14,7 @@ import (
 var (
 	printVersion = flag.Bool("version", false, "Print the version and exit.")
 	configPath   = flag.String("config", "ika.yaml", "Path to the configuration file.")
+	validate     = flag.Bool("validate", false, "Validate the configuration file and exit.")
 )
 
 // Run runs Ika gateway.
@@ -24,7 +25,7 @@ func Run(opts ...Option) {
 		os.Exit(0)
 	}
 
-	cfg := config.Options{}
+	cfg := config.Options{Validate: *validate}
 	for _, opt := range opts {
 		if err := opt(&cfg); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to apply option: %s\n", err)

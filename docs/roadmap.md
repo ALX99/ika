@@ -6,7 +6,7 @@ This page outlines the planned features and improvements for Ika Gateway. The ro
 
 ::: info Configuration
 
-- Configuration validation <Badge type="warning">In Progress</Badge>
+- Configuration validation <Badge type="tip">Complete</Badge>
 - Configuration variable support <Badge type="info">Idea</Badge>
 - Remote configuration reference <Badge type="info">Idea</Badge>
 - Configuration templating <Badge type="info">Idea</Badge>

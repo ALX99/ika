@@ -33,16 +33,21 @@ func Run(configPath string, options config.Options) {
 	}
 
 	makeServer := func(handler http.Handler, servers []config.Server) server.HTTPServer {
+		if options.Validate {
+			return &mockServer{onListenAndServe: func() { cancel() }}
+		}
 		return server.New(handler, servers)
 	}
+
+	exitOne := false
 
 	flush, err := run(ctx, makeServer, cfg, options)
 	if err != nil {
 		slog.Error(err.Error())
+		exitOne = !errors.Is(err, context.Canceled)
 	} else {
 		slog.Info("Shutdown finished")
 	}
-	exitOne := !errors.Is(err, context.Canceled)
 
 	if err = flush(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to flush: %s\n", err)
@@ -129,3 +134,10 @@ func readConfig() (config.Config, error) {
 	}
 	return cfg, nil
 }
+
+type mockServer struct {
+	onListenAndServe func()
+}
+
+func (m *mockServer) ListenAndServe() error              { m.onListenAndServe(); return nil }
+func (m *mockServer) Shutdown(ctx context.Context) error { return nil }
