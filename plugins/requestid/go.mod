@@ -1,7 +1,8 @@
 module github.com/alx99/ika/plugins/requestid
 
-go 1.23.5
+go 1.24.0
 
+// published too early
 retract v1.0.0
 
 require (

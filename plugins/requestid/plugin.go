@@ -28,6 +28,9 @@ type plugin struct {
 	once sync.Once
 }
 
+// ksuidMu protects the global ksuid.SetRand operation
+var ksuidMu sync.Mutex
+
 func Factory() ika.PluginFactory {
 	return &plugin{}
 }
@@ -109,27 +112,27 @@ func makeRandFun(variant string) (func() (string, error), error) {
 
 	switch variant {
 	case vUUIDv4:
-		uuid.SetRand(chacha)
-		uuid.EnableRandPool()
+		rng := rand.NewChaCha8(seed)
 		return func() (string, error) {
-			uuid, err := uuid.NewRandom()
+			uuid, err := uuid.NewRandomFromReader(rng)
 			if err != nil {
 				return "", err
 			}
 			return uuid.String(), nil
 		}, nil
 	case vUUIDv7:
-		uuid.SetRand(chacha)
-		uuid.EnableRandPool()
+		rng := rand.NewChaCha8(seed)
 		return func() (string, error) {
-			uuid, err := uuid.NewV7()
+			uuid, err := uuid.NewV7FromReader(rng)
 			if err != nil {
 				return "", err
 			}
 			return uuid.String(), nil
 		}, nil
 	case vKSUID:
+		ksuidMu.Lock()
 		ksuid.SetRand(chacha)
+		ksuidMu.Unlock()
 		return func() (string, error) {
 			ksuid, err := ksuid.NewRandomWithTime(time.Now())
 			return ksuid.String(), err

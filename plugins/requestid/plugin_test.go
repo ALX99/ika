@@ -16,7 +16,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 	next := ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error { return nil })
 	tests := []struct {
 		name string
-		p    plugin
+		p    *plugin
 		// Named input parameters for target function.
 		r              *http.Request
 		wantHeader     http.Header
@@ -24,7 +24,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 	}{
 		{
 			name: "no override header",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -43,7 +43,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "override header",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{true}[0],
@@ -63,7 +63,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "append header",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Append:   true,
@@ -84,7 +84,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose disabled",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -102,7 +102,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose header with no existing ID",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -119,7 +119,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose header with existing ID",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{false}[0],
@@ -138,7 +138,7 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 		},
 		{
 			name: "expose header with override",
-			p: plugin{
+			p: &plugin{
 				cfg: pConfig{
 					Header:   "X-Request-Id",
 					Override: &[]bool{true}[0],
