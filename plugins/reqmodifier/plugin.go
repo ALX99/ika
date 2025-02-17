@@ -3,6 +3,7 @@ package reqmodifier
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -16,26 +17,24 @@ import (
 	"github.com/alx99/ika/pluginutil"
 )
 
-// regular expression to match segments in the rewrite path
-var segmentRe = regexp.MustCompile(`\{([^{}]*)\}`)
+// segmentPattern matches path segments like {id} or {wildcard...}
+var segmentPattern = regexp.MustCompile(`\{([^{}]*)\}`)
 
 type plugin struct {
 	cfg pConfig
 
-	// A map of segment index (in the route pattern)
-	// to the segment name
-	//
-	// For example, if the route pattern is /example/{id}/path/{wildcard...}
-	// segments will be {1: "{id}", 3: "{wildcard...}"}
-	segments map[int]string
+	// pathSegments maps segment positions to their names
+	// Example: For /users/{id}/posts/{type}, the map would be:
+	// {1: "{id}", 3: "{type}"}
+	pathSegments map[int]string
 
-	// replaceFormat is in the format of /example/%s/path
-	// where %s should be replaced with the corresponding segment
-	replaceFormat string
+	// pathTemplate is the format string for path rewriting
+	// Example: For target path "/api/%s/v2/%s", segments are replaced with %s
+	pathTemplate string
 
-	// host and scheme for host rewriting
-	host   string
-	scheme string
+	// targetHost and targetScheme for host rewriting
+	targetHost   string
+	targetScheme string
 
 	log  *slog.Logger
 	once sync.Once
@@ -58,10 +57,8 @@ func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 		return nil, err
 	}
 
-	if p.cfg.Path != "" {
-		if ictx.Route == "" {
-			return nil, fmt.Errorf("path pattern is required")
-		}
+	if ictx.Scope != ika.ScopeRoute {
+		return nil, errors.New("plugin only usable in route scope")
 	}
 
 	if p.cfg.Host != "" {
@@ -89,31 +86,38 @@ func (p *plugin) ModifyRequest(r *http.Request) error {
 }
 
 func (p *plugin) rewritePath(r *http.Request) error {
-	var err error
 	path := request.GetPath(r)
-	args := make([]any, 0, 8) // tiny buffer to avoid more allocs
+	args := make([]any, 0, 8)
 
-	start := 1 // skip first character which is always '/'
+	// Skip leading slash and process path segments
+	pos := 1
 	segmentIdx := 0
 	for i := 1; i <= len(path); i++ {
 		if i == len(path) || path[i] == '/' {
-			if i > start {
-				if repl, ok := p.segments[segmentIdx]; ok {
-					if isWildcard(repl) {
-						// For wildcards, use the rest of the path
-						args = append(args, path[start:])
-						break
-					}
-					args = append(args, path[start:i])
-				}
-				segmentIdx++
+			// Skip empty segments
+			if i <= pos {
+				pos = i + 1
+				continue
 			}
-			start = i + 1
+
+			segment, exists := p.pathSegments[segmentIdx]
+			if exists {
+				if strings.HasSuffix(segment, "...}") {
+					// Handle wildcard by capturing remaining path
+					args = append(args, path[pos:])
+					break
+				}
+				args = append(args, path[pos:i])
+			}
+			segmentIdx++
+			pos = i + 1
 		}
 	}
 
-	newPath := fmt.Sprintf(p.replaceFormat, args...)
+	// Format new path using collected segments
+	newPath := fmt.Sprintf(p.pathTemplate, args...)
 
+	var err error
 	r.URL.RawPath = newPath
 	r.URL.Path, err = url.PathUnescape(newPath)
 	if err != nil {
@@ -125,55 +129,49 @@ func (p *plugin) rewritePath(r *http.Request) error {
 	return nil
 }
 
-func (*plugin) Teardown(context.Context) error { return nil }
-
 func (p *plugin) rewriteHost(r *http.Request) {
 	if !p.cfg.RetainHostHeader {
-		r.Host = p.host // this overrides the Host header
+		r.Host = p.targetHost // this overrides the Host header
 	}
-	r.URL.Host = p.host
-	r.URL.Scheme = p.scheme
+	r.URL.Host = p.targetHost
+	r.URL.Scheme = p.targetScheme
 }
 
-// setupPathRewrite sets up the path rewrite
 func (p *plugin) setupPathRewrite(routePattern string) {
 	_, _, path := decomposePattern(routePattern)
-	// first element is always empty due to leading slash
-	routeSplit := strings.Split(path, "/")[1:]
+	routeSegments := strings.Split(path, "/")[1:] // Skip empty first segment
 
-	p.segments = make(map[int]string)
-	p.replaceFormat = segmentRe.ReplaceAllString(p.cfg.Path, "%s")
+	p.pathSegments = make(map[int]string)
+	p.pathTemplate = segmentPattern.ReplaceAllString(p.cfg.Path, "%s")
 
-	matches := segmentRe.FindAllStringSubmatch(p.cfg.Path, -1)
-	for _, match := range matches {
+	// Map segment positions to their names
+	for _, match := range segmentPattern.FindAllStringSubmatch(p.cfg.Path, -1) {
 		if match[1] == "$" {
-			continue // special token, not a segment
+			continue // Skip special tokens
 		}
 
-		for i, v := range routeSplit {
-			if v == match[0] {
-				p.segments[i] = match[0]
+		for i, segment := range routeSegments {
+			if segment == match[0] {
+				p.pathSegments[i] = match[0]
 			}
 		}
 	}
 }
 
-// setupHostRewrite sets up the host rewrite
 func (p *plugin) setupHostRewrite(host string) error {
-	u, err := url.Parse(host)
+	parsedURL, err := url.Parse(host)
 	if err != nil {
 		return err
 	}
 
-	p.host = u.Host
-	p.scheme = u.Scheme
+	p.targetHost = parsedURL.Host
+	p.targetScheme = parsedURL.Scheme
 	return nil
 }
 
-func isWildcard(segment string) bool {
-	return strings.HasSuffix(segment, "...}")
-}
+func (*plugin) Teardown(context.Context) error { return nil }
 
+// Helper function to parse route pattern into method, host, and path components
 var patternRe = regexp.MustCompile(`^(?:(\S*)\s+)*\s*([^/]*)(/.*)$`)
 
 func decomposePattern(pattern string) (method, host, path string) {

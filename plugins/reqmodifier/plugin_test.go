@@ -17,6 +17,7 @@ func TestPlugin_Setup(t *testing.T) {
 		name        string
 		config      map[string]any
 		route       string
+		scope       ika.InjectionLevel
 		wantErr     bool
 		errContains string
 	}{
@@ -26,12 +27,14 @@ func TestPlugin_Setup(t *testing.T) {
 				"path": "/new/{id}",
 			},
 			route: "/old/{id}",
+			scope: ika.ScopeRoute,
 		},
 		{
 			name: "valid host rewrite",
 			config: map[string]any{
 				"host": "https://example.com",
 			},
+			scope: ika.ScopeRoute,
 		},
 		{
 			name: "valid path and host rewrite",
@@ -40,21 +43,24 @@ func TestPlugin_Setup(t *testing.T) {
 				"host": "https://example.com",
 			},
 			route: "/old/{id}",
-		},
-		{
-			name: "path rewrite without route pattern",
-			config: map[string]any{
-				"path": "/new/{id}",
-			},
-			wantErr:     true,
-			errContains: "path pattern is required",
+			scope: ika.ScopeRoute,
 		},
 		{
 			name: "invalid host URL",
 			config: map[string]any{
 				"host": "://invalid",
 			},
+			scope:   ika.ScopeRoute,
 			wantErr: true,
+		},
+		{
+			name: "invalid scope",
+			config: map[string]any{
+				"host": "https://example.com",
+			},
+			scope:       ika.ScopeNamespace,
+			wantErr:     true,
+			errContains: "plugin only usable in route scope",
 		},
 	}
 
@@ -65,6 +71,7 @@ func TestPlugin_Setup(t *testing.T) {
 			iCtx := ika.InjectionContext{
 				Route:  tt.route,
 				Logger: slog.New(slog.DiscardHandler),
+				Scope:  tt.scope,
 			}
 
 			p, err := factory.New(context.Background(), iCtx, tt.config)
