@@ -26,7 +26,8 @@ func (c *pConfig) Validate() error {
 	}
 
 	if c.Host != "" {
-		if _, err := url.Parse(c.Host); err != nil {
+		host := segmentPattern.ReplaceAllString(c.Host, "dummy")
+		if _, err := url.Parse(host); err != nil {
 			return fmt.Errorf("invalid host URL: %w", err)
 		}
 	}

@@ -12,11 +12,11 @@ The Request Modifier plugin allows dynamic modification of HTTP requests, includ
 
 ## Configuration
 
-| Option             | Type      | Description                                                       | Required | Default |
-| ------------------ | --------- | ----------------------------------------------------------------- | -------- | ------- |
-| `path`             | `string`  | New path pattern that can include segments from the original path | No\*     | -       |
-| `host`             | `string`  | Target host URL including scheme (e.g., "https://example.com")    | No\*     | -       |
-| `retainHostHeader` | `boolean` | Whether to preserve the original Host header                      | No       | `false` |
+| Option             | Type      | Description                                                  | Required | Default |
+| ------------------ | --------- | ------------------------------------------------------------ | -------- | ------- |
+| `path`             | `string`  | New path pattern that can include route segments             | No\*     | -       |
+| `host`             | `string`  | Target host URL including scheme. Can include route segments | No\*     | -       |
+| `retainHostHeader` | `boolean` | Whether to preserve the original Host header                 | No       | `false` |
 
 ::: warning Note
 \*At least one of `path` or `host` must be configured.
@@ -28,8 +28,8 @@ The Request Modifier plugin allows dynamic modification of HTTP requests, includ
 reqModifiers:
   - name: req-modifier
     config:
-      path: /new/{id}/path/{wildcard...}
-      host: https://api.example.com
+      path: /api/{service}/{wildcard...}
+      host: https://{service}.internal.example.com
       retainHostHeader: false
 ```
 
@@ -39,7 +39,6 @@ The path rewriting feature uses a pattern-based syntax:
 
 - `{segment}`: Captures a single path segment
 - `{wildcard...}`: Captures all remaining path segments
-- `{$}`: Special token for static segments
 
 ## Best Practices
 

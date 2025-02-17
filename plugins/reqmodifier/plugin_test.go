@@ -46,6 +46,22 @@ func TestPlugin_Setup(t *testing.T) {
 			scope: ika.ScopeRoute,
 		},
 		{
+			name: "valid host rewrite with variables",
+			config: map[string]any{
+				"host": "https://{id}.example.com",
+			},
+			route: "/users/{id}",
+			scope: ika.ScopeRoute,
+		},
+		{
+			name: "valid host rewrite with multiple variables",
+			config: map[string]any{
+				"host": "https://{tenant}.{region}.example.com",
+			},
+			route: "/api/{tenant}/{region}/users",
+			scope: ika.ScopeRoute,
+		},
+		{
 			name: "invalid host URL",
 			config: map[string]any{
 				"host": "://invalid",
@@ -150,6 +166,40 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 			inputURL:      "http://example.com/users/123",
 			expectedPath:  "/users/123",
 			expectedHost:  "api.example.com",
+			expectedQuery: "",
+		},
+		{
+			name: "host rewrite with variable",
+			config: map[string]any{
+				"host": "https://{id}.example.com",
+			},
+			route:         "/users/{id}",
+			inputURL:      "http://example.com/users/tenant1",
+			expectedPath:  "/users/tenant1",
+			expectedHost:  "tenant1.example.com",
+			expectedQuery: "",
+		},
+		{
+			name: "host rewrite with multiple variables",
+			config: map[string]any{
+				"host": "https://{tenant}.{region}.example.com",
+			},
+			route:         "/api/{tenant}/{region}/users",
+			inputURL:      "http://example.com/api/acme/us-west/users",
+			expectedPath:  "/api/acme/us-west/users",
+			expectedHost:  "acme.us-west.example.com",
+			expectedQuery: "",
+		},
+		{
+			name: "host rewrite with variable and retain header",
+			config: map[string]any{
+				"host":             "https://{id}.example.com",
+				"retainHostHeader": true,
+			},
+			route:         "/users/{id}",
+			inputURL:      "http://example.com/users/tenant1",
+			expectedPath:  "/users/tenant1",
+			expectedHost:  "tenant1.example.com",
 			expectedQuery: "",
 		},
 		{

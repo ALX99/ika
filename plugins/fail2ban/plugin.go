@@ -34,7 +34,7 @@ type ipAttempts struct {
 	sync.Mutex
 }
 
-func Plugin() ika.PluginFactory {
+func Factory() ika.PluginFactory {
 	return &plugin{}
 }
 

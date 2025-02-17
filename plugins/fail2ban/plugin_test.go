@@ -16,7 +16,7 @@ import (
 func TestPlugin_Setup(t *testing.T) {
 	t.Parallel()
 
-	factory := Plugin()
+	factory := Factory()
 
 	tests := []struct {
 		name      string
@@ -85,7 +85,7 @@ func TestPlugin_Setup(t *testing.T) {
 
 func TestPlugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
-	factory := Plugin()
+	factory := Factory()
 
 	tests := []struct {
 		name           string
@@ -202,7 +202,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 func TestPlugin_Cleanup(t *testing.T) {
 	t.Parallel()
 	is := is.New(t)
-	factory := Plugin()
+	factory := Factory()
 
 	p, err := factory.New(t.Context(), ika.InjectionContext{
 		Logger: slog.New(slog.DiscardHandler),

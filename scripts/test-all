@@ -52,6 +52,9 @@ fi
 
 # Run config validation if enabled
 if [[ "$run_config" == true ]]; then
+    # Set environment variables for config validation
+    export ADMIN_USER=test
+    export ADMIN_PASS=test
     echo "Validating example configs..."
     for example in docs/example/configs/*.yaml; do
         echo "Validating $example"
