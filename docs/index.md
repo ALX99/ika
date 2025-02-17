@@ -6,9 +6,9 @@ hero:
   name: "Ika ><>"
   text: "Simple core,\nendless possibilities"
   tagline: The API Gateway that scales with you
-  image: /logo.png
-  alt: Ika Gateway logo
-  actions:
+  image: /ika.webp
+  alt: Ika Gateway
+actions:
     - theme: brand
       text: Why Ika?
       link: /guide/why-ika

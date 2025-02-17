@@ -5,6 +5,7 @@ export default defineConfig({
   title: "Ika Gateway",
   description:
     "High-performance API Gateway with Go plugins. Zero bloat, sub-millisecond routing, and enterprise-grade reliability for modern microservices.",
+  head: [["link", { rel: "icon", href: "/favicon.png" }]],
   ignoreDeadLinks: [/^https?:\/\/localhost/, (url) => url.includes("TODO")],
   cleanUrls: true,
   themeConfig: {
@@ -56,7 +57,7 @@ export default defineConfig({
     socialLinks: [{ icon: "github", link: "https://github.com/alx99/ika" }],
 
     siteTitle: "Ika Gateway",
-    logo: { light: "/logo.png", dark: "/logo.png" },
+    logo: { light: "/ika.webp", dark: "/ika.webp" },
   },
   sitemap: {
     hostname: "https://ika.dozy.dev",
