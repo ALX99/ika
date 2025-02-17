@@ -18,6 +18,10 @@ type pConfig struct {
 type incomingConfig struct {
 	// Credentials is a list of valid credentials for incoming requests
 	Credentials []namedCredential `json:"credentials"`
+
+	// Strip determines whether to remove the basic auth credentials
+	// from the request after successful authentication
+	Strip bool `json:"strip"`
 }
 
 type basicAuthConfig struct {

@@ -13,6 +13,7 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 	is := is.New(t)
 	type fields struct {
 		inCreds []credential
+		strip   bool
 		outUser string
 		outPass string
 	}
@@ -163,11 +164,62 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 			wantOutUser: "outUser",
 			wantOutPass: "outPass",
 		},
+		{
+			name: "strip incoming credentials",
+			fields: fields{
+				inCreds: []credential{
+					{
+						user: []byte("user"),
+						pass: []byte("pass"),
+					},
+				},
+				strip:   true,
+				outUser: "outUser",
+				outPass: "outPass",
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: func() *http.Request {
+					req := httptest.NewRequest("GET", "/", nil)
+					req.SetBasicAuth("user", "pass")
+					return req
+				}(),
+			},
+			wantErr:     false,
+			wantOutUser: "outUser",
+			wantOutPass: "outPass",
+		},
+		{
+			name: "strip incoming credentials - no outgoing credentials",
+			fields: fields{
+				inCreds: []credential{
+					{
+						user: []byte("user"),
+						pass: []byte("pass"),
+					},
+				},
+				strip:   true,
+				outUser: "",
+				outPass: "",
+			},
+			args: args{
+				w: httptest.NewRecorder(),
+				r: func() *http.Request {
+					req := httptest.NewRequest("GET", "/", nil)
+					req.SetBasicAuth("user", "pass")
+					return req
+				}(),
+			},
+			wantErr:     false,
+			wantOutUser: "",
+			wantOutPass: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &plugin{
 				inCreds: tt.fields.inCreds,
+				strip:   tt.fields.strip,
 				outUser: tt.fields.outUser,
 				outPass: tt.fields.outPass,
 				next: ika.HandlerFunc(func(w http.ResponseWriter, r *http.Request) error {
@@ -179,10 +231,12 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 				is.NoErr(err)
 			} else {
 				is.True(err != nil)
+				return // wanted error
 			}
+
 			user, pass, ok := tt.args.r.BasicAuth()
+			is.True(ok == (tt.wantOutUser != "" || tt.wantOutPass != ""))
 			if tt.wantOutUser != "" || tt.wantOutPass != "" {
-				is.True(ok)
 				is.Equal(user, tt.wantOutUser)
 				is.Equal(pass, tt.wantOutPass)
 			}

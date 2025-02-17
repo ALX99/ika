@@ -15,6 +15,7 @@ import (
 
 type plugin struct {
 	inCreds          []credential
+	strip            bool
 	outUser, outPass string
 	next             ika.Handler
 }
@@ -52,6 +53,7 @@ func (*plugin) New(ctx context.Context, ictx ika.InjectionContext, config map[st
 				pass: []byte(pass),
 			}
 		}
+		p.strip = cfg.Incoming.Strip
 	}
 
 	if cfg.Outgoing != nil {
@@ -81,12 +83,9 @@ func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 			return invalidCredsErr
 		}
 
-		userBytes := []byte(user)
-		passBytes := []byte(pass)
-
 		for _, cred := range p.inCreds {
-			if subtle.ConstantTimeCompare(userBytes, cred.user) == 1 &&
-				subtle.ConstantTimeCompare(passBytes, cred.pass) == 1 {
+			if subtle.ConstantTimeCompare([]byte(user), cred.user) == 1 &&
+				subtle.ConstantTimeCompare([]byte(pass), cred.pass) == 1 {
 				// Found valid credentials
 				goto authorized
 			}
@@ -94,6 +93,9 @@ func (p *plugin) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		return invalidCredsErr
 	}
 authorized:
+	if p.strip {
+		r.Header.Del("Authorization")
+	}
 	if p.outUser != "" || p.outPass != "" {
 		r.SetBasicAuth(p.outUser, p.outPass)
 	}

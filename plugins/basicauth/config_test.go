@@ -246,6 +246,30 @@ func TestPlugin_Setup(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "valid static config with incoming and strip",
+			config: map[string]any{
+				"incoming": map[string]any{
+					"credentials": []map[string]any{
+						{
+							"name":     "admin",
+							"type":     "static",
+							"username": "user",
+							"password": "pass",
+						},
+					},
+					"strip": true,
+				},
+			},
+			wantErr: false,
+			check: func(is *is.I, p ika.Plugin) {
+				plugin := p.(*plugin)
+				is.Equal(len(plugin.inCreds), 1)
+				is.Equal(string(plugin.inCreds[0].user), "user")
+				is.Equal(string(plugin.inCreds[0].pass), "pass")
+				is.True(plugin.strip)
+			},
+		},
 	}
 
 	for _, tt := range tests {

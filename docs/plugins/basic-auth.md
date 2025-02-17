@@ -21,12 +21,13 @@ The Basic Auth plugin provides HTTP Basic Authentication support for both incomi
 
 The `incoming` section supports multiple named credentials. Each credential can be configured independently.
 
-| Option                            | Type     | Description                                      | Required | Default  |
-| --------------------------------- | -------- | ------------------------------------------------ | -------- | -------- |
-| `incoming.credentials[].name`     | `string` | Unique identifier for the credential             | Yes      | -        |
-| `incoming.credentials[].type`     | `string` | Credential lookup type. Options: `static`, `env` | No       | `static` |
-| `incoming.credentials[].username` | `string` | Username or environment variable name            | Yes      | -        |
-| `incoming.credentials[].password` | `string` | Password or environment variable name            | Yes      | -        |
+| Option                            | Type      | Description                                      | Required | Default  |
+| --------------------------------- | --------- | ------------------------------------------------ | -------- | -------- |
+| `incoming.credentials[].name`     | `string`  | Unique identifier for the credential             | Yes      | -        |
+| `incoming.credentials[].type`     | `string`  | Credential lookup type. Options: `static`, `env` | No       | `static` |
+| `incoming.credentials[].username` | `string`  | Username or environment variable name            | Yes      | -        |
+| `incoming.credentials[].password` | `string`  | Password or environment variable name            | Yes      | -        |
+| `incoming.strip`                  | `boolean` | Remove credentials after successful authentication| No       | `false`  |
 
 ### `outgoing` Configuration
 
@@ -47,6 +48,7 @@ middlewares:
   - name: basic-auth
     config:
       incoming:
+        strip: false
         credentials:
           - name: admin
             type: env
@@ -77,3 +79,4 @@ In this example:
 4. Consider using more secure authentication methods for sensitive operations
 5. Use meaningful names for credentials to aid in organization and monitoring
 6. Avoid duplicate credential names as they will cause validation errors
+7. Enable `strip` when you want to prevent credentials from being forwarded to upstream services
