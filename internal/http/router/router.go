@@ -14,11 +14,11 @@ type Router struct {
 	tder teardown.Teardowner
 	mux  *http.ServeMux
 	cfg  config.Config
-	opts config.Options
+	opts config.ComptimeOpts
 	log  *slog.Logger
 }
 
-func New(cfg config.Config, opts config.Options, log *slog.Logger) (*Router, error) {
+func New(cfg config.Config, opts config.ComptimeOpts, log *slog.Logger) (*Router, error) {
 	return &Router{
 		tder: make(teardown.Teardowner, 0),
 		mux:  http.NewServeMux(),

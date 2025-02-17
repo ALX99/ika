@@ -2,7 +2,7 @@ package config
 
 import "github.com/alx99/ika"
 
-type Options struct {
+type ComptimeOpts struct {
 	Plugins  map[string]ika.PluginFactory
 	Validate bool
 }

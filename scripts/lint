@@ -1,0 +1,10 @@
+#!/bin/bash
+# This script runs golangci-lint on all Go packages
+
+set -euo pipefail
+
+find . -type f -name go.mod -exec dirname {} \; | while read -r dir; do
+    pushd "$dir"
+    golangci-lint run ./...
+    popd
+done

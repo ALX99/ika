@@ -23,6 +23,7 @@ type MultiServer struct {
 func New(handler http.Handler, config []config.Server) *MultiServer {
 	var servers []http.Server
 	for _, c := range config {
+		//nolint:gosec // not an issue, user-provided configuration
 		servers = append(servers, *ConfigureServer(&http.Server{Handler: handler}, c))
 	}
 

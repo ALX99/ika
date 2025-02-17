@@ -10,6 +10,7 @@ import (
 )
 
 func Test_plugin_ServeHTTP(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 	type fields struct {
 		inCreds []credential
@@ -217,6 +218,7 @@ func Test_plugin_ServeHTTP(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			p := &plugin{
 				inCreds: tt.fields.inCreds,
 				strip:   tt.fields.strip,

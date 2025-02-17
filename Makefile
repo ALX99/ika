@@ -46,6 +46,10 @@ fmt:
 	gofmt -l -w .
 	pnpm run fmt
 
+.PHONY: lint
+lint:
+	./scripts/lint
+
 .PHONY: tidy
 tidy:
 	./scripts/tidy

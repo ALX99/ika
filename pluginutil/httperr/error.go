@@ -63,7 +63,7 @@ func (e *Error) WithErr(err error) *Error {
 }
 
 // Error implements the error interface.
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	var sb strings.Builder
 	if e.Title() != "" {
 		sb.WriteString(e.Title())
@@ -78,26 +78,26 @@ func (e Error) Error() string {
 }
 
 // Detail returns the detail of the error.
-func (e Error) Detail() string {
+func (e *Error) Detail() string {
 	return e.sDetail
 }
 
 // TypeURI returns the type URI of the error.
-func (e Error) TypeURI() string {
+func (e *Error) TypeURI() string {
 	return e.sTypeURI
 }
 
 // Status returns the status of the error.
-func (e Error) Status() int {
+func (e *Error) Status() int {
 	return e.sStatus
 }
 
 // Title returns the title of the error.
-func (e Error) Title() string {
+func (e *Error) Title() string {
 	return cmp.Or(e.sTitle, http.StatusText(e.sStatus))
 }
 
 // Unwrap returns the underlying error.
-func (e Error) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.err
 }

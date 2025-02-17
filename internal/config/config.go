@@ -52,12 +52,12 @@ func Read(path string) (Config, error) {
 
 type Duration time.Duration
 
-func (d Duration) LogValue() slog.Value {
-	return slog.StringValue(time.Duration(d).String())
+func (d *Duration) LogValue() slog.Value {
+	return slog.StringValue(time.Duration(*d).String())
 }
 
-func (d Duration) Dur() time.Duration {
-	return time.Duration(d)
+func (d *Duration) Dur() time.Duration {
+	return time.Duration(*d)
 }
 
 func (d *Duration) UnmarshalJSON(b []byte) error {

@@ -84,6 +84,7 @@ func TestPlugin_Setup(t *testing.T) {
 }
 
 func TestPlugin_ServeHTTP(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 	factory := Factory()
 

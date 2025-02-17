@@ -25,7 +25,7 @@ func Run(opts ...Option) {
 		os.Exit(0)
 	}
 
-	cfg := config.Options{Validate: *validate}
+	cfg := config.ComptimeOpts{Validate: *validate}
 	for _, opt := range opts {
 		if err := opt(&cfg); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to apply option: %s\n", err)
@@ -37,12 +37,12 @@ func Run(opts ...Option) {
 }
 
 // Option represents an option for Run.
-type Option func(*config.Options) error
+type Option func(*config.ComptimeOpts) error
 
 // WithPlugin registers a plugin factory with Ika.
 // Once registered, the plugin which the factory creates can be used in the configuration file.
 func WithPlugin(factory ika.PluginFactory) Option {
-	return func(cfg *config.Options) error {
+	return func(cfg *config.ComptimeOpts) error {
 		if cfg.Plugins == nil {
 			cfg.Plugins = make(map[string]ika.PluginFactory)
 		}

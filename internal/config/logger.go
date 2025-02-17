@@ -18,7 +18,7 @@ func (l *Logger) SetDefaults() {
 	l.Format = strings.ToLower(cmp.Or(l.Format, "json"))
 }
 
-func (l Logger) LogValue() slog.Value {
+func (l *Logger) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("level", l.Level),
 		slog.String("format", l.Format),

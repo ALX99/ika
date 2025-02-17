@@ -67,9 +67,7 @@ func UnmarshalCfg(data map[string]any, config any) error {
 			continue
 		}
 
-		// Handle special types
-		switch field.Interface().(type) {
-		case time.Duration:
+		if _, ok := field.Interface().(time.Duration); ok {
 			var dur durAlias
 			if err := json.Unmarshal(rawValue, &dur); err != nil {
 				return fmt.Errorf("invalid duration for field %s: %w", jsonTag, err)

@@ -143,7 +143,7 @@ func (f HandlerFunc) ToHTTPHandler(errHandler ErrorHandler) http.Handler {
 // If the client accepts "application/json" or "*/*", the error is encoded in JSON; otherwise, plain text is used.
 // If the error implements Status(), TypeURI(), Title(), and Detail() methods, their values will be used in the response.
 func DefaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
-	logWriteError := func(err error) {
+	logWriteError := func(err error) { //nolint:contextcheck // not an issue here
 		slog.LogAttrs(r.Context(),
 			slog.LevelError,
 			"Error writing error response",

@@ -22,15 +22,14 @@ import (
 var start = time.Now()
 
 // Run starts Ika
-func Run(configPath string, options config.Options) {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
-	defer cancel()
-
+func Run(configPath string, options config.ComptimeOpts) {
 	cfg, err := config.Read(configPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGQUIT, syscall.SIGTERM)
 
 	makeServer := func(handler http.Handler, servers []config.Server) server.HTTPServer {
 		if options.Validate {
@@ -53,6 +52,7 @@ func Run(configPath string, options config.Options) {
 		fmt.Fprintf(os.Stderr, "failed to flush: %s\n", err)
 	}
 
+	cancel()
 	if exitOne || err != nil {
 		os.Exit(1)
 	}
@@ -61,7 +61,7 @@ func Run(configPath string, options config.Options) {
 func run(ctx context.Context,
 	makeServer func(handler http.Handler, servers []config.Server) server.HTTPServer,
 	cfg config.Config,
-	opts config.Options,
+	opts config.ComptimeOpts,
 ) (func() error, error) {
 	log, flush := logger.Initialize(ctx, cfg.Ika.Logger)
 
@@ -98,7 +98,7 @@ func run(ctx context.Context,
 	slog.Info("Caught shutdown signal, shutting down gracefully...")
 
 	ctx, cancel := context.WithTimeoutCause(
-		context.Background(),
+		context.WithoutCancel(ctx),
 		cfg.Ika.GracefulShutdownTimeout.Dur(),
 		fmt.Errorf("could not shut down gracefully in %v", cfg.Ika.GracefulShutdownTimeout),
 	)
@@ -139,5 +139,5 @@ type mockServer struct {
 	onListenAndServe func()
 }
 
-func (m *mockServer) ListenAndServe() error              { m.onListenAndServe(); return nil }
-func (m *mockServer) Shutdown(ctx context.Context) error { return nil }
+func (m *mockServer) ListenAndServe() error            { m.onListenAndServe(); return nil }
+func (m *mockServer) Shutdown(_ context.Context) error { return nil }

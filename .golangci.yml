@@ -1,0 +1,13 @@
+linters:
+  presets:
+    - bugs
+    - test
+    - error
+  enable:
+    - gocritic
+  disable:
+    - testpackage
+    - exhaustruct
+    - paralleltest # using tparallel
+    - wrapcheck
+    - err113

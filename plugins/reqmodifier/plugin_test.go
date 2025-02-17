@@ -1,9 +1,9 @@
 package reqmodifier
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/alx99/ika"
@@ -90,7 +90,7 @@ func TestPlugin_Setup(t *testing.T) {
 				Scope:  tt.scope,
 			}
 
-			p, err := factory.New(context.Background(), iCtx, tt.config)
+			p, err := factory.New(t.Context(), iCtx, tt.config)
 			if tt.wantErr {
 				is.True(err != nil)
 				if tt.errContains != "" {
@@ -406,11 +406,10 @@ func TestPlugin_ModifyRequest(t *testing.T) {
 				Logger: slog.New(slog.DiscardHandler),
 			}
 
-			p, err := factory.New(context.Background(), iCtx, tt.config)
+			p, err := factory.New(t.Context(), iCtx, tt.config)
 			is.NoErr(err)
 
-			req, err := http.NewRequest(http.MethodGet, tt.inputURL, nil)
-			is.NoErr(err)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, tt.inputURL, nil)
 			if tt.route != "" {
 				req.Pattern = tt.route
 			}
@@ -495,7 +494,7 @@ func BenchmarkRewritePath(b *testing.B) {
 
 	rm.setupPathRewrite(iCtx.Route)
 
-	req, _ := http.NewRequest("GET", "http://example.com/old/test", nil)
+	req := httptest.NewRequestWithContext(b.Context(), http.MethodGet, "http://example.com/old/test", nil)
 
 	for b.Loop() {
 		req.URL.Path = "/old/test"

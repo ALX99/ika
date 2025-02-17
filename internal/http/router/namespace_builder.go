@@ -42,7 +42,7 @@ type routeRegistration struct {
 	err     chan error
 }
 
-func newNSBuilder(ctx context.Context, mux *http.ServeMux, name string, ns config.Namespace, log *slog.Logger, factories map[string]ika.PluginFactory) (*nsBuilder, error) {
+func newNSBuilder(_ context.Context, mux *http.ServeMux, name string, ns config.Namespace, log *slog.Logger, factories map[string]ika.PluginFactory) (*nsBuilder, error) {
 	registrationCh := make(chan routeRegistration)
 	done := make(chan struct{})
 

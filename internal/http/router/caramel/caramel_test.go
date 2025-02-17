@@ -39,15 +39,18 @@ func TestCaramel_patterns(t *testing.T) {
 }
 
 func TestCaramel_makePattern(t *testing.T) {
+	t.Parallel()
 	is := is.New(t)
 
 	t.Run("should return a pattern with the method and path", func(t *testing.T) {
+		t.Parallel()
 		c := &Caramel{path: "/api"}
 		pattern := c.makePattern("/users")
 		is.Equal(pattern, "/api/users")
 	})
 
 	t.Run("should handle nested groups", func(t *testing.T) {
+		t.Parallel()
 		mux := http.NewServeMux()
 		c1 := Wrap(mux).Mount("/api")
 		c2 := c1.Mount("/v1")
@@ -56,6 +59,7 @@ func TestCaramel_makePattern(t *testing.T) {
 	})
 
 	t.Run("should handle nested groups with methods", func(t *testing.T) {
+		t.Parallel()
 		mux := http.NewServeMux()
 		c1 := Wrap(mux).Mount("/api")
 		c2 := c1.Mount("/v1")
@@ -64,6 +68,7 @@ func TestCaramel_makePattern(t *testing.T) {
 	})
 
 	t.Run("should handle root path in nested groups", func(t *testing.T) {
+		t.Parallel()
 		mux := http.NewServeMux()
 		c1 := Wrap(mux).Mount("/api")
 		c2 := c1.Mount("/v1")
@@ -72,6 +77,7 @@ func TestCaramel_makePattern(t *testing.T) {
 	})
 
 	t.Run("should panic if method does not match group's base method", func(t *testing.T) {
+		t.Parallel()
 		defer func() {
 			if r := recover(); r == nil {
 				t.Errorf("expected panic but did not get one")
@@ -83,6 +89,7 @@ func TestCaramel_makePattern(t *testing.T) {
 	})
 
 	t.Run("should panic if host does not match group's base host", func(t *testing.T) {
+		t.Parallel()
 		defer func() {
 			if r := recover(); r == nil {
 				t.Errorf("expected panic but did not get one")
@@ -94,18 +101,21 @@ func TestCaramel_makePattern(t *testing.T) {
 	})
 
 	t.Run("should handle patterns with host", func(t *testing.T) {
+		t.Parallel()
 		c := &Caramel{path: "/api"}
 		pattern := c.makePattern("example.com/users")
 		is.Equal(pattern, "example.com/api/users")
 	})
 
 	t.Run("should handle patterns with method and host", func(t *testing.T) {
+		t.Parallel()
 		c := &Caramel{path: "/api"}
 		pattern := c.makePattern("GET example.com/users")
 		is.Equal(pattern, "GET example.com/api/users")
 	})
 
 	t.Run("should handle nested groups with host", func(t *testing.T) {
+		t.Parallel()
 		mux := http.NewServeMux()
 		c1 := Wrap(mux).Mount("example.com/api")
 		c2 := c1.Mount("/v1")
@@ -114,6 +124,7 @@ func TestCaramel_makePattern(t *testing.T) {
 	})
 
 	t.Run("should handle nested groups with method and host", func(t *testing.T) {
+		t.Parallel()
 		mux := http.NewServeMux()
 		c1 := Wrap(mux).Mount("example.com/api")
 		c2 := c1.Mount("/v1")
@@ -123,6 +134,7 @@ func TestCaramel_makePattern(t *testing.T) {
 }
 
 func TestDecomposePattern(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		pattern  string
@@ -162,6 +174,7 @@ func TestDecomposePattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 			method, host, path := decomposePattern(tt.pattern)
 			is.Equal(method, tt.expected[0])

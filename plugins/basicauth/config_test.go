@@ -7,6 +7,7 @@ import (
 	"github.com/matryer/is"
 )
 
+//nolint:tparallel // not possible with t.Setenv
 func TestPlugin_Setup(t *testing.T) {
 	t.Setenv("USER_ENV", "user")
 	t.Setenv("PASS_ENV", "pass")
@@ -274,6 +275,7 @@ func TestPlugin_Setup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			p, err := factory.New(t.Context(), ika.InjectionContext{}, tt.config)
@@ -415,6 +417,7 @@ func TestIncomingConfig_Validate(t *testing.T) {
 	}
 }
 
+//nolint:tparallel // not possible with t.Setenv
 func TestNamedCredential_Validate(t *testing.T) {
 	t.Setenv("USER_ENV", "user")
 	t.Setenv("PASS_ENV", "pass")
@@ -510,6 +513,7 @@ func TestNamedCredential_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			err := tt.cfg.validate()
@@ -522,6 +526,7 @@ func TestNamedCredential_Validate(t *testing.T) {
 	}
 }
 
+//nolint:tparallel // not possible with t.Setenv
 func TestBasicAuthConfig_Validate(t *testing.T) {
 	t.Setenv("USER_ENV", "user")
 	t.Setenv("PASS_ENV", "pass")
@@ -604,6 +609,7 @@ func TestBasicAuthConfig_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			err := tt.cfg.validate()
@@ -616,6 +622,7 @@ func TestBasicAuthConfig_Validate(t *testing.T) {
 	}
 }
 
+//nolint:tparallel // not possible with t.Setenv
 func TestCredentials(t *testing.T) {
 	t.Setenv("USER_ENV", "envuser")
 	t.Setenv("PASS_ENV", "envpass")
@@ -707,6 +714,7 @@ func TestCredentials(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			is := is.New(t)
 
 			if tt.setupEnv != nil {

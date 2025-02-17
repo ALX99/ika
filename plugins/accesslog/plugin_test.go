@@ -2,7 +2,6 @@ package accesslog
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -208,7 +207,7 @@ func TestPlugin_ServeHTTP(t *testing.T) {
 			logger := slog.New(slog.NewJSONHandler(&buf, nil))
 
 			factory := Factory()
-			p, err := factory.New(context.Background(), ika.InjectionContext{
+			p, err := factory.New(t.Context(), ika.InjectionContext{
 				Logger: logger,
 				Route:  tt.request.Pattern,
 			}, tt.config)

@@ -32,6 +32,7 @@ func (s *testServer) waitForStart() {
 }
 
 func newTestServer(t *testing.T, s *httptest.Server) *testServer {
+	t.Helper()
 	t.Cleanup(s.Close)
 	return &testServer{
 		server:  s,
@@ -40,6 +41,7 @@ func newTestServer(t *testing.T, s *httptest.Server) *testServer {
 }
 
 func newMakeTestServer(t *testing.T, s *testServer) func(handler http.Handler, servers []config.Server) server.HTTPServer {
+	t.Helper()
 	return func(handler http.Handler, servers []config.Server) server.HTTPServer {
 		s.server.Config.Handler = handler
 		if len(servers) > 1 {
