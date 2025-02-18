@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: latest
           cache: pnpm
-      - uses: actions/configure-pages@v4
+      - uses: actions/configure-pages@v5
       - name: Install dependencies
         run: pnpm install
       - name: Build with VitePress
